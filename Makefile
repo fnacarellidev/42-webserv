@@ -1,7 +1,7 @@
 NAME = webserv
 
-PATH_INCS = ./
-PATH_SRCS = ./
+PATH_INCS = ./includes/
+PATH_SRCS = ./srcs/
 PATH_OBJS = ./objects/
 
 FILES = main
