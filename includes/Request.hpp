@@ -16,7 +16,7 @@ enum RequestLine {
 
 class Request {
 	private:
-		unsigned int _method;
+		Methods _method;
 	public:
 		Request(std::string request);
 };
