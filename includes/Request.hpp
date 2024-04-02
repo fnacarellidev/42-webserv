@@ -8,6 +8,12 @@ enum Methods {
 	INVALMETHOD
 };
 
+enum RequestLine {
+	METHOD,
+	REQUESTURI,
+	PROTOCOLVER
+};
+
 class Request {
 	private:
 		unsigned int _method;
