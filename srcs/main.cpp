@@ -1,6 +1,9 @@
-#include <iostream>
+#include "../includes/Response.hpp"
 
 int main() {
-	std::cout << "Hello World!" << std::endl;
+	Response	r(200, "./index.html");
+
+	std::cout << r.getFullReponse();
+	
 	return(0);
 }
