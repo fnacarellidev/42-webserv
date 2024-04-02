@@ -8,11 +8,15 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 
+#ifndef BUFFER_SIZE
+# define BUFFER_SIZE 4096
+#endif
+
 int main() {
 	int newSocket;
 	int serverFd = socket(AF_INET, SOCK_STREAM, 0);
-	struct sockaddr sockAddr;
-	char buffer[1024] = { 0 };
+	struct sockaddr sockAddr = {};
+	char buffer[BUFFER_SIZE] = { 0 };
 	socklen_t addrLen = sizeof(sockAddr);
 	const char* hello = "<html><body>\n<h1> Hello </h1>\n</body><html>";
 	int opt = 1;
@@ -25,7 +29,7 @@ int main() {
 		perror("setsockopt");
 		exit(EXIT_FAILURE);
 	}
-	memset(&sockAddr, 0, sizeof(sockAddr));
+	// memset(&sockAddr, 0, sizeof(sockAddr));
 	sockAddr.sa_family = AF_INET;
 	unsigned short port = htons(8080);
 	memcpy(&sockAddr.sa_data, &port, sizeof(port));
@@ -49,12 +53,12 @@ int main() {
 			exit(EXIT_FAILURE);
 		}
 		// le o request
-		read(newSocket, buffer, 1024 - 1);
+		recv(newSocket, buffer, BUFFER_SIZE, 0);
 
 		//manda resposta com o html completo
 		send(newSocket, fullResponse.c_str(), fullResponse.size(), 0);
+		close(newSocket);
 	}
-	close(newSocket);
 	close(serverFd);
 
 	return 0;
