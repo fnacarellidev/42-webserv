@@ -14,7 +14,7 @@ int main() {
 	struct sockaddr sockAddr;
 	char buffer[1024] = { 0 };
 	socklen_t addrLen = sizeof(sockAddr);
-	const char* hello = "<h1> Hello </h1>";
+	const char* hello = "<html><body>\n<h1> Hello </h1>\n</body><html>";
 	int opt = 1;
 
 	if (serverFd < 0) {
@@ -37,15 +37,25 @@ int main() {
 		perror("listen");
 		exit(EXIT_FAILURE);
 	}
-	if ((newSocket = accept(serverFd, &sockAddr, &addrLen))
-			< 0) {
-		perror("accept");
-		exit(EXIT_FAILURE);
+
+	std::string fullResponse("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
+
+	fullResponse += hello;
+	while (true) {
+		// aceita o pacote sempre q surgir um request
+		if ((newSocket = accept(serverFd, &sockAddr, &addrLen))
+				< 0) {
+			perror("accept");
+			exit(EXIT_FAILURE);
+		}
+		// le o request
+		read(newSocket, buffer, 1024 - 1);
+
+		//manda resposta com o html completo
+		send(newSocket, fullResponse.c_str(), fullResponse.size(), 0);
 	}
-	read(newSocket, buffer, 1024 - 1);
-	send(newSocket, hello, strlen(hello), 0);
 	close(newSocket);
 	close(serverFd);
 
 	return 0;
- }
+}
