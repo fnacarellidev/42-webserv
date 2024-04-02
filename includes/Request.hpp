@@ -28,4 +28,6 @@ class Request {
 	public:
 		Request(std::string request);
 		void setStatusCode(HttpStatus::Code httpStatusCode);
+		HttpStatus::Code getStatusCode();
+		Methods getMethod();
 };

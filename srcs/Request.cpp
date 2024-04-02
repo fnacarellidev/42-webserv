@@ -37,9 +37,17 @@ Methods getMethod(std::string request, Request &requestClass) {
 }
 
 Request::Request(std::string request) : _httpStatusCode(HttpStatus::OK) {
-	_method = getMethod(request, *this);
+	_method = ::getMethod(request, *this);
 }
 
 void Request::setStatusCode(HttpStatus::Code httpStatusCode) {
 	_httpStatusCode = httpStatusCode;
+}
+
+HttpStatus::Code Request::getStatusCode() {
+	return _httpStatusCode;
+}
+
+Methods Request::getMethod() {
+	return _method;
 }
