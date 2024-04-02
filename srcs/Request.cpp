@@ -23,18 +23,23 @@ std::map<std::string, Methods> getMethodsMap() {
 	return methodsMap;
 }
 
-Methods getMethod(std::string request) {
+Methods getMethod(std::string request, Request &requestClass) {
 	Methods method = INVALMETHOD;
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::map<std::string, Methods> methodsMap = getMethodsMap();
 	std::string methodKey = requestLineParams[METHOD];
 
-	if (methodsMap.find(methodKey) != methodsMap.end())
-		method = methodsMap[methodKey];
+	if (methodsMap.find(methodKey) == methodsMap.end())
+		requestClass.setStatusCode(HttpStatus::NOTALLOWED);
+	method = methodsMap[methodKey];
 
 	return method;
 }
 
-Request::Request(std::string request) {
-	std::cout << getMethod(request) << std::endl;
+Request::Request(std::string request) : _httpStatusCode(HttpStatus::OK) {
+	_method = getMethod(request, *this);
+}
+
+void Request::setStatusCode(HttpStatus::Code httpStatusCode) {
+	_httpStatusCode = httpStatusCode;
 }
