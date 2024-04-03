@@ -70,12 +70,19 @@ static std::string	getFileSize(std::string filename) {
 	return (toString(stat_buff.st_size));
 }
 
-static std::string	getContentType(std::string filename)
-{
+static std::string	getContentType(std::string filename) {
 	std::map<std::string, std::string>	mimeTypes;
 
-	mimeTypes["html"] = "text/html";
-	std::string	extension = filename.substr(filename.find_last_of(".") + 1);
+	mimeTypes[".html"] = "text/html";
+	mimeTypes[".htm"] = "text/html";
+	mimeTypes[".css"] = "text/css";
+	mimeTypes[".txt"] = "text/plain";
+	mimeTypes[".gif"] = "image/gif";
+	mimeTypes[".png"] = "image/png";
+	mimeTypes[".jpg"] = "image/jpeg";
+	mimeTypes[".jpeg"] = "image/jpeg";
+	mimeTypes[".php"] = "application/x-httpd-php";
+	std::string	extension = filename.substr(filename.find_last_of("."));
 	std::map<std::string, std::string>::iterator	it = mimeTypes.find(extension);
 	if (it != mimeTypes.end())
 		return (it->second);
