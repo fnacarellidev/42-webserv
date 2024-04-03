@@ -15,26 +15,17 @@ std::vector<std::string> getRequestLineParams(std::string request) {
 	return split(firstLine, ' ');
 }
 
-std::map<std::string, Methods> getMethodsMap() {
-	std::map<std::string, Methods> methodsMap;
-
-	methodsMap["GET"] = GET;
-	methodsMap["POST"] = POST;
-	methodsMap["DELETE"] = DELETE;
-
-	return methodsMap;
-}
-
 Methods getMethod(std::string request) {
-	Methods method = UNKNOWNMETHOD;
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
-	std::map<std::string, Methods> methodsMap = getMethodsMap();
-	std::string methodKey = requestLineParams[METHOD];
+	std::string method = requestLineParams[METHOD];
 
-	if (methodsMap.find(methodKey) != methodsMap.end())
-		method = methodsMap[methodKey];
-
-	return method;
+	if (method == "GET")
+		return GET;
+	else if (method == "POST")
+		return POST;
+	else if (method == "DELETE")
+		return DELETE;
+	return UNKNOWNMETHOD;
 }
 
 int	fileGood(const char *filePath) {
@@ -55,7 +46,6 @@ void runGetMethod(std::string filePath, unsigned short allowedMethodsBitmask, Re
 		std::cout << "Not allowed to execute GET\n";
 		return ;
 	}
-
 	switch (fileGood(filePath.c_str())) {
 		case ENOENT:
 			requestClass.setStatusCode(HttpStatus::NOTFOUND);
@@ -106,7 +96,6 @@ void	runMethods(Methods method, std::string request, Request &requestClass) {
 Request::Request(std::string request, std::list<ServerConfig> serverConfigs) : _httpStatusCode(HttpStatus::OK), _serverConfigs(serverConfigs) {
 	_method = ::getMethod(request);
 	runMethods(_method, request, *this);
-	std::cout << "STATUS CODE: " << _httpStatusCode << std::endl;
 }
 
 void Request::setStatusCode(HttpStatus::Code httpStatusCode) {
