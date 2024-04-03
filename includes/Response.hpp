@@ -6,7 +6,11 @@
 #include <vector>
 #include <iterator>
 #include <algorithm>
+#include <ctime>
+#include <sys/stat.h>
+#include <map>
 
+#define SERVER_NAME "webserver/1.0"
 #define HTTP_VERSION "HTTP/1.1"
 
 class Response {

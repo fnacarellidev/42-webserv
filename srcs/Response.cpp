@@ -1,8 +1,4 @@
 #include "../includes/Response.hpp"
-#include <ctime>
-#include <sys/stat.h>
-#include <map>
-#include <ctime>
 
 Response::Response() {
 	this->_status = 0;
