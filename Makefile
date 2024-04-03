@@ -4,7 +4,7 @@ PATH_INCS = ./includes/
 PATH_SRCS = ./srcs/
 PATH_OBJS = ./objects/
 
-FILES = main
+FILES = main Request utils/split
 SRCS = ${FILES:%=$(PATH_OBJS)%.cpp}
 OBJS = ${FILES:%=$(PATH_OBJS)%.o}
 FLAGS = -Wall -Wextra -Werror -std=c++98 -g3
@@ -15,6 +15,7 @@ $(NAME): $(OBJS)
 	c++ $(FLAGS) $(OBJS) -o $(NAME)
 
 $(PATH_OBJS)%.o: $(PATH_SRCS)%.cpp | $(PATH_OBJS)
+	@mkdir -p $(@D)
 	c++ $(FLAGS) -c $< -o $@
 
 $(PATH_OBJS):
