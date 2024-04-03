@@ -53,21 +53,29 @@ std::string	Response::getFullReponse() {
 	return (fullReponse);
 }
 
-static std::string	getCurrentTime() {
-	time_t	now = time(0);
-	std::string	currentTime = ctime(&now);
-	return (currentTime.substr(0, currentTime.length() - 1));
+static time_t	convertTimeToGMT(time_t t) {
+	struct tm	*gmtTime = gmtime(&t);
+	return (mktime(gmtTime));
+}
+
+static std::string	formatTimeString(time_t	time) {
+	char	buffer[80];
+	std::strftime(buffer, sizeof(buffer), "%c", localtime(&time));
+	std::string strTime(buffer);
+	strTime += " GMT";
+	return (strTime);
+}
+
+static std::string	getCurrentTimeInGMT() {
+	time_t	now = convertTimeToGMT(time(0));
+	return (formatTimeString(now));
 }
 
 static std::string	getLastModifiedOfFile(const std::string &filename) {
 	struct stat stat_buff;
-	struct tm *timeinfo;
-	char buffer[80];
-
 	stat(filename.c_str(), &stat_buff);
-	timeinfo = localtime(&stat_buff.st_mtime);
-	strftime(buffer, 80, "%c", timeinfo);
-	return (buffer);
+	time_t	gmtTime = convertTimeToGMT(stat_buff.st_mtime);
+	return (formatTimeString(gmtTime));
 }
 
 static std::string	getFileSize(std::string filename) {
@@ -98,7 +106,7 @@ static std::string	getContentType(std::string filename) {
 
 void	Response::_success() {
 	this->_header.push_back(HTTP_VERSION + (" " + toString(this->_status) + " OK"));
-	this->_header.push_back("Date: " + getCurrentTime());
+	this->_header.push_back("Date: " + getCurrentTimeInGMT());
 	this->_header.push_back("Server: Webserv/1.0");
 	this->_header.push_back("ETag: ");
 	if (!this->_bodyFile.empty()) {
