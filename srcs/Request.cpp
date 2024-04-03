@@ -33,7 +33,8 @@ Methods getMethod(std::string request, Request &requestClass) {
 
 	if (methodsMap.find(methodKey) == methodsMap.end())
 		requestClass.setStatusCode(HttpStatus::NOTALLOWED);
-	method = methodsMap[methodKey];
+	else
+		method = methodsMap[methodKey];
 
 	return method;
 }
