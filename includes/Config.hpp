@@ -19,7 +19,7 @@ class Config
 			std::string const* names, size_t const size, unsigned int const port) \
 			const throw(ServerNotFound);
 		void	addServers(std::string const& filename);
-		static bool configIsValid(std::string const& filename);
+		bool	configIsValid(std::string const& filename);
 };
 
 /*
