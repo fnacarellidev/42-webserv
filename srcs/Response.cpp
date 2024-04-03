@@ -2,6 +2,7 @@
 #include <ctime>
 #include <sys/stat.h>
 #include <map>
+#include <ctime>
 
 Response::Response() {
 	this->_status = 0;
@@ -60,8 +61,13 @@ static std::string	getCurrentTime() {
 
 static std::string	getLastModifiedOfFile(const std::string &filename) {
 	struct stat stat_buff;
+	struct tm *timeinfo;
+	char buffer[80];
+
 	stat(filename.c_str(), &stat_buff);
-	return (toString(stat_buff.st_mtime));
+	timeinfo = localtime(&stat_buff.st_mtime);
+	strftime(buffer, 80, "%c", timeinfo);
+	return (buffer);
 }
 
 static std::string	getFileSize(std::string filename) {
