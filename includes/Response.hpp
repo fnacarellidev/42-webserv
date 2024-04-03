@@ -13,6 +13,8 @@
 #define SERVER_NAME "webserver/1.0"
 #define HTTP_VERSION "HTTP/1.1"
 
+typedef std::pair<std::string, std::string> t_fields;
+
 class Response {
 	public:
 		Response();
@@ -22,10 +24,11 @@ class Response {
 		std::string	getFullReponse();
 
 	private:
-		short int	_status;
-		std::vector<std::string>	_header;
-		std::string	_bodyFile;
-		std::string	_body;
+		short int					_status;
+		std::string					_statusLine;
+		std::vector<t_fields>		_header;
+		std::string					_body;
+		std::string					_bodyFile;
 		void	_success();
 };
 

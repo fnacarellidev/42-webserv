@@ -41,11 +41,12 @@ static std::string	getFileContent(std::string filename) {
 
 std::string	Response::getFullReponse() {
 	std::string	fullReponse = "";
-	std::vector<std::string>::iterator	it;
+	std::vector<t_fields>::iterator	it;
 
+	fullReponse += this->_statusLine + "\n";
 	for (it = this->_header.begin(); it != this->_header.end(); it++)
-		fullReponse += *it + '\n';
-	fullReponse += '\n' + getFileContent(this->_bodyFile);
+		fullReponse += it->first + ": " + it->second + "\n";
+	fullReponse += '\n' + this->_body;
 	return (fullReponse);
 }
 
@@ -101,14 +102,13 @@ static std::string	getContentType(std::string filename) {
 }
 
 void	Response::_success() {
-	this->_header.push_back(HTTP_VERSION + (" " + toString(this->_status) + " OK"));
-	this->_header.push_back("Date: " + getCurrentTimeInGMT());
-	this->_header.push_back("Server: Webserv/1.0");
-	this->_header.push_back("ETag: ");
-	if (!this->_bodyFile.empty()) {
-		this->_header.push_back("Last-Modified: " + getLastModifiedOfFile(this->_bodyFile));
-		this->_header.push_back("Content-Lenght: " + getFileSize(this->_bodyFile));
-		this->_header.push_back("Content-Type: " + getContentType(this->_bodyFile));
-	}
-	this->_header.push_back("Connection: keep-alive");
+	this->_statusLine = HTTP_VERSION + (" " + toString(this->_status) + " OK");
+	this->_header.push_back(std::make_pair("Date", getCurrentTimeInGMT()));
+	this->_header.push_back(std::make_pair("Server", SERVER_NAME));
+	this->_header.push_back(std::make_pair("Etag", "* hash function *"));
+	this->_header.push_back(std::make_pair("Last-Modified", getLastModifiedOfFile(this->_bodyFile)));
+	this->_header.push_back(std::make_pair("Content-Lenght", getFileSize(this->_bodyFile)));
+	this->_header.push_back(std::make_pair("Content-Type", getContentType(this->_bodyFile)));
+	this->_header.push_back(std::make_pair("Connection", "keep-alive"));
+	this->_body = getFileContent(this->_bodyFile);
 }
