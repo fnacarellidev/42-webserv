@@ -9,6 +9,7 @@
 #include <ctime>
 #include <sys/stat.h>
 #include <map>
+#include "../includes/utils.hpp"
 
 #define SERVER_NAME "webserver/1.0"
 #define HTTP_VERSION "HTTP/1.1"
@@ -16,13 +17,6 @@
 typedef std::pair<std::string, std::string> t_fields;
 
 class Response {
-	public:
-		Response();
-		Response(short int status);
-		Response(short int status, std::string bodyFile);
-		~Response();
-		std::string	getFullReponse();
-
 	private:
 		short int					_status;
 		std::string					_statusLine;
@@ -30,13 +24,10 @@ class Response {
 		std::string					_body;
 		std::string					_bodyFile;
 		void	_success();
+	public:
+		Response();
+		Response(short int status);
+		Response(short int status, std::string bodyFile);
+		~Response();
+		std::string	getFullReponse();
 };
-
-template<typename T>
-std::string	toString(const T& value)
-{
-	std::ostringstream oss;
-	oss << value;
-	return (oss.str());
-}
-
