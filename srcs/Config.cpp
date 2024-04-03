@@ -1,18 +1,15 @@
 #include "../includes/Config.hpp"
+#include "../includes/utils.hpp"
+#include <fstream>
 
 const char* ServerNotFound::what() const throw()
 {
 	return ("This server don't exist.");
 }
 
-static ServerConfig*	searchViaName(std::string const name, \
-	unsigned int const port, \
-	std::list< ServerConfig >& servers);
+#include "Config.cpp"
 
-static ServerConfig&	searchViaHost(std::string const& host, \
-	unsigned int const port, \
-	std::list< ServerConfig >& servers)
-throw(ServerNotFound);
+/* METHODS ================================================================= */
 
 ServerConfig&	Config::findByHostNamePort(std::string const& host, \
 	std::string const* names, \
@@ -37,41 +34,40 @@ const throw(ServerNotFound)
 	throw ServerNotFound();
 }
 
-void	Config::addServers(std::string const& filename);
-bool	Config::configIsValid(std::string const& filename);
+void	Config::addServers(const char* filename);
 
-
-static ServerConfig&	searchViaHost(std::string const& host, \
-	unsigned int const port, \
-	std::list< ServerConfig >& servers)
-throw(ServerNotFound)
+bool	Config::configIsValid(const char* filename)
 {
-	std::list< ServerConfig >::iterator end(servers.end());
-	std::list< ServerConfig >::iterator begin(servers.begin());
+	std::map< std::string, ServerKeywords > serverMap(buildServerMap());
+	std::ifstream	file(filename);
+	std::string line;
+	std::string word;
+	bool openBrackets = false;
 
-	while (begin != end) {
-		if (begin->getHost() == host && begin->getPort() == port)
-			return *begin;
-		++begin;
-	}
-	throw ServerNotFound();
-}
-
-
-static ServerConfig*	searchViaName(std::string const name, \
-	unsigned int const port, \
-	std::list< ServerConfig >& servers)
-{
-	std::list< ServerConfig >::iterator end(servers.end());
-	std::list< ServerConfig >::iterator begin(servers.begin());
-
-	while (begin != end) {
-		for (size_t i = 0; i < begin->getSizeNames(); i++) {
-			if (begin->getNames()[i] == name && begin->getPort() == port)
-				return &(*begin);
+	if (!file.is_open())
+		return false;
+	while (!file.eof()) {
+		std::getline(file, line);
+		trim(line, "\t \n");
+		word = line.substr(0, line.find_first_of(" \t\n"));
+		if (word.size() == 1 && word[0] == '}' && !openBrackets)
+			goto ret_error;
+		if (word == "}") {
+			openBrackets = !openBrackets;
+			continue ;
 		}
-		++begin;
+		if (serverMap.find(word) == serverMap.end())
+			goto ret_error;
+		if (serverMap.find(word)->second == SERVER && \
+			invalidServerInputs(file, line, &openBrackets, serverMap))
+			goto ret_error;
+		else
+			goto ret_error;
 	}
-
-	return NULL;
+	file.close();
+	return true;
+ret_error:
+	std::cout << "opa essa linha deu ruim irmao: `" << line << "`" << std::endl;
+	file.close();
+	return false;
 }

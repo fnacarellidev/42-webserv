@@ -1,8 +1,30 @@
 #pragma once
 
-#include "ServerConfig.hpp"
 #include <list>
 #include <exception>
+#include <map>
+#include "ServerConfig.hpp"
+
+enum ServerKeywords
+{
+	SERVER = 1,
+	HOST,
+	PORT,
+	NAMES,
+	LIMIT,
+	ERROR,
+	ROUTE
+};
+
+enum RouteKeywords
+{
+	INDEX = 1,
+	REDIRECT,
+	ROOT,
+	METHODS,
+	LISTING,
+	CGI
+};
 
 class ServerNotFound: public std::exception
 {

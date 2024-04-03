@@ -3,12 +3,9 @@
 #include <iostream>
 #include <utility>
 
-enum RouteMask
-{
-	MASK_GET = 1,
-	MASK_POST = 1<<1,
-	MASK_DELETE = 1<<2
-};
+#define GET_OK 0b0001
+#define POST_OK 0b0010
+#define DELETE_OK 0b0100
 
 class RouteConfig
 {
@@ -19,9 +16,9 @@ class RouteConfig
 		std::string*	_index;
 		// default /?
 		std::string	_root;
-		// default so get 0 = none, 1 = get, 1<<1 = 
-		char	_acceptMethodsBitmask;
+		unsigned short	_acceptMethodsBitmask;
 		// default pra false
 		bool	_dirList;
 	public:
+
 };
