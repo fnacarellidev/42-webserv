@@ -102,11 +102,11 @@ void Request::setStatusCode(HttpStatus::Code httpStatusCode) {
 	_httpStatusCode = httpStatusCode;
 }
 
-HttpStatus::Code Request::getStatusCode() {
+HttpStatus::Code Request::getStatusCode() const {
 	return _httpStatusCode;
 }
 
-Methods Request::getMethod() {
+Methods Request::getMethod() const {
 	return _method;
 }
 
@@ -114,10 +114,10 @@ void	Request::setFileContent(std::string fileContent) {
 	_fileContent = fileContent;
 }
 
-std::string Request::getFileContent() {
+std::string Request::getFileContent() const {
 	return _fileContent;
 }
 
-std::list<ServerConfig> Request::getServerConfigs() {
+std::list<ServerConfig> Request::getServerConfigs() const {
 	return _serverConfigs;
 }

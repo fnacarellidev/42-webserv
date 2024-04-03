@@ -29,10 +29,10 @@ class Request {
 		std::list<ServerConfig> _serverConfigs;
 	public:
 		Request(std::string request, std::list<ServerConfig> serverConfigs);
+		HttpStatus::Code getStatusCode() const;
+		Methods getMethod() const;
+		std::string getFileContent() const;
+		std::list<ServerConfig> getServerConfigs() const;
 		void setStatusCode(HttpStatus::Code httpStatusCode);
-		HttpStatus::Code getStatusCode();
-		Methods getMethod();
 		void setFileContent(std::string fileContent);
-		std::string getFileContent();
-		std::list<ServerConfig> getServerConfigs();
 };
