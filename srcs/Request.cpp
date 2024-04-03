@@ -25,15 +25,13 @@ std::map<std::string, Methods> getMethodsMap() {
 	return methodsMap;
 }
 
-Methods getMethod(std::string request, Request &requestClass) {
-	Methods method = INVALMETHOD;
+Methods getMethod(std::string request) {
+	Methods method = UNKNOWNMETHOD;
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::map<std::string, Methods> methodsMap = getMethodsMap();
 	std::string methodKey = requestLineParams[METHOD];
 
-	if (methodsMap.find(methodKey) == methodsMap.end())
-		requestClass.setStatusCode(HttpStatus::NOTALLOWED);
-	else
+	if (methodsMap.find(methodKey) != methodsMap.end())
 		method = methodsMap[methodKey];
 
 	return method;
@@ -50,10 +48,13 @@ int	fileGood(const char *filePath) {
 	return 0;
 }
 
-void runGetMethod(std::string request, Request &requestClass) {
+void runGetMethod(std::string filePath, unsigned short allowedMethodsBitmask, Request &requestClass) {
 	std::string fileContent;
-	std::vector<std::string> requestLineParams = getRequestLineParams(request);
-	std::string filePath = requestClass.getRootPath() + requestLineParams[REQUESTURI];
+
+	if (!(GET_OK & allowedMethodsBitmask)) {
+		std::cout << "Not allowed to execute GET\n";
+		return ;
+	}
 
 	switch (fileGood(filePath.c_str())) {
 		case ENOENT:
@@ -76,11 +77,17 @@ void runGetMethod(std::string request, Request &requestClass) {
 	}
 }
 
-Request::Request(std::string request, std::string rootPath) : _httpStatusCode(HttpStatus::OK), _rootPath(rootPath) {
-	_method = ::getMethod(request, *this);
-	switch (_method) {
+void	runMethods(Methods method, std::string request, Request &requestClass) {
+	std::vector<std::string> requestLineParams = getRequestLineParams(request);
+	std::string requestUri = requestLineParams[REQUESTURI];
+	std::list<ServerConfig> serverConfigs = requestClass.getServerConfigs();
+	std::list<RouteConfig> routeConfigs = serverConfigs.front().getRoutesConfigs();
+	unsigned short allowedMethodsBitmask = routeConfigs.front().getAllowedMethodsBitmask();
+	std::string filePath = routeConfigs.front().getRoot() + requestUri;
+
+	switch (method) {
 		case GET:
-			runGetMethod(request, *this);
+			runGetMethod(filePath, allowedMethodsBitmask, requestClass);
 			break;
 
 		case POST:
@@ -89,9 +96,16 @@ Request::Request(std::string request, std::string rootPath) : _httpStatusCode(Ht
 		case DELETE:
 			break;
 
-		case INVALMETHOD:
+		case UNKNOWNMETHOD:
+			requestClass.setStatusCode(HttpStatus::NOTALLOWED);
+			std::cout << "Couldn't recognize the method\n";
 			break;
 	}
+}
+
+Request::Request(std::string request, std::list<ServerConfig> serverConfigs) : _httpStatusCode(HttpStatus::OK), _serverConfigs(serverConfigs) {
+	_method = ::getMethod(request);
+	runMethods(_method, request, *this);
 	std::cout << "STATUS CODE: " << _httpStatusCode << std::endl;
 }
 
@@ -107,14 +121,14 @@ Methods Request::getMethod() {
 	return _method;
 }
 
-std::string Request::getRootPath() {
-	return _rootPath;
-}
-
 void	Request::setFileContent(std::string fileContent) {
 	_fileContent = fileContent;
 }
 
 std::string Request::getFileContent() {
 	return _fileContent;
+}
+
+std::list<ServerConfig> Request::getServerConfigs() {
+	return _serverConfigs;
 }
