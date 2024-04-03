@@ -3,18 +3,6 @@
 #include <iostream>
 #include <utility>
 
-#ifndef GET_OK
- #define GET_OK 0b0001
-#endif
-
-#ifndef POST_OK
- #define POST_OK 0b0010
-#endif
-
-#ifndef DELETE_OK
- #define DELETE_OK 0b0100
-#endif
-
 class RouteConfig
 {
 	private:
