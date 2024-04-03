@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>
+#include "../includes/HttpStatus.hpp"
+
 
 enum Methods {
 	GET,
@@ -12,15 +14,6 @@ enum RequestLine {
 	METHOD,
 	REQUESTURI,
 	PROTOCOLVER
-};
-
-namespace HttpStatus {
-	enum Code {
-		OK = 200,
-		FORBIDDEN = 403,
-		NOTFOUND = 404,
-		NOTALLOWED = 405
-	};
 };
 
 class Request {
