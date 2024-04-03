@@ -1,22 +1,25 @@
 #pragma once
 
 #include "ServerConfig.hpp"
+#include <list>
+#include <exception>
 
-#include <map>
-#include <utility>
-/*
- * general config
- * all config outside (but also including) `server {}` will be here
-*/
+class ServerNotFound: public std::exception
+{
+	public:
+		virtual const char* what() const throw();
+};
+
 class Config
 {
 	private:
-		std::vector< std::pair< std::string, int > >	_serverPorts;
-	// 	std::map< std::string, ServerConfig > _configs;
+		std::list< ServerConfig >	_servers;
 	public:
-		std::vector< std::pair< std::string, int > >&	getServerPorts();
-
-	// 	std::map< std::string, ServerConfig >& getConfigs() const;
+		ServerConfig&	findByHostNamePort(std::string const& host,\
+			std::string const* names, size_t const size, unsigned int const port) \
+			const throw(ServerNotFound);
+		void	addServers(std::string const& filename);
+		static bool configIsValid(std::string const& filename);
 };
 
 /*
@@ -38,5 +41,58 @@ server {
 	index hello_world.php hello_world.html
 	dir_listing on;
 	
+}
+*/
+
+/*
+phind example in yml:
+# Configuração para o servidor 1
+server {
+    host: 127.0.0.1
+    port: 8080
+    server_names: example.com www.example.com
+
+    # Páginas de erro padrão
+    error_pages {
+        404: /errors/404.html
+        500: /errors/500.html
+    }
+
+    # Limite de tamanho do corpo do cliente
+    client_body_size_limit: 10MB
+
+    # Rotas
+    route {
+        path: /api
+        methods: [GET, POST]
+        directory_listing: off
+        default_file: index.html
+        cgi_executable: /usr/bin/php-cgi
+        cgi_path_info: true
+        cgi_directory: /var/www/cgi-bin
+    }
+
+    route {
+        path: /uploads
+        methods: [POST]
+        upload_directory: /var/www/uploads
+    }
+}
+
+# Configuração para o servidor 2
+server {
+    host: 0.0.0.0
+    port: 8888
+
+    # Rotas
+    route {
+        path: /redirect
+        redirect: /new_location
+    }
+
+    route {
+        path: /files
+        file_root: /var/www/static
+    }
 }
 */
