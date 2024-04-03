@@ -3,25 +3,28 @@
 #include <iostream>
 #include <utility>
 
-enum RouteMask
-{
-	MASK_GET = 1,
-	MASK_POST = 1<<1,
-	MASK_DELETE = 1<<2
-};
+#ifndef GET_OK
+ #define GET_OK 0b0001
+#endif
+
+#ifndef POST_OK
+ #define POST_OK 0b0010
+#endif
+
+#ifndef DELETE_OK
+ #define DELETE_OK 0b0100
+#endif
 
 class RouteConfig
 {
 	private:
-		// sem default?
 		std::pair< std::string, std::string >	_redirect;
-		// default index.html
 		std::string*	_index;
-		// default /?
 		std::string	_root;
-		// default so get 0 = none, 1 = get, 1<<1 = 
-		char	_acceptMethodsBitmask;
-		// default pra false
+		unsigned short	_allowedMethodsBitmask;
 		bool	_dirList;
 	public:
+		RouteConfig();
+		std::string getRoot() { return _root; };
+		unsigned short getAllowedMethodsBitmask() { return _allowedMethodsBitmask; };
 };
