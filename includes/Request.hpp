@@ -25,9 +25,11 @@ class Request {
 	private:
 		Methods _method;
 		HttpStatus::Code _httpStatusCode;
+		std::string _rootPath;
 	public:
-		Request(std::string request);
+		Request(std::string request, std::string rootPath);
 		void setStatusCode(HttpStatus::Code httpStatusCode);
 		HttpStatus::Code getStatusCode();
 		Methods getMethod();
+		std::string getRootPath();
 };

@@ -36,7 +36,7 @@ Methods getMethod(std::string request, Request &requestClass) {
 	return method;
 }
 
-Request::Request(std::string request) : _httpStatusCode(HttpStatus::OK) {
+Request::Request(std::string request, std::string rootPath) : _httpStatusCode(HttpStatus::OK), _rootPath(rootPath) {
 	_method = ::getMethod(request, *this);
 }
 
@@ -50,4 +50,8 @@ HttpStatus::Code Request::getStatusCode() {
 
 Methods Request::getMethod() {
 	return _method;
+}
+
+std::string Request::getRootPath() {
+	return _rootPath;
 }
