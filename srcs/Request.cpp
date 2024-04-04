@@ -27,10 +27,7 @@ static Methods getMethod(std::string method) {
 static bool pathIsDir(const char *filePath) {
 	struct stat statbuf;
 
-	if (stat(filePath, &statbuf) == -1) {
-		std::cout << "stat failed\n";
-	}
-
+	stat(filePath, &statbuf);
 	return S_ISDIR(statbuf.st_mode);
 }
 
@@ -46,5 +43,5 @@ Request::Request(std::string request, std::list<ServerConfig> serverConfigs) : _
 
 	method = getMethod(requestLineParams[METHOD]);
 	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
-	isDir = pathIsDir(requestLineParams[REQUESTURI].c_str());
+	isDir = pathIsDir(filePath.c_str());
 }

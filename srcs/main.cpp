@@ -69,6 +69,27 @@ int main() {
 
 		serverConfigs.push_back(ServerConfig());
 		Request req(buffer, serverConfigs);
+
+		std::cout << "Method: ";
+		switch (req.method) {
+			case GET:
+				std::cout << "GET\n";
+				break;
+
+			case POST:
+				std::cout << "POST\n";
+				break;
+
+			case DELETE:
+				std::cout << "DELETE\n";
+				break;
+
+			case UNKNOWNMETHOD:
+				std::cout << "UNKNOWNMETHOD\n";
+				break;
+		}
+		std::cout << "File path stored by Request Class: " << req.filePath << std::endl;
+		std::cout << "Given path is a dir? " << (req.isDir ? "yes" : "no") << std::endl;
 		
 		getline(copy, line);
 
