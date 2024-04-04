@@ -127,7 +127,7 @@ static std::string getFilePath(std::list<ServerConfig> serverConfigs, std::strin
 Request::Request(std::string request, std::list<ServerConfig> serverConfigs) : _serverConfigs(serverConfigs) {
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 
-	_method = ::getMethod(requestLineParams[METHOD]);
+	_method = getMethod(requestLineParams[METHOD]);
 	_filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
 	_isDir = pathIsDir(requestLineParams[REQUESTURI].c_str());
 }
