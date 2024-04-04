@@ -11,12 +11,12 @@ class ServerConfig
 {
 	private:
 		// default so 404 q a response vai ser um html <h1>404</h1>
-		std::vector< std::pair< HttpStatus::Code, std::string > >	_errors;
-		std::vector< RouteConfig >	_routes;
+		std::vector<std::pair<HttpStatus::Code, std::string> >	_errors;
+		std::vector<RouteConfig>	_routes;
 		// default pra 4200
 		unsigned int	_port;
 		// default e '_' que e o mesmo q o host
-		std::vector< std::string >	_serverNames;
+		std::vector<std::string>	_serverNames;
 		// o literalmente o _serverNames[0]
 		std::string	_defaultName;
 		// default vai ser localhost em ip (127.0.0.1)

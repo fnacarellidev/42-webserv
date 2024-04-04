@@ -1,14 +1,14 @@
 #include "../includes/ServerConfig.hpp"
 
-std::list<std::pair<HttpStatus::Code, std::string>> ServerConfig::getErrors() {
+std::vector<std::pair<HttpStatus::Code, std::string> > ServerConfig::getErrors() {
 	return _errors;
 }
 
-std::list<RouteConfig> ServerConfig::getRoutes() {
+std::vector<RouteConfig> ServerConfig::getRoutes() {
 	return _routes;
 }
 
-std::list<std::string> ServerConfig::getNames() const {
+std::vector<std::string> ServerConfig::getNames() const {
 	return _serverNames;
 }
 
@@ -32,7 +32,7 @@ size_t	ServerConfig::getSizeNames() const {
 	return _sizeNames;
 }
 
-void ServerConfig::setErrors(std::list<std::pair<HttpStatus::Code, std::string>> errors) {
+void ServerConfig::setErrors(std::vector<std::pair<HttpStatus::Code, std::string> > errors) {
 	_errors = errors;
 }
 
@@ -40,7 +40,7 @@ void ServerConfig::setErrors(std::pair<HttpStatus::Code, std::string> error) {
 	_errors.push_back(error);
 }
 
-void ServerConfig::setRoutes(std::list<RouteConfig> routeConfigs) {
+void ServerConfig::setRoutes(std::vector<RouteConfig> routeConfigs) {
 	_routes = routeConfigs;
 }
 
@@ -52,7 +52,7 @@ void ServerConfig::setPort(unsigned int port) {
 	_port = port;
 }
 
-void ServerConfig::setServerNames(std::list<std::string> serverNames) {
+void ServerConfig::setServerNames(std::vector<std::string> serverNames) {
 	_serverNames = serverNames;
 }
 

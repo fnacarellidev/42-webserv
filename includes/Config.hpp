@@ -16,9 +16,11 @@ enum ServerKeywords
 	ROUTE
 };
 
+// tem q arranjar uma gambiarra pra isso
 enum RouteKeywords
 {
-	INDEX = 1,
+	IROUTE = 1,
+	INDEX,
 	REDIRECT,
 	ROOT,
 	METHODS,
@@ -35,13 +37,13 @@ class ServerNotFound: public std::exception
 class Config
 {
 	private:
-		std::vector< ServerConfig >	_servers;
+		std::vector<ServerConfig>	_servers;
 	public:
 		ServerConfig&	findByHostNamePort(std::string const& host,\
 			std::string const* names, size_t const size, unsigned int const port) \
 			const throw(ServerNotFound);
-		void	addServers(std::string const& filename);
-		bool	configIsValid(std::string const& filename);
+		void	addServers(const char* filename);
+		bool	configIsValid(const char* filename);
 };
 
 /*

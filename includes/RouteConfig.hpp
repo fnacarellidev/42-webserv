@@ -12,9 +12,9 @@ class RouteConfig
 {
 	private:
 		// sem default?
-		std::pair< std::string, std::string >	_redirect;
+		std::pair<std::string, std::string>	_redirect;
 		// default index.html
-		std::vector< std::string >	_index;
+		std::vector<std::string>	_index;
 		// default /?
 		std::string	_root;
 		unsigned short	_acceptMethodsBitmask;

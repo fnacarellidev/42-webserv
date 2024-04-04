@@ -4,7 +4,8 @@ PATH_INCS = ./includes/
 PATH_SRCS = ./srcs/
 PATH_OBJS = ./objects/
 
-FILES = main Request utils/split
+FILES = main Request Config RouteConfig ServerConfig staticConfig \
+				utils/split utils/trim
 SRCS = ${FILES:%=$(PATH_OBJS)%.cpp}
 OBJS = ${FILES:%=$(PATH_OBJS)%.o}
 FLAGS = -Wall -Wextra -Werror -std=c++98 -g3

@@ -4,7 +4,7 @@ void RouteConfig::setRoot(std::string root) {
 	_root = root;
 }
 
-void RouteConfig::setIndex(std::string* index) {
+void RouteConfig::setIndex(std::vector<std::string> index) {
 	_index = index;
 }
 
@@ -28,7 +28,7 @@ std::string RouteConfig::getRoot() {
 	return _root;
 }
 
-std::string* RouteConfig::getIndex() {
+std::vector<std::string> RouteConfig::getIndex() {
 	return _index;
 }
 
