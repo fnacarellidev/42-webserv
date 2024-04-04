@@ -20,8 +20,8 @@ class Request {
 	private:
 		std::list<ServerConfig> _serverConfigs;
 	public:
-		bool _isDir;
-		Methods _method;
-		std::string _filePath;
+		bool isDir;
+		Methods method;
+		std::string filePath;
 		Request(std::string request, std::list<ServerConfig> serverConfigs);
 };
