@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <map>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -17,10 +18,7 @@ std::vector<std::string> getRequestLineParams(std::string request) {
 	return split(firstLine, ' ');
 }
 
-Methods getMethod(std::string request) {
-	std::vector<std::string> requestLineParams = getRequestLineParams(request);
-	std::string method = requestLineParams[METHOD];
-
+Methods getMethod(std::string method) {
 	if (method == "GET")
 		return GET;
 	else if (method == "POST")
@@ -109,6 +107,27 @@ void runDeleteMethod(std::string rootDir, std::string file, unsigned short allow
 		/* requestClass.setStatusCode(HttpStatus::NOTFOUND); */
 }
 
+static bool pathIsDir(const char *filePath) {
+	struct stat statbuf;
+
+	if (stat(filePath, &statbuf) == -1) {
+		perror("stat");
+	}
+
+	return S_ISDIR(statbuf.st_mode);
+}
+
+static std::string getFilePath(std::list<ServerConfig> serverConfigs, std::string requestUri) {
+	std::list<RouteConfig> routeConfigs = serverConfigs.front().getRoutesConfigs();
+	std::string root = routeConfigs.front().getRoot();
+
+	return root + requestUri;
+}
+
 Request::Request(std::string request, std::list<ServerConfig> serverConfigs) : _serverConfigs(serverConfigs) {
-	_method = ::getMethod(request);
+	std::vector<std::string> requestLineParams = getRequestLineParams(request);
+
+	_method = ::getMethod(requestLineParams[METHOD]);
+	_filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
+	_isDir = pathIsDir(requestLineParams[REQUESTURI].c_str());
 }

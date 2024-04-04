@@ -22,11 +22,11 @@ enum RequestLine {
 };
 
 class Request {
-	public:
-		Methods _method;
-		std::string filePath;
-		bool isDir;
+	private:
 		std::list<ServerConfig> _serverConfigs;
 	public:
 		Request(std::string request, std::list<ServerConfig> serverConfigs);
+		bool _isDir;
+		Methods _method;
+		std::string _filePath;
 };
