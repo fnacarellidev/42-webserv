@@ -5,6 +5,8 @@
 #include <string>
 #include <map>
 #include <unistd.h>
+#include <dirent.h>
+#include <fcntl.h>
 
 std::vector<std::string> getRequestLineParams(std::string request) {
 	std::string firstLine;
@@ -44,6 +46,7 @@ void runGetMethod(std::string filePath, unsigned short allowedMethodsBitmask, Re
 
 	if (!(GET_OK & allowedMethodsBitmask)) {
 		std::cout << "Not allowed to execute GET\n";
+		requestClass.setStatusCode(HttpStatus::NOTALLOWED);
 		return ;
 	}
 	switch (fileGood(filePath.c_str())) {
@@ -67,6 +70,45 @@ void runGetMethod(std::string filePath, unsigned short allowedMethodsBitmask, Re
 	}
 }
 
+void runDeleteMethod(std::string rootDir, std::string file, unsigned short allowedMethodsBitmask, Request &requestClass) {
+	bool fileExists = false;
+	DIR *d = opendir(rootDir.c_str());
+	const std::string filePath = rootDir + file;
+	const std::string noSlashFile = file.erase(0, 1);
+
+	if (!(DELETE_OK & allowedMethodsBitmask)) {
+		requestClass.setStatusCode(HttpStatus::NOTALLOWED);
+		return ;
+	}
+	else if (!d) {
+		switch (errno) {
+			case EACCES:
+				requestClass.setStatusCode(HttpStatus::FORBIDDEN);
+				break;
+
+			// ENOENT || ENOTDIR
+			case ENOENT:
+			case ENOTDIR:
+				requestClass.setStatusCode(HttpStatus::NOTFOUND);
+				break ;
+		};
+		return ;
+	}
+	for (struct dirent *dir = readdir(d); dir != NULL; dir = readdir(d)) {
+		if (dir->d_name == noSlashFile) {
+			fileExists = true;
+			break ;
+		}
+	}
+	closedir(d);
+	if (fileExists) {
+		remove(filePath.c_str());
+		requestClass.setStatusCode(HttpStatus::NOCONTENT);
+	}
+	else
+		requestClass.setStatusCode(HttpStatus::NOTFOUND);
+}
+
 void	runMethods(Methods method, std::string request, Request &requestClass) {
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::string requestUri = requestLineParams[REQUESTURI];
@@ -84,13 +126,17 @@ void	runMethods(Methods method, std::string request, Request &requestClass) {
 			break;
 
 		case DELETE:
+			runDeleteMethod(routeConfigs.front().getRoot(), requestUri, allowedMethodsBitmask, requestClass);
 			break;
 
 		case UNKNOWNMETHOD:
 			requestClass.setStatusCode(HttpStatus::NOTALLOWED);
-			std::cout << "Couldn't recognize the method\n";
 			break;
 	}
+	if (method != UNKNOWNMETHOD)
+		std::cout << requestLineParams[METHOD] << " exited with status code " << requestClass.getStatusCode() << std::endl;
+	else
+		std::cout << requestLineParams[METHOD] << " is unknown and exited with status code " << requestClass.getStatusCode() << std::endl;
 }
 
 Request::Request(std::string request, std::list<ServerConfig> serverConfigs) : _httpStatusCode(HttpStatus::OK), _serverConfigs(serverConfigs) {
