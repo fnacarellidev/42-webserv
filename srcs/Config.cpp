@@ -20,13 +20,13 @@ const throw(ServerNotFound)
 	ServerConfig* foundConfig = NULL;
 	if (!host.empty()) {
 		return searchViaHost(host, port, \
-			const_cast< std::list< ServerConfig >& >(this->_servers));
+			const_cast< std::vector< ServerConfig >& >(this->_servers));
 	} else if (names == NULL) {
 		throw ServerNotFound();
 	}
 	for (size_t i = 0; foundConfig != NULL && i < size; i++) {
 		foundConfig = searchViaName(names[i], port, \
-			const_cast< std::list< ServerConfig >& >(this->_servers));
+			const_cast< std::vector< ServerConfig >& >(this->_servers));
 	}
 	if (foundConfig != NULL) {
 		return *foundConfig;

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <list>
 #include <exception>
 #include <map>
 #include "ServerConfig.hpp"
+#include <vector>
 
 enum ServerKeywords
 {
@@ -35,7 +35,7 @@ class ServerNotFound: public std::exception
 class Config
 {
 	private:
-		std::list< ServerConfig >	_servers;
+		std::vector< ServerConfig >	_servers;
 	public:
 		ServerConfig&	findByHostNamePort(std::string const& host,\
 			std::string const* names, size_t const size, unsigned int const port) \

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
 #include <utility>
 
 #define GET_OK 0b0001
@@ -13,7 +14,7 @@ class RouteConfig
 		// sem default?
 		std::pair< std::string, std::string >	_redirect;
 		// default index.html
-		std::string*	_index;
+		std::vector< std::string >	_index;
 		// default /?
 		std::string	_root;
 		unsigned short	_acceptMethodsBitmask;
@@ -22,11 +23,11 @@ class RouteConfig
 	public:
 		bool getDirList();
 		std::string getRoot();
-		std::string* getIndex();
+		std::vector< std::string > getIndex();
 		std::pair<std::string, std::string> getRedirect();
 		unsigned short getAcceptMethodsBitmask();
 		void setRoot(std::string root);
-		void setIndex(std::string* index);
+		void setIndex(std::vector< std::string > index);
 		void setDirList(bool dirList);
 		void setRedirect(std::pair<std::string, std::string> redirect);
 		void setAcceptMethodsBitmask(unsigned short acceptMethodsBitmask);

@@ -45,11 +45,11 @@ static bool	invalidServerInputs(std::ifstream& file, \
 
 static ServerConfig&	searchViaHost(std::string const& host, \
 	unsigned int const port, \
-	std::list< ServerConfig >& servers)
+	std::vector< ServerConfig >& servers)
 throw(ServerNotFound)
 {
-	std::list< ServerConfig >::iterator end(servers.end());
-	std::list< ServerConfig >::iterator begin(servers.begin());
+	std::vector< ServerConfig >::iterator end(servers.end());
+	std::vector< ServerConfig >::iterator begin(servers.begin());
 
 	while (begin != end) {
 		if (begin->getHost() == host && begin->getPort() == port)
@@ -61,10 +61,10 @@ throw(ServerNotFound)
 
 static ServerConfig*	searchViaName(std::string const name, \
 	unsigned int const port, \
-	std::list< ServerConfig >& servers)
+	std::vector< ServerConfig >& servers)
 {
-	std::list< ServerConfig >::iterator end(servers.end());
-	std::list< ServerConfig >::iterator begin(servers.begin());
+	std::vector< ServerConfig >::iterator end(servers.end());
+	std::vector< ServerConfig >::iterator begin(servers.begin());
 
 	while (begin != end) {
 		for (size_t i = 0; i < begin->getSizeNames(); i++) {
