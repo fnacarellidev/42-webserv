@@ -32,11 +32,19 @@ class ServerConfig
 	*	accept uploaded file... only if POST is set? where to save them is another var!
 	*/
 	public:
-		std::pair< HttpStatus::Code, std::string >*	getErrors() { return this->_errors; };
-		std::string*	getNames() const { return this->_serverNames; };
-		unsigned int getPort() const { return this->_port; };
-		std::string	getHost() const { return this->_host; };
-		std::string	getDefaultName() const { return this->_defaultName; };
-		size_t	getLimit() const { return this->_bodyLimit; };
-		size_t	getSizeNames() const { return this->_sizeNames; };
+		std::list<std::pair< HttpStatus::Code, std::string>> getErrors();
+		std::list<RouteConfig> getRoutes();
+		std::list<std::string> getNames() const;
+		unsigned int getPort() const;
+		std::string	getHost() const;
+		std::string	getDefaultName();
+		size_t	getLimit() const;
+		size_t	getSizeNames() const;
+		void setErrors(std::list<std::pair<HttpStatus::Code, std::string>> errors);
+		void setErrors(std::pair<HttpStatus::Code, std::string> error);
+		void setRoutes(RouteConfig routeConfig);
+		void setRoutes(std::list<RouteConfig> routeConfigs);
+		void setPort(unsigned int port);
+		void setServerNames(std::list<std::string> serverNames);
+		void setServerNames(std::string serverName);
 };
