@@ -1,4 +1,4 @@
-#include "../includes/RouteConfig.hpp"
+#include "../../includes/RouteConfig.hpp"
 
 void RouteConfig::setRoot(std::string root) {
 	_root = root;

@@ -21,6 +21,7 @@ class RouteConfig
 		// default pra false
 		bool	_dirList;
 	public:
+		RouteConfig();
 		bool getDirList();
 		std::string getRoot();
 		std::vector< std::string > getIndex();

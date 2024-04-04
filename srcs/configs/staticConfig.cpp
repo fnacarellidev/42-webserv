@@ -1,5 +1,5 @@
-#include "../includes/Config.hpp"
-#include "../includes/utils.hpp"
+#include "../../includes/Config.hpp"
+#include "../../includes/utils.hpp"
 #include <vector>
 #include <fstream>
 #include <exception>

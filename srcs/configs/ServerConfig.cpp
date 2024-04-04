@@ -1,4 +1,9 @@
-#include "../includes/ServerConfig.hpp"
+#include "../../includes/ServerConfig.hpp"
+
+ServerConfig::ServerConfig()
+{
+	
+}
 
 std::vector<std::pair<HttpStatus::Code, std::string> > ServerConfig::getErrors() {
 	return _errors;

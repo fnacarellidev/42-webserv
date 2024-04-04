@@ -31,6 +31,7 @@ class ServerConfig
 	*	accept uploaded file... only if POST is set? where to save them is another var!
 	*/
 	public:
+		ServerConfig();
 		std::vector< std::pair< HttpStatus::Code, std::string > > getErrors();
 		std::vector< RouteConfig > getRoutes();
 		std::vector< std::string > getNames() const;
