@@ -1,13 +1,9 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
-#include <fstream>
 #include <sstream>
 #include <string>
-#include <map>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <dirent.h>
-#include <fcntl.h>
 
 static std::vector<std::string> getRequestLineParams(std::string request) {
 	std::string firstLine;
@@ -32,7 +28,7 @@ static bool pathIsDir(const char *filePath) {
 	struct stat statbuf;
 
 	if (stat(filePath, &statbuf) == -1) {
-		perror("stat");
+		std::cout << "stat failed\n";
 	}
 
 	return S_ISDIR(statbuf.st_mode);
