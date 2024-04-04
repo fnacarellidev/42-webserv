@@ -89,7 +89,6 @@ int main() {
 				break;
 		}
 		std::cout << "File path stored by Request Class: " << req.filePath << std::endl;
-		std::cout << "Given path is a dir? " << (req.isDir ? "yes" : "no") << std::endl;
 		
 		getline(copy, line);
 

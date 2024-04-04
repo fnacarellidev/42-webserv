@@ -20,7 +20,6 @@ class Request {
 	private:
 		std::list<ServerConfig> _serverConfigs;
 	public:
-		bool isDir;
 		Methods method;
 		std::string filePath;
 		Request(std::string request, std::list<ServerConfig> serverConfigs);

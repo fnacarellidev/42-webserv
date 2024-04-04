@@ -1,9 +1,6 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 #include <sstream>
-#include <string>
-#include <sys/stat.h>
-#include <unistd.h>
 
 static std::vector<std::string> getRequestLineParams(std::string request) {
 	std::string firstLine;
@@ -24,13 +21,6 @@ static Methods getMethod(std::string method) {
 	return UNKNOWNMETHOD;
 }
 
-static bool pathIsDir(const char *filePath) {
-	struct stat statbuf;
-
-	stat(filePath, &statbuf);
-	return S_ISDIR(statbuf.st_mode);
-}
-
 static std::string getFilePath(std::list<ServerConfig> serverConfigs, std::string requestUri) {
 	std::list<RouteConfig> routeConfigs = serverConfigs.front().getRoutesConfigs();
 	std::string root = routeConfigs.front().getRoot();
@@ -43,5 +33,4 @@ Request::Request(std::string request, std::list<ServerConfig> serverConfigs) : _
 
 	method = getMethod(requestLineParams[METHOD]);
 	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
-	isDir = pathIsDir(filePath.c_str());
 }
