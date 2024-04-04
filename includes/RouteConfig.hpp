@@ -20,5 +20,14 @@ class RouteConfig
 		// default pra false
 		bool	_dirList;
 	public:
-
+		bool getDirList();
+		std::string getRoot();
+		std::string* getIndex();
+		std::pair<std::string, std::string> getRedirect();
+		unsigned short getAcceptMethodsBitmask();
+		void setRoot(std::string root);
+		void setIndex(std::string* index);
+		void setDirList(bool dirList);
+		void setRedirect(std::pair<std::string, std::string> redirect);
+		void setAcceptMethodsBitmask(unsigned short acceptMethodsBitmask);
 };
