@@ -25,8 +25,8 @@ class Request {
 	private:
 		std::list<ServerConfig> _serverConfigs;
 	public:
-		Request(std::string request, std::list<ServerConfig> serverConfigs);
 		bool _isDir;
 		Methods _method;
 		std::string _filePath;
+		Request(std::string request, std::list<ServerConfig> serverConfigs);
 };
