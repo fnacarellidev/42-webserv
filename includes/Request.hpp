@@ -22,17 +22,11 @@ enum RequestLine {
 };
 
 class Request {
-	private:
+	public:
 		Methods _method;
-		HttpStatus::Code _httpStatusCode;
-		std::string _fileContent;
+		std::string filePath;
+		bool isDir;
 		std::list<ServerConfig> _serverConfigs;
 	public:
 		Request(std::string request, std::list<ServerConfig> serverConfigs);
-		HttpStatus::Code getStatusCode() const;
-		Methods getMethod() const;
-		std::string getFileContent() const;
-		std::list<ServerConfig> getServerConfigs() const;
-		void setStatusCode(HttpStatus::Code httpStatusCode);
-		void setFileContent(std::string fileContent);
 };

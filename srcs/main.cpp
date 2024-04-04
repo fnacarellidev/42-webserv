@@ -72,7 +72,7 @@ int main() {
 		
 		getline(copy, line);
 
-		fullResponse += req.getFileContent();
+		/* fullResponse += req.getFileContent(); */
 		send(newSocket, fullResponse.c_str(), fullResponse.size(), 0);
 		close(newSocket);
 	}
