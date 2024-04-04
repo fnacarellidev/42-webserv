@@ -5,11 +5,11 @@ ServerConfig::ServerConfig()
 	
 }
 
-std::vector<std::pair<HttpStatus::Code, std::string> > ServerConfig::getErrors() {
+std::vector<std::pair<HttpStatus::Code, std::string> > ServerConfig::getErrors() const {
 	return _errors;
 }
 
-std::vector<RouteConfig> ServerConfig::getRoutes() {
+std::vector<RouteConfig> ServerConfig::getRoutes() const {
 	return _routes;
 }
 
@@ -25,7 +25,7 @@ std::string	ServerConfig::getHost() const {
 	return _host;
 }
 
-std::string	ServerConfig::getDefaultName() {
+std::string	ServerConfig::getDefaultName() const {
 	return _defaultName;
 }
 

@@ -11,12 +11,13 @@
 class RouteConfig
 {
 	private:
-		// sem default?
+		// de acordo com o nginx n tem default
 		std::pair<std::string, std::string>	_redirect;
 		// default index.html
 		std::vector<std::string>	_index;
-		// default /?
+		// default /var/www/html
 		std::string	_root;
+		// default so GET
 		unsigned short	_acceptMethodsBitmask;
 		// default pra false
 		bool	_dirList;

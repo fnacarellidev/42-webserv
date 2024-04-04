@@ -32,12 +32,12 @@ class ServerConfig
 	*/
 	public:
 		ServerConfig();
-		std::vector< std::pair< HttpStatus::Code, std::string > > getErrors();
-		std::vector< RouteConfig > getRoutes();
+		std::vector< std::pair< HttpStatus::Code, std::string > > getErrors() const;
+		std::vector< RouteConfig > getRoutes() const;
 		std::vector< std::string > getNames() const;
 		unsigned int getPort() const;
 		std::string	getHost() const;
-		std::string	getDefaultName();
+		std::string	getDefaultName() const;
 		size_t	getLimit() const;
 		size_t	getSizeNames() const;
 		void setErrors(std::vector< std::pair< HttpStatus::Code, std::string > > errors);
