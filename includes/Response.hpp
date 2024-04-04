@@ -24,6 +24,9 @@ class Response {
 		std::string					_body;
 		std::string					_bodyFile;
 		void	_success();
+		void	_redirection();
+		void	_error();
+		void	_serverError();
 	public:
 		Response();
 		Response(short int status);

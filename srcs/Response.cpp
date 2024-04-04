@@ -9,16 +9,20 @@ Response::Response(short int status, std::string bodyFile) {
 	this->_status = status;
 	this->_bodyFile = bodyFile;
 	switch (status / 100) { 
-		case 1: // 1xx
-			break ;
+		// case 1: // 1xx
+		//	this->_informatiol
+		// 	break ;
 		case 2: // 2xx
 			this->_success();
 			break ;
 		case 3: // 3xx
+			this->_redirection();
 			break ;
 		case 4: // 4xx
+			this->_error();
 			break ;
 		case 5: // 5xx
+			this->_serverError();
 			break ;
 	}
 }
@@ -101,14 +105,102 @@ static std::string	getContentType(std::string filename) {
 		return ("Content Type Unknown");
 }
 
+static std::string	getStatusMessage(int status) {
+	std::map<int, std::string>	statusMessages;
+
+	statusMessages[200] = "OK";
+	statusMessages[201] = "Created";
+	statusMessages[204] = "No Content";
+	statusMessages[301] = "Moved Permanently";
+	statusMessages[302] = "Found";
+	statusMessages[304] = "Not Modified";
+	statusMessages[400] = "Bad Resquest";
+	statusMessages[401] = "Unauthorized";
+	statusMessages[403] = "Forbidden";
+	statusMessages[404] = "Not Found";
+	statusMessages[405] = "Method Not Allowed";
+	statusMessages[408] = "Request Timeout";
+	statusMessages[500] = "Internal Server Error";
+	statusMessages[502] = "Bad Gateway";
+	statusMessages[503] = "Service Unavailable";
+	std::map<int, std::string>::iterator	it = statusMessages.find(status);
+	std::string	statusMessage;
+	if (it != statusMessages.end())
+		statusMessage = toString(status) + " " + it->second;
+	else
+		statusMessage = toString(status) + " Unknown Status";
+	return (statusMessage);
+}
+
+static std::string	defineStatusLine(int status) {
+	std::string	statusLine;
+	statusLine = HTTP_VERSION + (" " + toString(status) + " " + getStatusMessage(status));
+	return (statusLine);
+}
+
 void	Response::_success() {
-	this->_statusLine = HTTP_VERSION + (" " + toString(this->_status) + " OK");
+	this->_statusLine = defineStatusLine(this->_status);
 	this->_header.push_back(std::make_pair("Date", getCurrentTimeInGMT()));
 	this->_header.push_back(std::make_pair("Server", SERVER_NAME));
 	this->_header.push_back(std::make_pair("Etag", "* hash function *"));
-	this->_header.push_back(std::make_pair("Last-Modified", getLastModifiedOfFile(this->_bodyFile)));
+	switch (this->_status) {
+		case 200:
+			this->_header.push_back(std::make_pair("Last-Modified", getLastModifiedOfFile(this->_bodyFile)));
+			this->_header.push_back(std::make_pair("Content-Lenght", getFileSize(this->_bodyFile)));
+			this->_header.push_back(std::make_pair("Content-Type", getContentType(this->_bodyFile)));
+			this->_body = getFileContent(this->_bodyFile);
+			break ;
+		case 201:
+			this->_header.push_back(std::make_pair("Location:", "/path/to/some?"));
+			this->_body = getFileContent(this->_bodyFile);
+			break ;
+		case 204:
+			break ;
+	}
+	// this->_header.push_back(std::make_pair("Connection", "keep-alive"));
+}
+
+void	Response::_redirection() {
+	this->_statusLine = defineStatusLine(this->_status);
+	this->_header.push_back(std::make_pair("Date", getCurrentTimeInGMT()));
+	this->_header.push_back(std::make_pair("Server", SERVER_NAME));
+	this->_header.push_back(std::make_pair("Etag", "* hash function *"));
+	switch (this->_status) {
+		case 301:
+			this->_header.push_back(std::make_pair("Location:", "/path/to/some?"));
+			break ;
+		case 302:
+			this->_header.push_back(std::make_pair("Location:", "/path/to/some?"));
+			break ;
+		case 304:
+			break ;
+	}
+}
+
+void	Response::_error(){
+	this->_statusLine = defineStatusLine(this->_status);
+	this->_header.push_back(std::make_pair("Date", getCurrentTimeInGMT()));
+	this->_header.push_back(std::make_pair("Server", SERVER_NAME));
+	this->_header.push_back(std::make_pair("Etag", "* hash function *"));
 	this->_header.push_back(std::make_pair("Content-Lenght", getFileSize(this->_bodyFile)));
 	this->_header.push_back(std::make_pair("Content-Type", getContentType(this->_bodyFile)));
-	this->_header.push_back(std::make_pair("Connection", "keep-alive"));
 	this->_body = getFileContent(this->_bodyFile);
+	// switch (this->_status) {
+	// 	case 400:
+	// 		break ;
+	// 	case 401:
+	// 		break ;
+	// 	case 403:
+	// 		break ;
+	// 	case 404:
+	// 		break ;
+	// 	case 405:
+	// 		break ;
+	// 	case 408:
+	// 		break ;
+	// }
+}
+
+void	Response::_serverError() {
+	return ;
 }
