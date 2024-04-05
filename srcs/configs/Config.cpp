@@ -1,62 +1,29 @@
 #include "../../includes/Config.hpp"
 #include "../../includes/utils.hpp"
 #include <fstream>
-#include <map>
-#include <cstdlib>
 
 const char* ServerNotFound::what() const throw()
 {
 	return ("This server don't exist.");
 }
 
-std::map<std::string, Server::Keywords>	buildServerMap();
-std::map<std::string, Route::Keywords>	buildRouteMap();
-void	checkInsideRoute(std::ifstream& file, std::string& line) \
-throw(std::runtime_error);
-ServerConfig*	searchViaName(std::string const name, \
-	unsigned int const port, \
-	std::vector<ServerConfig>& servers);
-ServerConfig&	searchViaHost(std::string const& host, \
-	unsigned int const port, \
-	std::vector<ServerConfig>& servers)
-throw(ServerNotFound);
-bool	invalidServerInputs(std::ifstream& file, \
-	std::string& line, \
-	bool* serverBrackets, \
-	std::map<std::string, Server::Keywords>& serverMap);
-void	addRoutes(std::ifstream& file, ServerConfig& server);
-static void	addErrors(std::string const& error, ServerConfig& server);
-static HttpStatus::Code	matchStatus(std::string const& status);
-static void	addMethods(std::string const& methods, RouteConfig& route);
-static void	addRedirect(std::string const& redirect, RouteConfig& route);
-
-/* METHODS ----------------------------------------------------------------- */
-
-ServerConfig&	Config::findByHostNamePort(std::string const& host, \
-	std::string const* names, \
-	size_t const size, \
-	unsigned int const port)
-const throw(ServerNotFound)
+ServerConfig&	Config::findByHostNamePort(std::string const& host, std::string const* names, size_t const size, unsigned int const port) const throw(ServerNotFound)
 {
 	ServerConfig* foundConfig = NULL;
-	if (!host.empty()) {
-		return searchViaHost(host, port, \
-			const_cast<std::vector<ServerConfig>&>(this->servers));
-	} else if (names == NULL) {
+	std::vector<ServerConfig>&	servers = const_cast<std::vector<ServerConfig>&>(this->servers);
+
+	if (!host.empty())
+		return searchViaHost(host, port, servers);
+	else if (names == NULL)
 		throw ServerNotFound();
-	}
-	for (size_t i = 0; foundConfig != NULL && i < size; i++) {
-		foundConfig = searchViaName(names[i], port, \
-			const_cast<std::vector<ServerConfig>&>(this->servers));
-	}
-	if (foundConfig != NULL) {
+	for (size_t i = 0; foundConfig != NULL && i < size; i++)
+		foundConfig = searchViaName(names[i], port, servers);
+	if (foundConfig != NULL)
 		return *foundConfig;
-	}
 	throw ServerNotFound();
 }
 
-void	Config::addServers(const char* filename)
-throw (std::runtime_error)
+void	Config::addServers(const char* filename) throw (std::runtime_error)
 {
 	std::map<std::string, Server::Keywords> serverMap(buildServerMap());
 	std::ifstream	file(filename);
@@ -75,29 +42,21 @@ throw (std::runtime_error)
 		std::vector<std::string> splited = split(line, ' ');
 
 		splited.at(1)[splited[1].size() - 1] = 0;
-		switch (serverMap[splited[1]]) {
-			case Server::SERVER:
-				this->servers.push_back(ServerConfig());
-				break;
-			case Server::HOST:
-				this->servers.back().setHost(splited[1]);
-				break;
-			case Server::PORT:
-				this->servers.back().setPort(std::strtoul(splited[1].c_str(), 0, 10));
-				break;
-			case Server::NAMES:
-				this->servers.back().setServerNames(split(splited[1], ','));
-				break;
-			case Server::LIMIT:
-				this->servers.back().setLimit(std::strtoull(splited[1].c_str(), 0, 10));
-				break;
-			case Server::ERROR:
-				addErrors(splited[1], this->servers.back());
-				break;
-			case Server::ROUTE:
-				addRoutes(file, this->servers.back());
+		if (serverMap[splited[1]] == Server::SERVER)
+			this->servers.push_back(ServerConfig());
+		else if (serverMap[splited[1]] == Server::HOST)
+			this->servers.back().setHost(splited[1]);
+		else if (serverMap[splited[1]] == Server::PORT)
+			this->servers.back().setPort(std::strtoul(splited[1].c_str(), 0, 10));
+		else if (serverMap[splited[1]] == Server::NAMES)
+			this->servers.back().setServerNames(split(splited[1], ','));
+		else if (serverMap[splited[1]] == Server::LIMIT)
+			this->servers.back().setLimit(std::strtoull(splited[1].c_str(), 0, 10));
+		else if (serverMap[splited[1]] == Server::ERROR)
+			addErrors(splited[1], this->servers.back());
+		else
+			addRoutes(file, this->servers.back());
 		}
-	}
 	file.close();
 }
 
@@ -116,25 +75,16 @@ void	addRoutes(std::ifstream& file, ServerConfig& server)
 		std::vector<std::string> splited = split(line, ' ');
 
 		splited.at(1)[splited[1].size() - 1] = 0;
-		switch (routeMap.at(splited[1])) {
-			case Route::INDEX:
-				server.getRoutes().back().setIndex(split(splited[1], ','));
-				break;
-			case Route::REDIRECT:
-				addRedirect(splited[1], server.getRoutes().back());
-				break;
-			case Route::ROOT:
-				server.getRoutes().back().setRoot(splited[1]);
-				break;
-			case Route::METHODS:
-				addMethods(splited[1], server.getRoutes().back());
-				break;
-			case Route::LISTING:
-				server.getRoutes().back().setDirList(splited[1] == "on");
-				break;
-			case Route::CGI: case Route::ROUTE:
-				break;
-		}
+		if (routeMap[splited[1]] == Route::INDEX)
+			server.getRoutes().back().setIndex(split(splited[1], ','));
+		else if (routeMap[splited[1]] == Route::REDIRECT)
+			addRedirect(splited[1], server.getRoutes().back());
+		else if (routeMap[splited[1]] == Route::ROOT)
+			server.getRoutes().back().setRoot(splited[1]);
+		else if (routeMap[splited[1]] == Route::METHODS)
+			addMethods(splited[1], server.getRoutes().back());
+		else if (routeMap[splited[1]] == Route::LISTING)
+			server.getRoutes().back().setDirList(splited[1] == "on");
 	}
 }
 
@@ -160,12 +110,9 @@ bool	Config::configIsValid(const char* filename)
 			openBrackets = !openBrackets;
 			continue ;
 		}
-		if (serverMap.find(word) == serverMap.end())
+		if (serverMap.find(word) == serverMap.end() || serverMap.find(word)->second != Server::SERVER)
 			goto ret_error;
-		if (serverMap.find(word)->second != Server::SERVER)
-			goto ret_error;
-		if (serverMap.find(word)->second == Server::SERVER && \
-			invalidServerInputs(file, line, &openBrackets, serverMap))
+		if (invalidServerInputs(file, line, &openBrackets, serverMap))
 			goto ret_error;
 	}
 	file.close();
@@ -180,8 +127,7 @@ static void	addErrors(std::string const& error, ServerConfig& server)
 {
 	std::vector<std::string> splited = split(error, ',');
 
-	for (std::vector<std::string>::iterator it = splited.begin(); \
-		it != splited.end(); ++it) {
+	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
 		std::vector<std::string> error = split(*it, '=');
 
 		if (error.size() != 2)
@@ -218,8 +164,7 @@ static void	addMethods(std::string const& methods, RouteConfig& route)
 	std::vector<std::string> splited = split(methods, ',');
 	unsigned short	method = NONE_OK;
 
-	for (std::vector<std::string>::iterator it = splited.begin(); \
-		it != splited.end(); ++it) {
+	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
 		switch (it->size()) {
 			case 3:
 				method |= GET_OK;

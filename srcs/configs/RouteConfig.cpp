@@ -1,7 +1,6 @@
 #include "../../includes/RouteConfig.hpp"
 
 RouteConfig::RouteConfig() {
-// redirect n tem default
 	_root = DEFAULT_ROOT;
 	_index.push_back(DEFAULT_INDEX);
 	_dirList = DEFAULT_DIRLIST;

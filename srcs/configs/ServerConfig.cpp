@@ -2,7 +2,6 @@
 
 ServerConfig::ServerConfig()
 {
-// _errors n tem default
 	_host = DEFAULT_HOST;
 	_port = DEFAULT_PORT;
 	_bodyLimit = DEFAULT_LIMIT;
