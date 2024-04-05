@@ -22,7 +22,7 @@ static Methods getMethod(std::string method) {
 }
 
 static std::string getFilePath(std::list<ServerConfig> serverConfigs, std::string requestUri) {
-	std::list<RouteConfig> routeConfigs = serverConfigs.front().getRoutesConfigs();
+	std::vector<RouteConfig> routeConfigs = serverConfigs.front().getRoutesConfigs();
 	std::string root = routeConfigs.front().getRoot();
 
 	return root + requestUri;

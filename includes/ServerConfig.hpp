@@ -4,6 +4,7 @@
 #include <sstream>
 #include <utility>
 #include <list>
+#include <vector>
 
 #include "HttpStatus.hpp"
 #include "RouteConfig.hpp"
@@ -12,7 +13,7 @@ class ServerConfig
 {
 	private:
 		std::pair< HttpStatus::Code, std::string >*	_errors;
-		std::list< RouteConfig >	_routes;
+		std::vector< RouteConfig >	_routes;
 		unsigned int	_port;
 		std::string*	_serverNames;
 		std::string	_defaultName;
@@ -28,5 +29,5 @@ class ServerConfig
 		std::string	getDefaultName() const { return this->_defaultName; };
 		size_t	getLimit() const { return this->_bodyLimit; };
 		size_t	getSizeNames() const { return this->_sizeNames; };
-		std::list<RouteConfig> getRoutesConfigs() { return _routes; };
+		std::vector<RouteConfig> getRoutesConfigs() { return _routes; };
 };
