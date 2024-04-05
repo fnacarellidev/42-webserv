@@ -9,7 +9,7 @@
 
 #define DEFAULT_LIMIT 1000000
 #define DEFAULT_HOST "127.0.0.1"
-#define DEFAULT_PORT 4200
+#define DEFAULT_PORT 80
 
 typedef std::vector<std::pair<HttpStatus::Code, std::string> > TStatusPage;
 
@@ -20,10 +20,8 @@ class ServerConfig
 		std::vector<RouteConfig>	_routes;
 		unsigned int	_port;
 		std::vector<std::string>	_serverNames;
-		std::string	_defaultName;
 		std::string	_host;
 		size_t	_bodyLimit;
-		size_t	_sizeNames;
 	/*
 	*	for the routes class
 	*	CGI? do a interface? abstract class? normal class?
@@ -37,14 +35,14 @@ class ServerConfig
 		std::vector<std::string> getNames() const;
 		unsigned int getPort() const;
 		std::string	getHost() const;
-		std::string	getDefaultName() const;
 		size_t	getLimit() const;
-		size_t	getSizeNames() const;
-		void setErrors(TStatusPage errors);
-		void setErrors(std::pair<HttpStatus::Code, std::string> error);
-		void setRoutes(RouteConfig routeConfig);
-		void setRoutes(std::vector<RouteConfig> routeConfigs);
-		void setPort(unsigned int port);
-		void setServerNames(std::vector<std::string> serverNames);
-		void setServerNames(std::string serverName);
+		void	setHost(std::string host);
+		void	setLimit(size_t limit);
+		void	setErrors(TStatusPage errors);
+		void	setErrors(std::pair<HttpStatus::Code, std::string> error);
+		void	setRoutes(RouteConfig routeConfig);
+		void	setRoutes(std::vector<RouteConfig> routeConfigs);
+		void	setPort(unsigned int port);
+		void	setServerNames(std::vector<std::string> serverNames);
+		void	setServerNames(std::string serverName);
 };

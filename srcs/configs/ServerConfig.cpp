@@ -7,7 +7,6 @@ ServerConfig::ServerConfig()
 	_port = DEFAULT_PORT;
 	_bodyLimit = DEFAULT_LIMIT;
 	_serverNames.push_back(_host);
-	_defaultName = _host;
 }
 
 TStatusPage ServerConfig::getErrors() const {
@@ -30,16 +29,8 @@ std::string	ServerConfig::getHost() const {
 	return _host;
 }
 
-std::string	ServerConfig::getDefaultName() const {
-	return _defaultName;
-}
-
 size_t	ServerConfig::getLimit() const {
 	return _bodyLimit;
-}
-
-size_t	ServerConfig::getSizeNames() const {
-	return _sizeNames;
 }
 
 void ServerConfig::setErrors(TStatusPage errors) {
@@ -68,4 +59,14 @@ void ServerConfig::setServerNames(std::vector<std::string> serverNames) {
 
 void ServerConfig::setServerNames(std::string serverName) {
 	_serverNames.push_back(serverName);
+}
+
+void	ServerConfig::setHost(std::string host)
+{
+	_host = host;
+}
+
+void	ServerConfig::setLimit(size_t limit)
+{
+	_bodyLimit = limit;
 }
