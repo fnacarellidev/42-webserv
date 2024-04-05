@@ -6,7 +6,7 @@ int main(int argc, char **argv) {
 
 	Response	r(200, argv[1]);
 
-	std::cout << r.getFullReponse();
+	std::cout << r.response();
 	
 	return (0);
 }
