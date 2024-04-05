@@ -66,6 +66,7 @@ bool	Config::configIsValid(const char* filename)
 		trim(line, "\t \n");
 		if (line.empty())
 			continue ;
+		word = line.substr(0, line.find(' '));
 		if (word == "}" && !openBrackets)
 			goto ret_error;
 		if (word == "}") {

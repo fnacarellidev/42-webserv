@@ -5,7 +5,7 @@ PATH_SRCS = ./srcs/
 PATH_OBJS = ./objects/
 
 FILES = main Request \
-				configs/Config configs/RouteConfig consfigs/ServerConfig configs/staticConfig \
+				configs/Config configs/RouteConfig configs/ServerConfig configs/staticConfig \
 				utils/split utils/trim
 SRCS = ${FILES:%=$(PATH_OBJS)%.cpp}
 OBJS = ${FILES:%=$(PATH_OBJS)%.o}
