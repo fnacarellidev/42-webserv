@@ -1,5 +1,13 @@
 #include "../../includes/RouteConfig.hpp"
 
+RouteConfig::RouteConfig() {
+// redirect n tem default
+	_root = DEFAULT_ROOT;
+	_index.push_back(DEFAULT_INDEX);
+	_dirList = DEFAULT_DIRLIST;
+	_acceptMethodsBitmask = DEFAULT_ACCEPT_METHODS;
+}
+
 void RouteConfig::setRoot(std::string root) {
 	_root = root;
 }

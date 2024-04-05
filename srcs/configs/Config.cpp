@@ -1,14 +1,15 @@
 #include "../../includes/Config.hpp"
 #include "../../includes/utils.hpp"
 #include <fstream>
+#include <map>
 
 const char* ServerNotFound::what() const throw()
 {
 	return ("This server don't exist.");
 }
 
-std::map<std::string, ServerKeywords>	buildServerMap();
-std::map<std::string, RouteKeywords>	buildRouteMap();
+std::map<std::string, Server::Keywords>	buildServerMap();
+std::map<std::string, Route::Keywords>	buildRouteMap();
 void	checkInsideRoute(std::ifstream& file, std::string& line) \
 throw(std::runtime_error);
 ServerConfig*	searchViaName(std::string const name, \
@@ -21,7 +22,7 @@ throw(ServerNotFound);
 bool	invalidServerInputs(std::ifstream& file, \
 	std::string& line, \
 	bool* serverBrackets, \
-	std::map<std::string, ServerKeywords>& serverMap);
+	std::map<std::string, Server::Keywords>& serverMap);
 
 /* METHODS ================================================================= */
 
@@ -52,7 +53,7 @@ void	Config::addServers(const char* filename) {(void)filename;}
 
 bool	Config::configIsValid(const char* filename)
 {
-	std::map<std::string, ServerKeywords> serverMap(buildServerMap());
+	std::map<std::string, Server::Keywords> serverMap(buildServerMap());
 	std::ifstream	file(filename);
 	std::string line;
 	std::string word;
@@ -65,8 +66,7 @@ bool	Config::configIsValid(const char* filename)
 		trim(line, "\t \n");
 		if (line.empty())
 			continue ;
-		word = line.substr(0, line.find_first_of(" \t\n"));
-		if (word[0] == '}' && !openBrackets)
+		if (word == "}" && !openBrackets)
 			goto ret_error;
 		if (word == "}") {
 			openBrackets = !openBrackets;
@@ -74,9 +74,9 @@ bool	Config::configIsValid(const char* filename)
 		}
 		if (serverMap.find(word) == serverMap.end())
 			goto ret_error;
-		if (serverMap.find(word)->second != SERVER)
+		if (serverMap.find(word)->second != Server::SERVER)
 			goto ret_error;
-		if (serverMap.find(word)->second == SERVER && \
+		if (serverMap.find(word)->second == Server::SERVER && \
 			invalidServerInputs(file, line, &openBrackets, serverMap))
 			goto ret_error;
 	}
@@ -85,7 +85,6 @@ bool	Config::configIsValid(const char* filename)
 	return true;
 ret_error:
 	std::cout << "opa essa linha deu ruim irmao: `" << line << "`" << std::endl;
-	line.clear();
 	file.close();
 	return false;
 }

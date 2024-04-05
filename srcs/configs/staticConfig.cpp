@@ -1,36 +1,39 @@
 #include "../../includes/Config.hpp"
 #include "../../includes/utils.hpp"
+#include <map>
 #include <vector>
 #include <fstream>
 #include <exception>
 
+static bool	serverKeyMatch(Server::Keywords key);
+static bool	routeKeyMatch(Route::Keywords key);
 
-std::map<std::string, ServerKeywords>	buildServerMap()
+std::map<std::string, Server::Keywords>	buildServerMap()
 {
-	std::map<std::string, ServerKeywords> map;
+	std::map<std::string, Server::Keywords> map;
 
-	map["server"] = SERVER;
-	map["host"] = HOST;
-	map["port"] = PORT;
-	map["names"] = NAMES;
-	map["limit"] = LIMIT;
-	map["error"] = ERROR;
-	map["route"] = ROUTE;
+	map["server"] = Server::SERVER;
+	map["host"] = Server::HOST;
+	map["port"] = Server::PORT;
+	map["names"] = Server::NAMES;
+	map["limit"] = Server::LIMIT;
+	map["error"] = Server::ERROR;
+	map["route"] = Server::ROUTE;
 
 	return map;
 }
 
-std::map<std::string, RouteKeywords>	buildRouteMap()
+std::map<std::string, Route::Keywords>	buildRouteMap()
 {
-	std::map<std::string, RouteKeywords> map;
+	std::map<std::string, Route::Keywords> map;
 
-	map["route"] = IROUTE;
-	map["index"] = INDEX;
-	map["redirect"] = REDIRECT;
-	map["root"] = ROOT;
-	map["methods"] = METHODS;
-	map["listing"] = LISTING;
-	map["cgi"] = CGI;
+	map["route"] = Route::ROUTE;
+	map["index"] = Route::INDEX;
+	map["redirect"] = Route::REDIRECT;
+	map["root"] = Route::ROOT;
+	map["methods"] = Route::METHODS;
+	map["listing"] = Route::LISTING;
+	map["cgi"] = Route::CGI;
 
 	return map;
 }
@@ -38,31 +41,32 @@ std::map<std::string, RouteKeywords>	buildRouteMap()
 void	checkInsideRoute(std::ifstream& file, std::string& line) \
 throw(std::runtime_error)
 {
-	std::map<std::string, RouteKeywords> routeMap(buildRouteMap());
+	std::map<std::string, Route::Keywords> routeMap(buildRouteMap());
 	bool routeBrackets = false;
 
 	while (!file.eof()) {
 		std::vector<std::string> splited = split(line, ' ');
 
-		if (splited.size() == 1 && splited[0] == "}" && routeBrackets)
-			return ;
-		else if (splited[0] == "}") // n sei o q tava fazendo aqui
-			return ;
-		if (routeMap.find(splited[0]) == routeMap.end())
-			throw std::runtime_error("");
-		switch (routeMap.find(splited[0])->second) {
-			case IROUTE:
-				if (splited.size() != 2 || splited[1] != "{" || routeBrackets)
-					throw std::runtime_error("");
+		if (!splited.empty()) {
+			std::map<std::string, Route::Keywords>::iterator found = \
+				routeMap.find(splited[0]);
+
+			if (splited.size() == 1 && splited[0] == "}" && routeBrackets)
+				return ;
+			if (splited.size() != 2)
+				throw std::runtime_error("");
+			if (found == routeMap.end())
+				throw std::runtime_error("");
+
+			Route::Keywords key = found->second;
+
+			if (key == Route::ROUTE && (splited[1] != "{" || routeBrackets))
+				throw std::runtime_error("");
+			else if (routeKeyMatch(key) && \
+				splited[1].find_first_of(';') == std::string::npos)
+				throw std::runtime_error("");
+			else if (key == Route::ROUTE)
 				routeBrackets = !routeBrackets;
-				break;
-			case INDEX: case REDIRECT: case ROOT: case METHODS: case LISTING:
-				if (splited.size() != 2 || \
-					splited[1].find_first_of(';') == std::string::npos)
-					throw std::runtime_error("");
-				break;
-			case CGI:
-			default: ;// nada acontece feijoada
 		}
 		line.clear();
 		std::getline(file, line);
@@ -73,40 +77,39 @@ throw(std::runtime_error)
 bool	invalidServerInputs(std::ifstream& file, \
 	std::string& line, \
 	bool* serverBrackets, \
-	std::map<std::string, ServerKeywords>& serverMap)
+	std::map<std::string, Server::Keywords>& serverMap)
 {
 	while (!file.eof()) {
 		std::vector<std::string> splited = split(line, ' ');
 
 		if (!splited.empty()) {
-			if (splited[0] == "}" && *serverBrackets) {
+			std::map<std::string, Server::Keywords>::iterator found = \
+				serverMap.find(splited[0]);
+
+			if (splited.size() == 1 && splited[0] == "}" && *serverBrackets) {
 				*serverBrackets = !*serverBrackets;
 				return false;
-			} else if (splited[0] == "}") // n sei o q tava fazendo aqui
-				return false;
-			if (serverMap.find(splited[0]) == serverMap.end())
-				return true;
-			switch (serverMap.find(splited[0])->second) {
-				case SERVER:
-					if (splited.size() != 2 || splited[1] != "{" || *serverBrackets)
-						return true;
-					*serverBrackets = !*serverBrackets;
-					break;
-				case HOST: case PORT: case LIMIT: case NAMES: case ERROR:
-					if (splited.size() != 2 || \
-						splited[1].find_first_of(';') == std::string::npos)
-						return true;
-					break;
-				case ROUTE:
-					if (!(splited.size() != 2 || splited[1] != "{")) {
-						try {
-							checkInsideRoute(file, line);
-						} catch (std::exception& e) {
-							return true;
-						}
-					}
-				default: ;// nada acontece feijoada
 			}
+			if (splited.size() != 2)
+				return true;
+			if (found == serverMap.end())
+				return true;
+
+			Server::Keywords key = found->second;
+
+			if (key == Server::SERVER && (splited[1] != "{" || *serverBrackets))
+				return true;
+			else if (serverKeyMatch(key) && \
+				splited[1].find_first_of(';') == std::string::npos)
+				return true;
+			else if (key == Server::ROUTE && splited[1] == "{") {
+				try {
+					checkInsideRoute(file, line);
+				} catch (std::exception& e) {
+					return true;
+				}
+			} else if (key == Server::SERVER)
+				*serverBrackets = !*serverBrackets;
 		}
 		line.clear();
 		std::getline(file, line);
@@ -147,4 +150,16 @@ ServerConfig*	searchViaName(std::string const name, \
 	}
 
 	return NULL;
+}
+
+static bool	serverKeyMatch(Server::Keywords key)
+{
+	return key == Server::HOST || key == Server::PORT || key == Server::NAMES || \
+		key == Server::LIMIT || key == Server::ERROR;
+}
+
+static bool	routeKeyMatch(Route::Keywords key)
+{
+	return key == Route::INDEX || key == Route::REDIRECT || key == Route::ROOT || \
+		key == Route::METHODS || key == Route::LISTING;
 }
