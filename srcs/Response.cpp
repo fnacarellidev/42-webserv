@@ -162,8 +162,7 @@ void	Response::defineStatusLine(int status) {
 	this->_statusLine = HTTP_VERSION + (" " + getStatusMessage(status));
 }
 
-void	Response::addNewField(std::string key, std::string value)
-{
+void	Response::addNewField(std::string key, std::string value) {
 	this->_headerFields.push_back(std::make_pair(key, value));
 }
 
@@ -204,7 +203,7 @@ void	Response::_redirection() {
 	}
 }
 
-void	Response::_error(){
+void	Response::_error() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	this->addNewField("Etag", "* hash function *");
