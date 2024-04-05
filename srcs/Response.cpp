@@ -1,48 +1,5 @@
 #include "../includes/Response.hpp"
 
-// UTILS FUNCTIONS
-
-static std::string	getFileContent(const std::string &filename) {
-	std::ifstream	file;
-	std::string		content;
-
-	file.open(filename.c_str());
-	std::getline(file, content, '\0');
-	file.close();
-	return(content);
-}
-
-static time_t	convertTimeToGMT(time_t t) {
-	struct tm	*gmtTime = gmtime(&t);
-	return (mktime(gmtTime));
-}
-
-static std::string	formatTimeString(time_t	time) {
-	char	buffer[80];
-	std::strftime(buffer, sizeof(buffer), "%c", localtime(&time));
-	std::string strTime(buffer);
-	strTime += " GMT";
-	return (strTime);
-}
-
-static std::string	getCurrentTimeInGMT() {
-	time_t	now = convertTimeToGMT(time(0));
-	return (formatTimeString(now));
-}
-
-static std::string	getLastModifiedOfFile(const std::string &filename) {
-	struct stat stat_buff;
-	stat(filename.c_str(), &stat_buff);
-	time_t	gmtTime = convertTimeToGMT(stat_buff.st_mtime);
-	return (formatTimeString(gmtTime));
-}
-
-static std::string	getFileSize(const std::string &filename) {
-	struct stat	stat_buff;
-	stat(filename.c_str(), &stat_buff);
-	return (toString(stat_buff.st_size));
-}
-
 static std::string	getErrInformation(int status)
 {
 	switch (status) {
@@ -113,8 +70,6 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	return (statusMessages);
 }
 
-// CONSTRUCTORS
-
 Response::Response() {
 	this->_body = "";
 	this->_status = 0;
@@ -178,8 +133,6 @@ Response::Response(int status, std::string bodyFile) {
 
 Response::~Response() {}
 
-// GETTERS AND SETTERS
-
 std::string	Response::response() const {
 	return (this->_fullResponse);
 }
@@ -204,8 +157,6 @@ std::string	Response::getStatusMessage(int status) const {
 		statusMessage = toString(status) + " Unknown Status";
 	return (statusMessage);
 }
-
-// MEMBERS FUNCTIONS
 
 void	Response::generateFullResponse() {
 	std::vector<t_fields>::iterator	it;

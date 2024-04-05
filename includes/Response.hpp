@@ -1,19 +1,16 @@
 #pragma once
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <vector>
 #include <iterator>
 #include <algorithm>
 #include <ctime>
-#include <sys/stat.h>
 #include <map>
+#include "utils.hpp"
 #include "errorPages.hpp"
 
 #define SERVER_NAME "webserver/1.0"
 #define HTTP_VERSION "HTTP/1.1"
-
 
 typedef std::pair<std::string, std::string> t_fields;
 
@@ -43,10 +40,3 @@ class Response {
 		void		addNewField(std::string key, std::string value);
 		void		generateFullResponse();
 };
-
-template<typename T>
-std::string	toString(const T& value) {
-	std::ostringstream oss;
-	oss << value;
-	return (oss.str());
-}
