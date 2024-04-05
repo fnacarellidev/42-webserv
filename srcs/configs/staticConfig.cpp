@@ -60,9 +60,11 @@ ServerConfig*	searchViaName(std::string const name, \
 	std::vector<ServerConfig>::iterator begin(servers.begin());
 
 	while (begin != end) {
-		for (std::vector<std::string>::iterator nameIt = begin->getNames().begin(); \
-			nameIt != begin->getNames().end(); nameIt++) {
-			if (*nameIt == name && begin->getPort() == port)
+		std::vector<std::string> names = begin->getNames();
+
+		for (std::vector<std::string>::iterator it = names.begin(); \
+			it != names.end(); it++) {
+			if (*it == name && begin->getPort() == port)
 				return &(*begin);
 		}
 		++begin;

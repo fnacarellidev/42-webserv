@@ -28,22 +28,22 @@ void RouteConfig::setAcceptMethodsBitmask(unsigned short acceptMethodsBitmask) {
 	_acceptMethodsBitmask = acceptMethodsBitmask;
 }
 
-bool RouteConfig::getDirList() {
+bool RouteConfig::getDirList() const {
 	return _dirList;
 }
 
-std::string RouteConfig::getRoot() {
+std::string RouteConfig::getRoot() const {
 	return _root;
 }
 
-std::vector<std::string> RouteConfig::getIndex() {
+std::vector<std::string> RouteConfig::getIndex() const {
 	return _index;
 }
 
-std::pair<std::string, std::string> RouteConfig::getRedirect() {
+std::pair<std::string, std::string> RouteConfig::getRedirect() const {
 	return _redirect;
 }
 
-unsigned short RouteConfig::getAcceptMethodsBitmask(){
+unsigned short RouteConfig::getAcceptMethodsBitmask() const {
 	return _acceptMethodsBitmask;
 }

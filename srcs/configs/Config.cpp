@@ -24,6 +24,7 @@ bool	invalidServerInputs(std::ifstream& file, \
 	std::string& line, \
 	bool* serverBrackets, \
 	std::map<std::string, Server::Keywords>& serverMap);
+void	addRoutes(std::ifstream& file, ServerConfig& server);
 static void	addErrors(std::string const& error, ServerConfig& server);
 static HttpStatus::Code	matchStatus(std::string const& status);
 static void	addMethods(std::string const& methods, RouteConfig& route);
@@ -74,7 +75,7 @@ throw (std::runtime_error)
 		std::vector<std::string> splited = split(line, ' ');
 
 		splited.at(1)[splited[1].size() - 1] = 0;
-		switch (serverMap.at(splited[1])) {
+		switch (serverMap[splited[1]]) {
 			case Server::SERVER:
 				this->servers.push_back(ServerConfig());
 				break;
@@ -209,6 +210,7 @@ static HttpStatus::Code	matchStatus(std::string const& status)
 					return HttpStatus::NOTALLOWED;
 			}
 	}
+	return HttpStatus::ERROR;
 }
 
 static void	addMethods(std::string const& methods, RouteConfig& route)

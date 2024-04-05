@@ -24,14 +24,13 @@ class RouteConfig
 		bool	_dirList;
 	public:
 		RouteConfig();
-		bool getDirList();
-		std::string getRoot();
-		std::vector<std::string> getIndex();
-		std::pair<std::string, std::string> getRedirect();
-		unsigned short getAcceptMethodsBitmask();
+		bool getDirList() const;
+		std::string getRoot() const;
+		std::vector<std::string> getIndex() const;
+		std::pair<std::string, std::string> getRedirect() const;
+		unsigned short getAcceptMethodsBitmask() const;
 		void setRoot(std::string root);
 		void setIndex(std::vector<std::string> index);
-
 		void setDirList(bool dirList);
 		void setRedirect(std::pair<std::string, std::string> redirect);
 		void setAcceptMethodsBitmask(unsigned short acceptMethodsBitmask);
