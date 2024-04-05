@@ -9,7 +9,6 @@
 #include <ctime>
 #include <sys/stat.h>
 #include <map>
-#include "../includes/utils.hpp"
 
 #define SERVER_NAME "webserver/1.0"
 #define HTTP_VERSION "HTTP/1.1"
@@ -34,3 +33,11 @@ class Response {
 		~Response();
 		std::string	getFullReponse();
 };
+
+template<typename T>
+std::string	toString(const T& value)
+{
+	std::ostringstream oss;
+	oss << value;
+	return (oss.str());
+}
