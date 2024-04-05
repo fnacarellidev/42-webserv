@@ -2,10 +2,15 @@
 
 ServerConfig::ServerConfig()
 {
-	
+// _errors n tem default
+	_host = DEFAULT_HOST;
+	_port = DEFAULT_PORT;
+	_bodyLimit = DEFAULT_LIMIT;
+	_serverNames.push_back(_host);
+	_defaultName = _host;
 }
 
-std::vector<std::pair<HttpStatus::Code, std::string> > ServerConfig::getErrors() const {
+TStatusPage ServerConfig::getErrors() const {
 	return _errors;
 }
 
@@ -37,7 +42,7 @@ size_t	ServerConfig::getSizeNames() const {
 	return _sizeNames;
 }
 
-void ServerConfig::setErrors(std::vector<std::pair<HttpStatus::Code, std::string> > errors) {
+void ServerConfig::setErrors(TStatusPage errors) {
 	_errors = errors;
 }
 
