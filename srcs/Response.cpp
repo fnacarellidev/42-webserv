@@ -70,15 +70,6 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	return (statusMessages);
 }
 
-Response::Response() {
-	this->_body = "";
-	this->_status = 0;
-	this->_bodyFile = "";
-	this->_statusLine = "";
-	this->_mimeTypes = defaultMimeTypes();
-	this->_statusMessages = defaultStatusMessages();
-}
-
 Response::Response(int status) {
 	this->_status = status;
 	this->_bodyFile = "";
@@ -130,8 +121,6 @@ Response::Response(int status, std::string bodyFile) {
 	}
 	this->generateFullResponse();
 }
-
-Response::~Response() {}
 
 std::string	Response::response() const {
 	return (this->_fullResponse);
@@ -193,7 +182,6 @@ void	Response::_success() {
 		case 204:
 			break ;
 	}
-	// this->_header.push_back(std::make_pair("Connection", "keep-alive"));
 }
 
 void	Response::_redirection() {

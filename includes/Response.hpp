@@ -29,10 +29,8 @@ class Response {
 		void	_error();
 		void	_serverError();
 	public:
-		Response();
 		Response(int status);
 		Response(int status, std::string bodyFile);
-		~Response();
 		std::string	response() const;
 		std::string	getContentType(const std::string &filename) const;
 		std::string	getStatusMessage(int status) const;
