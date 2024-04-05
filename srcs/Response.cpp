@@ -4,21 +4,21 @@ static std::string	getErrInformation(int status)
 {
 	switch (status) {
 		case 400:
-			return (ERR_400);
+			return (E400);
 		case 401:
-			return (ERR_401);
+			return (E401);
 		case 403:
-			return (ERR_403);
+			return (E403);
 		case 404:
-			return (ERR_404);
+			return (E404);
 		case 405:
-			return (ERR_405);
+			return (E405);
 		case 500:
-			return (ERR_500);
+			return (E500);
 		case 502:
-			return (ERR_502);
+			return (E502);
 		case 503:
-			return (ERR_503);
+			return (E503);
 		default:
 			return ("");
 	}
