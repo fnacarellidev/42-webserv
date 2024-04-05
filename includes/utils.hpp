@@ -14,6 +14,7 @@ time_t		convertTimeToGMT(time_t t);
 std::string	formatTimeString(time_t	time);
 std::string	getCurrentTimeInGMT();
 std::vector<std::string> split(std::string str, char c);
+void	trim(std::string &str, const char* toFind);
 
 template<typename T>
 std::string	toString(const T& value) {
