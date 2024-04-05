@@ -167,7 +167,6 @@ void	Response::addNewField(std::string key, std::string value) {
 void	Response::_success() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	// this->addNewField("Etag", "* hash function *");
 	switch (this->_status) {
 		case 200:
 			this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
@@ -187,7 +186,6 @@ void	Response::_success() {
 void	Response::_redirection() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	// this->addNewField("Etag", "* hash function *");
 	switch (this->_status) {
 		case 301:
 			this->addNewField("Location:", "/path/to/some?");
@@ -203,7 +201,6 @@ void	Response::_redirection() {
 void	Response::_error() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	// this->addNewField("Etag", "* hash function *");
 	if (!_bodyFile.empty()) {
 		this->_body = getFileContent(this->_bodyFile);
 		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
@@ -219,7 +216,6 @@ void	Response::_error() {
 void	Response::_serverError() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	// this->addNewField("Etag", "* hash function *");
 	if (!_bodyFile.empty()) {
 		this->_body = getFileContent(this->_bodyFile);
 		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
