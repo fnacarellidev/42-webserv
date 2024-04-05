@@ -43,6 +43,42 @@ static std::string	getFileSize(const std::string &filename) {
 	return (toString(stat_buff.st_size));
 }
 
+static std::string	getErrInformation(int status)
+{
+	switch (status) {
+		case 400:
+			return (ERR_400);
+		case 401:
+			return (ERR_401);
+		case 403:
+			return (ERR_403);
+		case 404:
+			return (ERR_404);
+		case 405:
+			return (ERR_405);
+		case 500:
+			return (ERR_500);
+		case 502:
+			return (ERR_502);
+		case 503:
+			return (ERR_503);
+		default:
+			return ("");
+	}
+}
+
+static std::string	generateDefaultErrorPage(int status, const std::string &statusMsg) {
+	std::string	errorPage = "";
+	errorPage += "<html>\n";
+	errorPage += "<head><title>" + statusMsg + "</title></head>\n";
+	errorPage += "<body>\n";
+	errorPage += "<h1>" + statusMsg + "</h1>\n";
+	errorPage += "<p>" + getErrInformation(status) + "</p>\n";
+	errorPage += "</body>\n";
+	errorPage += "</html>\n";
+	return (errorPage);
+}
+
 static std::map<std::string, std::string>	defaultMimeTypes() {
 	std::map<std::string, std::string>	mimeTypes;
 	mimeTypes[".html"] = "text/html";
@@ -88,13 +124,13 @@ Response::Response() {
 	this->_statusMessages = defaultStatusMessages();
 }
 
-Response::Response(short int status, std::string bodyFile) {
+Response::Response(int status) {
 	this->_status = status;
-	this->_bodyFile = bodyFile;
+	this->_bodyFile = "";
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
-	switch (status / 100) { 
+	switch (status / 100) {
 		// case 1: // 1xx
 		//	this->_informatiol
 		// 	break ;
@@ -114,8 +150,30 @@ Response::Response(short int status, std::string bodyFile) {
 	this->generateFullResponse();
 }
 
-Response::Response(short int status) {
+Response::Response(int status, std::string bodyFile) {
 	this->_status = status;
+	this->_bodyFile = bodyFile;
+	this->_mimeTypes = defaultMimeTypes();
+	this->_statusMessages = defaultStatusMessages();
+	this->defineStatusLine(status);
+	switch (status / 100) {
+		// case 1: // 1xx
+		//	this->_informatiol
+		// 	break ;
+		case 2: // 2xx
+			this->_success();
+			break ;
+		case 3: // 3xx
+			this->_redirection();
+			break ;
+		case 4: // 4xx
+			this->_error();
+			break ;
+		case 5: // 5xx
+			this->_serverError();
+			break ;
+	}
+	this->generateFullResponse();
 }
 
 Response::~Response() {}
@@ -206,26 +264,31 @@ void	Response::_redirection() {
 void	Response::_error() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	this->addNewField("Etag", "* hash function *");
-	this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
-	this->addNewField("Content-Type", getContentType(this->_bodyFile));
-	this->_body = getFileContent(this->_bodyFile);
-	// switch (this->_status) {
-	// 	case 400:
-	// 		break ;
-	// 	case 401:
-	// 		break ;
-	// 	case 403:
-	// 		break ;
-	// 	case 404:
-	// 		break ;
-	// 	case 405:
-	// 		break ;
-	// 	case 408:
-	// 		break ;
-	// }
+	// this->addNewField("Etag", "* hash function *");
+	if (!_bodyFile.empty()) {
+		this->_body = getFileContent(this->_bodyFile);
+		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
+		this->addNewField("Content-Type", getContentType(this->_bodyFile));
+	} else {
+		std::string statusMsg = getStatusMessage(this->_status);
+		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
+		this->addNewField("Content-Lenght", toString(this->_body.size()));
+		this->addNewField("Content-Type", "text/html");
+	}
 }
 
 void	Response::_serverError() {
-	return ;
+	this->addNewField("Date", getCurrentTimeInGMT());
+	this->addNewField("Server", SERVER_NAME);
+	// this->addNewField("Etag", "* hash function *");
+	if (!_bodyFile.empty()) {
+		this->_body = getFileContent(this->_bodyFile);
+		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
+		this->addNewField("Content-Type", getContentType(this->_bodyFile));
+	} else {
+		std::string statusMsg = getStatusMessage(this->_status);
+		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
+		this->addNewField("Content-Lenght", toString(this->_body.size()));
+		this->addNewField("Content-Type", "text/html");
+	}
 }
