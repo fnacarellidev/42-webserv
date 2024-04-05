@@ -134,7 +134,7 @@ static std::string	getStatusMessage(int status) {
 
 static std::string	defineStatusLine(int status) {
 	std::string	statusLine;
-	statusLine = HTTP_VERSION + (" " + toString(status) + " " + getStatusMessage(status));
+	statusLine = HTTP_VERSION + (" " + getStatusMessage(status));
 	return (statusLine);
 }
 
