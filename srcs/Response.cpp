@@ -65,7 +65,7 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	statusMessages[301] = "Moved Permanently";
 	statusMessages[302] = "Found";
 	statusMessages[304] = "Not Modified";
-	statusMessages[400] = "Bad Resquest";
+	statusMessages[400] = "Bad Request";
 	statusMessages[401] = "Unauthorized";
 	statusMessages[403] = "Forbidden";
 	statusMessages[404] = "Not Found";
