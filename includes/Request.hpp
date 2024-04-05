@@ -19,7 +19,8 @@ namespace HttpStatus {
 		OK = 200,
 		FORBIDDEN = 403,
 		NOTFOUND = 404,
-		NOTALLOWED = 405
+		NOTALLOWED = 405,
+		ERROR = 1000
 	};
 };
 

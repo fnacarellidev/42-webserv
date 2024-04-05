@@ -1,10 +1,18 @@
-#include "../includes/ServerConfig.hpp"
+#include "../../includes/ServerConfig.hpp"
 
-std::vector<std::pair<HttpStatus::Code, std::string> > ServerConfig::getErrors() {
+ServerConfig::ServerConfig()
+{
+	_host = DEFAULT_HOST;
+	_port = DEFAULT_PORT;
+	_bodyLimit = DEFAULT_LIMIT;
+	_serverNames.push_back(_host);
+}
+
+TStatusPage ServerConfig::getErrors() const {
 	return _errors;
 }
 
-std::vector<RouteConfig> ServerConfig::getRoutes() {
+std::vector<RouteConfig> ServerConfig::getRoutes() const {
 	return _routes;
 }
 
@@ -20,19 +28,11 @@ std::string	ServerConfig::getHost() const {
 	return _host;
 }
 
-std::string	ServerConfig::getDefaultName() {
-	return _defaultName;
-}
-
 size_t	ServerConfig::getLimit() const {
 	return _bodyLimit;
 }
 
-size_t	ServerConfig::getSizeNames() const {
-	return _sizeNames;
-}
-
-void ServerConfig::setErrors(std::vector<std::pair<HttpStatus::Code, std::string> > errors) {
+void ServerConfig::setErrors(TStatusPage errors) {
 	_errors = errors;
 }
 
@@ -58,4 +58,14 @@ void ServerConfig::setServerNames(std::vector<std::string> serverNames) {
 
 void ServerConfig::setServerNames(std::string serverName) {
 	_serverNames.push_back(serverName);
+}
+
+void	ServerConfig::setHost(std::string host)
+{
+	_host = host;
+}
+
+void	ServerConfig::setLimit(size_t limit)
+{
+	_bodyLimit = limit;
 }

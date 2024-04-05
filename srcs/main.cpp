@@ -11,6 +11,7 @@ int main(int argc, char** argv) {
 	std::cout << "archive validation test" << std::endl;
 	Config config;
 	config.configIsValid(argv[1]);
+	config.addServers(argv[1]);
 	config.~Config();
 	std::cout << "end test" << std::endl;
 	exit(EXIT_SUCCESS);

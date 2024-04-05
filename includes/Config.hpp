@@ -1,31 +1,36 @@
 #pragma once
 
 #include <exception>
+#include <vector>
 #include <map>
 #include "ServerConfig.hpp"
-#include <vector>
 
-enum ServerKeywords
+namespace Server
 {
-	SERVER = 1,
-	HOST,
-	PORT,
-	NAMES,
-	LIMIT,
-	ERROR,
-	ROUTE
+	enum Keywords
+	{
+		SERVER = 1,
+		HOST,
+		PORT,
+		NAMES,
+		LIMIT,
+		ERROR,
+		ROUTE
+	};
 };
 
-// tem q arranjar uma gambiarra pra isso
-enum RouteKeywords
+namespace Route
 {
-	IROUTE = 1,
-	INDEX,
-	REDIRECT,
-	ROOT,
-	METHODS,
-	LISTING,
-	CGI
+	enum Keywords
+	{
+		ROUTE = 1,
+		INDEX,
+		REDIRECT,
+		ROOT,
+		METHODS,
+		LISTING,
+		CGI
+	};
 };
 
 class ServerNotFound: public std::exception
@@ -36,87 +41,23 @@ class ServerNotFound: public std::exception
 
 class Config
 {
-	private:
-		std::vector<ServerConfig>	_servers;
 	public:
-		ServerConfig&	findByHostNamePort(std::string const& host,\
-			std::string const* names, size_t const size, unsigned int const port) \
-			const throw(ServerNotFound);
-		void	addServers(const char* filename);
+		std::vector<ServerConfig>	servers;
+
+		ServerConfig&	findByHostNamePort(std::string const& host, std::string const* names, size_t const size, unsigned int const port) const throw(ServerNotFound);
+		void	addServers(const char* filename) throw (std::runtime_error);
 		bool	configIsValid(const char* filename);
 };
 
-/*
-example of conf file:
-listen 443;
-server_names localrosti.com www2.localrosti.com;
-default_server ww2.localrosti.com;
-limit_body 10mb;
-error 404.html 402.html
-# very cool comment
-index index.php index.txt;
-root /tmp/test42;
-dir_listing off;
-dir_default ops.php;
-server {
-	listen 666;
-	server_names www.aDeus.com aDeus.com;
-	root /tmp/test42/olaDiabo;
-	index hello_world.php hello_world.html
-	dir_listing on;
-	
-}
-*/
+std::map<std::string, Server::Keywords>	buildServerMap();
+std::map<std::string, Route::Keywords>	buildRouteMap();
+void	checkInsideRoute(std::ifstream& file, std::string& line) throw(std::runtime_error);
+ServerConfig*	searchViaName(std::string const name, unsigned int const port, std::vector<ServerConfig>& servers);
+ServerConfig&	searchViaHost(std::string const& host, unsigned int const port, std::vector<ServerConfig>& servers) throw(ServerNotFound);
+bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBrackets, std::map<std::string, Server::Keywords>& serverMap);
+void	addRoutes(std::ifstream& file, ServerConfig& server);
+static void	addErrors(std::string const& error, ServerConfig& server);
+static HttpStatus::Code	matchStatus(std::string const& status);
+static void	addMethods(std::string const& methods, RouteConfig& route);
+static void	addRedirect(std::string const& redirect, RouteConfig& route);
 
-/*
-phind example in yml:
-# Configuração para o servidor 1
-server {
-    host: 127.0.0.1
-    port: 8080
-    server_names: example.com www.example.com
-
-    # Páginas de erro padrão
-    error_pages {
-        404: /errors/404.html
-        500: /errors/500.html
-    }
-
-    # Limite de tamanho do corpo do cliente
-    client_body_size_limit: 10MB
-
-    # Rotas
-    route {
-        path: /api
-        methods: [GET, POST]
-        directory_listing: off
-        default_file: index.html
-        cgi_executable: /usr/bin/php-cgi
-        cgi_path_info: true
-        cgi_directory: /var/www/cgi-bin
-    }
-
-    route {
-        path: /uploads
-        methods: [POST]
-        upload_directory: /var/www/uploads
-    }
-}
-
-# Configuração para o servidor 2
-server {
-    host: 0.0.0.0
-    port: 8888
-
-    # Rotas
-    route {
-        path: /redirect
-        redirect: /new_location
-    }
-
-    route {
-        path: /files
-        file_root: /var/www/static
-    }
-}
-*/
