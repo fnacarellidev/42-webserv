@@ -76,7 +76,7 @@ bool	validateErrorConfig(std::string& errors)
 	for (std::vector<std::string>::iterator it = pairs.begin(); it != pairs.end(); it++) {
 		std::vector<std::string> values = split(*it, '=');
 
-		if (values.size() != 2 || values[0].size() != 3)
+		if (values.size() != 2 || values[0].size() != 3 || values[1].size() == 1)
 			return true;
 		
 		int	code = std::strtol(values[0].c_str(), 0, 10);
@@ -89,7 +89,7 @@ bool	validateErrorConfig(std::string& errors)
 
 bool	validateHostConfig(std::string& ip)
 {
-	if (ip.find_first_not_of("0123456789.") != std::string::npos)
+	if (ip.find_first_not_of("0123456789.") != ip.size() - 1)
 		return true;
 
 	std::vector<std::string> bits = split(ip, '.');
@@ -116,19 +116,19 @@ bool	validateLimitConfig(std::string& limit)
 	errno = 0;
 
 	char*	rest = NULL;
-	size_t	nbr = std::strtoull(limit.c_str(), &rest, 10);
+	size_t	nbr = std::strtoull(limit.c_str(), &rest, 10); // se estourar ele seta pra SIZE_MAX
 	
 	if (errno == ERANGE)
 		return true;
 
-	std::string byteType(rest == NULL ? "b" : rest);
+	std::string byteType(rest[0] == 0 ? "b" : rest);
 
 	if (byteType.size() > 2)
 		return true;
 	// std::for_each(byteType.begin(), byteType.end(), std::tolower); // ele n aceita tolower com std
 	for (std::string::iterator it = byteType.begin(); it != byteType.end(); it++)
 		*it = std::tolower(*it);
-	if (byteType != "b" || byteType != "kb" || byteType != "mb" || byteType != "gb" || byteType != "tb" || byteType != "pb")
+	if (byteType != "b" && byteType != "kb" && byteType != "mb" && byteType != "gb" && byteType != "tb" && byteType != "pb")
 		return true;
 	else if ((byteType == "pb" && nbr > PETA_LIMIT) || (byteType == "tb" && nbr > (size_t)TERA_LIMIT) || (byteType == "gb" && nbr > (size_t)GIGA_LIMIT) || (byteType == "mb" && nbr > (size_t)MEGA_LIMIT) || (byteType == "kb" && nbr > (size_t)KILO_LIMIT))
 		return true;
@@ -137,7 +137,7 @@ bool	validateLimitConfig(std::string& limit)
 
 bool	validatePortConfig(std::string& port)
 {
-	if (port.find_first_not_of("0123456789") != std::string::npos)
+	if (port.find_first_not_of("0123456789") != port.size() - 1)
 		return true;
 	errno = 0;
 
