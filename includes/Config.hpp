@@ -3,6 +3,7 @@
 #include <exception>
 #include <vector>
 #include <map>
+#include "RouteConfig.hpp"
 #include "ServerConfig.hpp"
 
 namespace Server
@@ -56,8 +57,5 @@ ServerConfig*	searchViaName(std::string const name, unsigned int const port, std
 ServerConfig&	searchViaHost(std::string const& host, unsigned int const port, std::vector<ServerConfig>& servers) throw(ServerNotFound);
 bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBrackets, std::map<std::string, Server::Keywords>& serverMap);
 void	addRoutes(std::ifstream& file, ServerConfig& server);
-static void	addErrors(std::string const& error, ServerConfig& server);
-static HttpStatus::Code	matchStatus(std::string const& status);
-static void	addMethods(std::string const& methods, RouteConfig& route);
-static void	addRedirect(std::string const& redirect, RouteConfig& route);
 
+std::ostream&	operator<<(std::ostream& o, const Config& webserv);

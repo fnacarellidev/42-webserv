@@ -12,6 +12,7 @@ int main(int argc, char** argv) {
 	Config config;
 	config.configIsValid(argv[1]);
 	config.addServers(argv[1]);
+	std::cout << config << std::endl;
 	config.~Config();
 	std::cout << "end test" << std::endl;
 	exit(EXIT_SUCCESS);
