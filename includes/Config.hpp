@@ -6,6 +6,12 @@
 #include "RouteConfig.hpp"
 #include "ServerConfig.hpp"
 
+#define PETA_LIMIT 18446
+#define TERA_LIMIT 1844674e7
+#define GIGA_LIMIT 184467e10
+#define MEGA_LIMIT 1844674e13
+#define KILO_LIMIT 1844674e16
+
 namespace Server
 {
 	enum Keywords
@@ -57,5 +63,9 @@ ServerConfig*	searchViaName(std::string const name, unsigned int const port, std
 ServerConfig&	searchViaHost(std::string const& host, unsigned int const port, std::vector<ServerConfig>& servers) throw(ServerNotFound);
 bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBrackets, std::map<std::string, Server::Keywords>& serverMap);
 void	addRoutes(std::ifstream& file, ServerConfig& server);
+bool	validateErrorConfig(std::string& errors);
+bool	validateHostConfig(std::string& ip);
+bool	validateLimitConfig(std::string& limit);
+bool	validatePortConfig(std::string& port);
 
 std::ostream&	operator<<(std::ostream& o, const Config& webserv);

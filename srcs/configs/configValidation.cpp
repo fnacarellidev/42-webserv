@@ -48,12 +48,10 @@ void	checkInsideRoute(std::ifstream& file, std::string& line) throw(std::runtime
 	}
 }
 
-// need to validate (and more static funcions):
-// ip of host
-// port limit, 443, 21, 22 cannot be used upper limit is 65535
-// body limit is valid
 bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBrackets, std::map<std::string, Server::Keywords>& serverMap)
 {
+	bool	error = false;
+
 	while (!file.eof()) {
 		std::vector<std::string> splited = split(line, ' ');
 
@@ -71,8 +69,6 @@ bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBra
 
 			if (key == Server::SERVER && (splited[1] != "{" || *serverBrackets))
 				return true;
-			else if (serverKeyMatch(key) && splited[1].find_first_of(';') == std::string::npos)
-				return true;
 			else if (key == Server::ROUTE && splited[1] == "{") {
 				try {
 					checkInsideRoute(file, line);
@@ -81,6 +77,19 @@ bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBra
 				}
 			} else if (key == Server::SERVER)
 				*serverBrackets = !*serverBrackets;
+			else if (serverKeyMatch(key) && (splited[1].find_first_of(';') == std::string::npos || splited[1].find_last_of(';') != splited[1].find_first_of(';'))) 
+				return true;
+			splited.at(1)[splited[1].size() - 1] = 0;
+			if (key == Server::ERROR)
+				error = validateErrorConfig(splited[1]);
+			else if (key == Server::HOST)
+				error = validateHostConfig(splited[1]);
+			else if (key == Server::LIMIT)
+				error = validateLimitConfig(splited[1]);
+			else if (key == Server::PORT)
+				error = validatePortConfig(splited[1]);
+			if (error)
+				return error;
 		}
 		line.clear();
 		std::getline(file, line);
