@@ -79,7 +79,9 @@ bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBra
 				*serverBrackets = !*serverBrackets;
 			else if (serverKeyMatch(key) && (splited[1].find_first_of(';') == std::string::npos || splited[1].find_last_of(';') != splited[1].find_first_of(';'))) 
 				return true;
-			splited.at(1)[splited[1].size() - 1] = 0;
+			else if (splited[1].size() == 1)
+				return true;
+			splited[1].erase(splited[1].end() - 1);
 			if (key == Server::ERROR)
 				error = validateErrorConfig(splited[1]);
 			else if (key == Server::HOST)
