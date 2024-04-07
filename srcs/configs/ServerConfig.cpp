@@ -6,6 +6,7 @@ ServerConfig::ServerConfig()
 	_port = DEFAULT_PORT;
 	_bodyLimit = DEFAULT_LIMIT;
 	_serverNames.push_back(_host);
+	_routes.push_back(RouteConfig());
 }
 
 TStatusPage ServerConfig::getErrors() const {
