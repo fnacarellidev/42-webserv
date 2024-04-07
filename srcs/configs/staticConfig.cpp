@@ -125,14 +125,11 @@ bool	validateLimitConfig(std::string& limit)
 
 	if (byteType.size() > 2)
 		return true;
-	// std::for_each(byteType.begin(), byteType.end(), std::tolower); // ele n aceita tolower com std
 	for (std::string::iterator it = byteType.begin(); it != byteType.end(); it++)
 		*it = std::tolower(*it);
 	if (byteType != "b" && byteType != "kb" && byteType != "mb" && byteType != "gb")
 		return true;
-	else if ((byteType == "gb" && nbr > (size_t)GIGA_LIMIT) || (byteType == "mb" && nbr > (size_t)MEGA_LIMIT) || (byteType == "kb" && nbr > (size_t)KILO_LIMIT))
-		return true;
-	return false;
+	return ((byteType == "gb" && nbr > (size_t)GIGA_LIMIT) || (byteType == "mb" && nbr > (size_t)MEGA_LIMIT) || (byteType == "kb" && nbr > (size_t)KILO_LIMIT));
 }
 
 bool	validatePortConfig(std::string& port)
@@ -141,10 +138,29 @@ bool	validatePortConfig(std::string& port)
 		return true;
 	errno = 0;
 
-	char*	rest = NULL;
-	size_t	nbr = std::strtoull(port.c_str(), &rest, 10);
+	size_t	nbr = std::strtoull(port.c_str(), 0, 10);
 
-	if (nbr > std::numeric_limits<unsigned short int>::max())
+	return (errno == ERANGE || nbr > std::numeric_limits<unsigned short int>::max());
+}
+
+bool	validateRedirectConfig(std::string& redirect)
+{
+	std::vector<std::string> values = split(redirect, '=');
+
+	return (values.size() != 2 || values.at(1)[0] != '/' || values.at(0)[0] != '/');
+}
+
+bool	validateMethodsConfig(std::string& methods)
+{
+	std::vector<std::string>	values = split(methods, ',');
+
+	if (values.size() > 3)
 		return true;
+	for (std::vector<std::string>::iterator it = values.begin(); it != values.end(); it++) {
+		for (std::string::iterator it2 = it->begin(); it2 != it->end(); it2++)
+			*it2 = std::toupper(*it2);
+		if (*it != "GET" && *it != "POST" && *it != "DELETE")
+			return true;
+	}
 	return false;
 }

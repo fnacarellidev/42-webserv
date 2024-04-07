@@ -6,8 +6,6 @@
 #include "RouteConfig.hpp"
 #include "ServerConfig.hpp"
 
-#define PETA_LIMIT 18446
-#define TERA_LIMIT 1844674e7
 #define GIGA_LIMIT 184467e10
 #define MEGA_LIMIT 1844674e13
 #define KILO_LIMIT 1844674e16
@@ -67,5 +65,7 @@ bool	validateErrorConfig(std::string& errors);
 bool	validateHostConfig(std::string& ip);
 bool	validateLimitConfig(std::string& limit);
 bool	validatePortConfig(std::string& port);
+bool	validateRedirectConfig(std::string& redirect);
+bool	validateMethodsConfig(std::string& methods);
 
 std::ostream&	operator<<(std::ostream& o, const Config& webserv);
