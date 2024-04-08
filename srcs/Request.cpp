@@ -22,10 +22,29 @@ static Methods getMethod(std::string method) {
 	return UNKNOWNMETHOD;
 }
 
+int    fileGood(const char *filePath) {
+	bool fileExists = !access(filePath, F_OK);
+	bool canRead = !access(filePath, R_OK);
+
+	if (!fileExists)
+		return ENOENT;
+	else if (!canRead)
+		return EACCES;
+	return 0;
+}
+
 static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::string requestUri) {
 	std::vector<RouteConfig> routeConfigs = serverConfigs.front().getRoutes();
 	std::string root = routeConfigs.front().getRoot();
+	std::vector<std::string> indexes = routeConfigs.front().getIndex();
 
+	if (requestUri == "/") {
+		for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
+			bool fileExists = access((root + *it).c_str(), F_OK) == 0;
+			if (fileExists)
+				return root + *it;
+		}
+	}
 	if (root[root.size() - 1] == '/')
 		root.erase(root.size() - 1);
 
@@ -37,17 +56,6 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 
 	method = getMethod(requestLineParams[METHOD]);
 	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
-}
-
-int    fileGood(const char *filePath) {
-	bool fileExists = !access(filePath, F_OK);
-	bool canRead = !access(filePath, R_OK);
-
-	if (!fileExists)
-		return ENOENT;
-	else if (!canRead)
-		return EACCES;
-	return 0;
 }
 
 unsigned short getBitmaskFromMethod(Methods method) {
@@ -78,5 +86,8 @@ Response Request::runRequest() {
 		default:
 			break;
 	}
+
+	if (S_ISDIR(statbuf.st_mode))
+		return Response(500);
 	return Response(200, filePath);
 }
