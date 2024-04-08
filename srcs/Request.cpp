@@ -21,9 +21,12 @@ static Methods getMethod(std::string method) {
 	return UNKNOWNMETHOD;
 }
 
-static std::string getFilePath(std::list<ServerConfig> serverConfigs, std::string requestUri) {
+static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::string requestUri) {
 	std::vector<RouteConfig> routeConfigs = serverConfigs.front().getRoutes();
 	std::string root = routeConfigs.front().getRoot();
+
+	if (root[root.size() - 1] == '/')
+		root.erase(root.size() - 1);
 
 	return root + requestUri;
 }
