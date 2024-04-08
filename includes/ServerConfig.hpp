@@ -13,8 +13,7 @@
 
 typedef std::vector<std::pair<HttpStatus::Code, std::string> > TStatusPage;
 
-class ServerConfig
-{
+class ServerConfig {
 	private:
 		TStatusPage	_errors;
 		std::vector<RouteConfig>	_routes;

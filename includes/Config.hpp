@@ -3,6 +3,12 @@
 #include <exception>
 #include <vector>
 #include <map>
+#include <cctype>
+#include <limits>
+#include <algorithm>
+#include <cerrno>
+#include <fstream>
+#include <cstdlib>
 #include "RouteConfig.hpp"
 #include "ServerConfig.hpp"
 
@@ -10,10 +16,8 @@
 #define MEGA_LIMIT 1844674e13
 #define KILO_LIMIT 1844674e16
 
-namespace Server
-{
-	enum Keywords
-	{
+namespace Server {
+	enum Keywords {
 		SERVER = 1,
 		HOST,
 		PORT,
@@ -24,10 +28,8 @@ namespace Server
 	};
 };
 
-namespace Route
-{
-	enum Keywords
-	{
+namespace Route {
+	enum Keywords {
 		ROUTE = 1,
 		INDEX,
 		REDIRECT,
@@ -38,14 +40,7 @@ namespace Route
 	};
 };
 
-class ServerNotFound: public std::exception
-{
-	public:
-		virtual const char* what() const throw();
-};
-
-class Config
-{
+class Config {
 	public:
 		std::vector<ServerConfig>	servers;
 
@@ -53,7 +48,7 @@ class Config
 			std::string const* names,
 			size_t const size,
 			unsigned int const port)
-			const throw(ServerNotFound);
+			const throw(std::runtime_error);
 		void	addServers(char* filename) throw (std::runtime_error);
 		bool	configIsValid(char* filename);
 };
@@ -68,7 +63,7 @@ ServerConfig*	searchViaName(std::string const name,
 ServerConfig&	searchViaHost(std::string const& host,
 	unsigned int const port,
 	std::vector<ServerConfig>& servers)
-	throw(ServerNotFound);
+	throw(std::runtime_error);
 bool	invalidServerInputs(std::ifstream& file,
 	std::string& line,
 	bool* serverBrackets,

@@ -1,11 +1,8 @@
 #include "../../includes/Config.hpp"
 #include "../../includes/utils.hpp"
 #include "../../includes/HttpStatus.hpp"
-#include <fstream>
-#include <cstdlib>
 
-static HttpStatus::Code	matchStatus(std::string const& status)
-{
+static HttpStatus::Code	matchStatus(std::string const& status) {
 	int code = std::atoi(status.c_str());
 
 	switch (code / 100) {
@@ -28,8 +25,7 @@ static HttpStatus::Code	matchStatus(std::string const& status)
 	return HttpStatus::NOTFOUND;
 }
 
-void	addErrors(std::string const& error, ServerConfig& server)
-{
+void	addErrors(std::string const& error, ServerConfig& server) {
 	std::vector<std::string> splited = split(error, ',');
 
 	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
@@ -39,8 +35,7 @@ void	addErrors(std::string const& error, ServerConfig& server)
 	}
 }
 
-void	addMethods(std::string const& methods, RouteConfig& route)
-{
+void	addMethods(std::string const& methods, RouteConfig& route) {
 	std::vector<std::string> splited = split(methods, ',');
 	unsigned short	method = NONE_OK;
 
@@ -59,20 +54,15 @@ void	addMethods(std::string const& methods, RouteConfig& route)
 	route.setAcceptMethodsBitmask(method);
 }
 
-void	addRedirect(std::string const& redirect, RouteConfig& route)
-{
+void	addRedirect(std::string const& redirect, RouteConfig& route) {
 	std::vector<std::string> splited = split(redirect, '=');
 
 	route.setRedirect(std::make_pair(splited[0], splited[1]));
 }
 
-void	addRoutes(std::ifstream& file, ServerConfig& server)
-{
+void	addRoutes(std::ifstream& file, ServerConfig& server) {
 	std::map<std::string, Route::Keywords>	routeMap(buildRouteMap());
 	std::string	line("");
-
-	server.setRoutes(RouteConfig());
-
 	std::vector<RouteConfig>	routes = server.getRoutes();
 
 	while (line != "}") {

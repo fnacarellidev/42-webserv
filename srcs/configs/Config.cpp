@@ -1,16 +1,12 @@
 #include "../../includes/Config.hpp"
 #include "../../includes/utils.hpp"
-#include <fstream>
-#include <cstdlib>
-#include <limits>
 
-std::ostream&	operator<<(std::ostream& o, const Config& webserv)
-{
+std::ostream&	operator<<(std::ostream& o, const Config& webserv) {
 	size_t i = 0;
 	std::vector<ServerConfig> servers = webserv.servers;
 
-	o << "server " << i++ << ":" << std::endl;
 	for (std::vector<ServerConfig>::iterator its = servers.begin(); its != servers.end(); its++) {
+		o << "server " << i++ << ":" << std::endl;
 		o << "\tport: " << its->getPort() << std::endl;
 		o << "\tlimit: " << its->getLimit() << std::endl;
 		o << "\thost: " << its->getHost() << std::endl;
@@ -46,33 +42,27 @@ std::ostream&	operator<<(std::ostream& o, const Config& webserv)
 	return o;
 }
 
-const char* ServerNotFound::what() const throw()
-{
-	return ("This server don't exist.");
-}
 
 ServerConfig&	Config::findByHostNamePort(std::string const& host,
 std::string const* names,
 size_t const size,
 unsigned int const port)
-const throw(ServerNotFound)
-{
+const throw(std::runtime_error) {
 	ServerConfig* foundConfig = NULL;
 	std::vector<ServerConfig>&	servers = const_cast<std::vector<ServerConfig>&>(this->servers);
 
 	if (!host.empty())
 		return searchViaHost(host, port, servers);
 	else if (names == NULL)
-		throw ServerNotFound();
+		throw std::runtime_error("Server not found");
 	for (size_t i = 0; foundConfig != NULL && i < size; i++)
 		foundConfig = searchViaName(names[i], port, servers);
 	if (foundConfig != NULL)
 		return *foundConfig;
-	throw ServerNotFound();
+	throw std::runtime_error("Server not found");
 }
 
-void	Config::addServers(char* filename) throw (std::runtime_error)
-{
+void	Config::addServers(char* filename) throw (std::runtime_error) {
 	std::map<std::string, Server::Keywords> serverMap(buildServerMap());
 	std::ifstream	file(filename);
 	std::string	line;
@@ -110,8 +100,7 @@ void	Config::addServers(char* filename) throw (std::runtime_error)
 	file.close();
 }
 
-bool	Config::configIsValid(char* filename)
-{
+bool	Config::configIsValid(char* filename) {
 	std::map<std::string, Server::Keywords> serverMap(buildServerMap());
 	std::ifstream	file(filename);
 	std::string line, word;

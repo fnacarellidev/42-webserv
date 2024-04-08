@@ -1,15 +1,7 @@
 #include "../../includes/Config.hpp"
 #include "../../includes/utils.hpp"
-#include <cctype>
-#include <limits>
-#include <algorithm>
-#include <map>
-#include <vector>
-#include <exception>
-#include <cerrno>
 
-std::map<std::string, Server::Keywords>	buildServerMap()
-{
+std::map<std::string, Server::Keywords>	buildServerMap() {
 	std::map<std::string, Server::Keywords> map;
 
 	map["server"] = Server::SERVER;
@@ -23,8 +15,7 @@ std::map<std::string, Server::Keywords>	buildServerMap()
 	return map;
 }
 
-std::map<std::string, Route::Keywords>	buildRouteMap()
-{
+std::map<std::string, Route::Keywords>	buildRouteMap() {
 	std::map<std::string, Route::Keywords> map;
 
 	map["route"] = Route::ROUTE;
@@ -42,8 +33,7 @@ std::map<std::string, Route::Keywords>	buildRouteMap()
 ServerConfig&	searchViaHost(std::string const& host,
 unsigned int const port,
 std::vector<ServerConfig>& servers)
-throw(ServerNotFound)
-{
+throw(std::runtime_error) {
 	std::vector<ServerConfig>::iterator end(servers.end()), begin(servers.begin());
 
 	while (begin != end) {
@@ -51,13 +41,12 @@ throw(ServerNotFound)
 			return *begin;
 		++begin;
 	}
-	throw ServerNotFound();
+	throw std::runtime_error("Server not found");
 }
 
 ServerConfig*	searchViaName(std::string const name,
 unsigned int const port,
-std::vector<ServerConfig>& servers)
-{
+std::vector<ServerConfig>& servers) {
 	std::vector<ServerConfig>::iterator end(servers.end()), begin(servers.begin());
 
 	while (begin != end) {
@@ -72,8 +61,7 @@ std::vector<ServerConfig>& servers)
 	return NULL;
 }
 
-bool	validateErrorConfig(std::string& errors)
-{
+bool	validateErrorConfig(std::string& errors) {
 	std::vector<std::string> pairs = split(errors, ',');
 	
 	for (std::vector<std::string>::iterator it = pairs.begin(); it != pairs.end(); it++) {
@@ -90,8 +78,7 @@ bool	validateErrorConfig(std::string& errors)
 	return false;
 }
 
-bool	validateHostConfig(std::string& ip)
-{
+bool	validateHostConfig(std::string& ip) {
 	if (ip.find_first_not_of("0123456789.") != std::string::npos)
 		return true;
 
@@ -112,8 +99,7 @@ bool	validateHostConfig(std::string& ip)
 	return false;
 }
 
-bool	validateLimitConfig(std::string& limit)
-{
+bool	validateLimitConfig(std::string& limit) {
 	if (limit.find_first_of('-') != std::string::npos)
 		return true;
 	errno = 0;
@@ -136,8 +122,7 @@ bool	validateLimitConfig(std::string& limit)
 	(byteType == "kb" && nbr > (size_t)KILO_LIMIT));
 }
 
-bool	validatePortConfig(std::string& port)
-{
+bool	validatePortConfig(std::string& port) {
 	if (port.find_first_not_of("0123456789") != std::string::npos)
 		return true;
 	errno = 0;
@@ -147,15 +132,13 @@ bool	validatePortConfig(std::string& port)
 	return (errno == ERANGE || nbr > std::numeric_limits<unsigned short int>::max());
 }
 
-bool	validateRedirectConfig(std::string& redirect)
-{
+bool	validateRedirectConfig(std::string& redirect) {
 	std::vector<std::string> values = split(redirect, '=');
 
 	return (values.size() != 2 || values.at(1)[0] != '/' || values.at(0)[0] != '/');
 }
 
-bool	validateMethodsConfig(std::string& methods)
-{
+bool	validateMethodsConfig(std::string& methods) {
 	std::vector<std::string>	values = split(methods, ',');
 
 	if (values.size() > 3)

@@ -14,8 +14,7 @@
 #define DEFAULT_DIRLIST false
 #define DEFAULT_ACCEPT_METHODS GET_OK
 
-class RouteConfig
-{
+class RouteConfig {
 	private:
 		std::pair<std::string, std::string>	_redirect;
 		std::vector<std::string>	_index;

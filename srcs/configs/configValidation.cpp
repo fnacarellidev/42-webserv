@@ -1,16 +1,13 @@
 
 #include "../../includes/Config.hpp"
 #include "../../includes/utils.hpp"
-#include <fstream>
 
-static bool	serverKeyMatch(Server::Keywords key)
-{
+static bool	serverKeyMatch(Server::Keywords key) {
 	return key == Server::HOST || key == Server::PORT || key == Server::NAMES || key == Server::LIMIT ||
 	key == Server::ERROR;
 }
 
-static bool	routeKeyMatch(Route::Keywords key)
-{
+static bool	routeKeyMatch(Route::Keywords key) {
 	return key == Route::INDEX || key == Route::REDIRECT || key == Route::ROOT || key == Route::METHODS ||
 	key == Route::LISTING;
 }
@@ -18,8 +15,7 @@ static bool	routeKeyMatch(Route::Keywords key)
 // needed to validate:
 // problably some CGI things
 void	checkInsideRoute(std::ifstream& file, std::string& line)
-throw(std::runtime_error)
-{
+throw(std::runtime_error) {
 	std::map<std::string, Route::Keywords> routeMap(buildRouteMap());
 	bool routeBrackets = false, error = false;
 
@@ -67,8 +63,7 @@ throw(std::runtime_error)
 bool	invalidServerInputs(std::ifstream& file,
 std::string& line,
 bool* serverBrackets,
-std::map<std::string, Server::Keywords>& serverMap)
-{
+std::map<std::string, Server::Keywords>& serverMap) {
 	bool	error = false;
 
 	while (!file.eof()) {

@@ -1,11 +1,11 @@
 #include "../../includes/ServerConfig.hpp"
 
-ServerConfig::ServerConfig()
-{
+ServerConfig::ServerConfig() {
 	_host = DEFAULT_HOST;
 	_port = DEFAULT_PORT;
 	_bodyLimit = DEFAULT_LIMIT;
 	_serverNames.push_back(_host);
+	_routes.push_back(RouteConfig());
 }
 
 TStatusPage ServerConfig::getErrors() const {
@@ -60,12 +60,10 @@ void ServerConfig::setServerNames(std::string serverName) {
 	_serverNames.push_back(serverName);
 }
 
-void	ServerConfig::setHost(std::string host)
-{
+void	ServerConfig::setHost(std::string host) {
 	_host = host;
 }
 
-void	ServerConfig::setLimit(size_t limit)
-{
+void	ServerConfig::setLimit(size_t limit) {
 	_bodyLimit = limit;
 }
