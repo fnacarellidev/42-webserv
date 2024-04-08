@@ -136,8 +136,12 @@ Response	&Response::operator=(const Response &other) {
 	return (*this);
 }
 
-std::string	Response::response() const {
+std::string	Response::getFullResponse() const {
 	return (this->_fullResponse);
+}
+
+const char	*Response::response() const {
+	return (this->_fullResponse.c_str());
 }
 
 size_t		Response::size() const {
