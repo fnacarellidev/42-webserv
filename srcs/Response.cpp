@@ -140,6 +140,10 @@ std::string	Response::response() const {
 	return (this->_fullResponse);
 }
 
+size_t		Response::size() const {
+	return (this->_fullResponse.length());
+}
+
 std::string	Response::getContentType(const std::string &filename) const {
 	std::map<std::string, std::string>::const_iterator	it;
 	std::string	extension = filename.substr(filename.find_last_of("."));

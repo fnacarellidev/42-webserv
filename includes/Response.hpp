@@ -28,6 +28,7 @@ class Response {
 		Response(int status);
 		Response(int status, std::string bodyFile);
 		Response	&operator=(const Response &other);
+		size_t		size() const;
 		std::string	response() const;
 		std::string	getContentType(const std::string &filename) const;
 		std::string	getStatusMessage(int status) const;
