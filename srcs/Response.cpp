@@ -167,6 +167,8 @@ void	Response::addNewField(std::string key, std::string value) {
 void	Response::_success() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
+	if (this->_bodyFile.empty())
+		return ;
 	switch (this->_status) {
 		case 200:
 			this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
@@ -186,6 +188,8 @@ void	Response::_success() {
 void	Response::_redirection() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
+	if (this->_bodyFile.empty())
+		return ;
 	switch (this->_status) {
 		case 301:
 			this->addNewField("Location:", "/path/to/some?");
