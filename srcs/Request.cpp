@@ -72,7 +72,9 @@ unsigned short getBitmaskFromMethod(Methods method) {
 }
 
 Response Request::runRequest() {
+	struct stat statbuf;
 	unsigned short methodBitmask = getBitmaskFromMethod(method);
+	stat(filePath.c_str(), &statbuf);
 
 	if (!(methodBitmask & _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask()))
 		return Response(405);
