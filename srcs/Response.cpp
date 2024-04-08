@@ -32,7 +32,7 @@ static std::string	generateDefaultErrorPage(int status, const std::string &statu
 	errorPage += "<h1>" + statusMsg + "</h1>\n";
 	errorPage += "<p>" + getErrInformation(status) + "</p>\n";
 	errorPage += "</body>\n";
-	errorPage += "</html>\n";
+	errorPage += "</html>";
 	return (errorPage);
 }
 
