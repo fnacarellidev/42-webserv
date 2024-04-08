@@ -201,7 +201,7 @@ void	Response::_redirection() {
 void	Response::_error() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!_bodyFile.empty()) {
+	if (!this->_bodyFile.empty()) {
 		this->_body = getFileContent(this->_bodyFile);
 		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
 		this->addNewField("Content-Type", getContentType(this->_bodyFile));
@@ -216,7 +216,7 @@ void	Response::_error() {
 void	Response::_serverError() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!_bodyFile.empty()) {
+	if (!this->_bodyFile.empty()) {
 		this->_body = getFileContent(this->_bodyFile);
 		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
 		this->addNewField("Content-Type", getContentType(this->_bodyFile));
