@@ -49,3 +49,17 @@ int    fileGood(const char *filePath) {
 		return EACCES;
 	return 0;
 }
+
+unsigned short getBitmaskFromMethod(Methods method) {
+	switch (method) {
+		case GET:
+			return GET_OK;
+		case POST:
+			return POST_OK;
+		case DELETE:
+			return DELETE_OK;
+		case UNKNOWNMETHOD:
+			return NONE_OK;
+	};
+}
+
