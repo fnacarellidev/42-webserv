@@ -1,4 +1,3 @@
-#define PORT 8080
 #include <algorithm>
 #include <limits>
 #include <cstdio>
@@ -12,7 +11,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include "../includes/Request.hpp"
-#include "../includes/ServerConfig.hpp"
+#include "../includes/Config.hpp"
 
 using namespace std;
 
@@ -21,13 +20,15 @@ using namespace std;
 # define BUFFER_SIZE 4096
 #endif
 
-int main() {
+int main(int argc, char **argv) {
 	int newSocket;
 	int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 	struct sockaddr sockAddr = {};
 	char buffer[BUFFER_SIZE] = { 0 };
 	socklen_t addrLen = sizeof(sockAddr);
 	int opt = 1;
+	if (argc == 0)
+		exit (1);
 
 	if (serverFd < 0) {
 		perror("socket failed");
@@ -51,7 +52,6 @@ int main() {
 	}
 
 	while (true) {
-		string fullResponse("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
 		if ((newSocket = accept(serverFd, &sockAddr, &addrLen))
 				< 0) {
 			perror("accept");
@@ -65,35 +65,18 @@ int main() {
 		buffer[ret] = 0;
 		stringstream copy(buffer);
 		string line;
-		std::list<ServerConfig> serverConfigs;
+		Config config;
 
-		serverConfigs.push_back(ServerConfig());
-		Request req(buffer, serverConfigs);
+		config.addServers(argv[1]);
 
-		std::cout << "Method: ";
-		switch (req.method) {
-			case GET:
-				std::cout << "GET\n";
-				break;
+		std::cout << config;
 
-			case POST:
-				std::cout << "POST\n";
-				break;
-
-			case DELETE:
-				std::cout << "DELETE\n";
-				break;
-
-			case UNKNOWNMETHOD:
-				std::cout << "UNKNOWNMETHOD\n";
-				break;
-		}
-		std::cout << "File path stored by Request Class: " << req.filePath << std::endl;
+		Request req(buffer, config.servers);
+		Response res = req.runRequest();
 		
 		getline(copy, line);
-
-		/* fullResponse += req.getFileContent(); */
-		send(newSocket, fullResponse.c_str(), fullResponse.size(), 0);
+		std::cout << res.response();
+		send(newSocket, res.response(), res.size(), 0);
 		close(newSocket);
 	}
 	close(serverFd);
