@@ -1,5 +1,6 @@
 #include "../../includes/Config.hpp"
 #include "../../includes/utils.hpp"
+#include "../../includes/HttpStatus.hpp"
 #include <fstream>
 #include <cstdlib>
 
@@ -24,7 +25,7 @@ static HttpStatus::Code	matchStatus(std::string const& status)
 					return HttpStatus::NOTALLOWED;
 			}
 	}
-	return HttpStatus::ERROR;
+	return HttpStatus::NOTFOUND;
 }
 
 void	addErrors(std::string const& error, ServerConfig& server)
