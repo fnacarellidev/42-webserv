@@ -2,6 +2,7 @@
 #include "../../includes/utils.hpp"
 #include <fstream>
 #include <cstdlib>
+#include <limits>
 
 std::ostream&	operator<<(std::ostream& o, const Config& webserv)
 {
@@ -50,70 +51,6 @@ const char* ServerNotFound::what() const throw()
 	return ("This server don't exist.");
 }
 
-static HttpStatus::Code	matchStatus(std::string const& status)
-{
-	int code = std::atoi(status.c_str());
-
-	switch (code / 100) {
-		case 2:
-			switch (code) {
-				case 200:
-					return HttpStatus::OK;
-			}
-		break;
-		case 4:
-			switch (code) {
-				case 403:
-					return HttpStatus::FORBIDDEN;
-				case 404:
-					return HttpStatus::NOTFOUND;
-				case 405:
-					return HttpStatus::NOTALLOWED;
-			}
-	}
-	return HttpStatus::ERROR;
-}
-
-static void	addErrors(std::string const& error, ServerConfig& server)
-{
-	std::vector<std::string> splited = split(error, ',');
-
-	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
-		std::vector<std::string> error = split(*it, '=');
-
-		if (error.size() != 2)
-			continue ;
-		server.setErrors(std::make_pair(matchStatus(error[0]), error[1]));
-	}
-}
-
-static void	addMethods(std::string const& methods, RouteConfig& route)
-{
-	std::vector<std::string> splited = split(methods, ',');
-	unsigned short	method = NONE_OK;
-
-	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
-		switch (it->size()) {
-			case 3:
-				method |= GET_OK;
-				break;
-			case 4:
-				method |= POST_OK;
-				break;
-			case 6:
-				method |= DELETE_OK;
-		}
-	}
-	route.setAcceptMethodsBitmask(method);
-}
-
-static void	addRedirect(std::string const& redirect, RouteConfig& route)
-{
-	std::vector<std::string> splited = split(redirect, '=');
-
-	route.setRedirect(std::make_pair(splited[0], splited[1]));
-}
-
 ServerConfig&	Config::findByHostNamePort(std::string const& host,
 std::string const* names,
 size_t const size,
@@ -134,7 +71,7 @@ const throw(ServerNotFound)
 	throw ServerNotFound();
 }
 
-void	Config::addServers(const char* filename) throw (std::runtime_error)
+void	Config::addServers(char* filename) throw (std::runtime_error)
 {
 	std::map<std::string, Server::Keywords> serverMap(buildServerMap());
 	std::ifstream	file(filename);
@@ -152,18 +89,20 @@ void	Config::addServers(const char* filename) throw (std::runtime_error)
 
 		std::vector<std::string> splited = split(line, ' ');
 
-		splited.at(1)[splited[1].size() - 1] = 0;
-		if (serverMap[splited[1]] == Server::SERVER)
+		if (splited[1].find_first_of(";") != std::string::npos)
+			splited[1].erase(splited[1].end() - 1);
+		if (serverMap[splited[0]] == Server::SERVER)
 			this->servers.push_back(ServerConfig());
-		else if (serverMap[splited[1]] == Server::HOST)
+		else if (serverMap[splited[0]] == Server::HOST)
 			this->servers.back().setHost(splited[1]);
-		else if (serverMap[splited[1]] == Server::PORT)
+		else if (serverMap[splited[0]] == Server::PORT)
 			this->servers.back().setPort(std::strtoul(splited[1].c_str(), 0, 10));
-		else if (serverMap[splited[1]] == Server::NAMES)
+		else if (serverMap[splited[0]] == Server::NAMES)
 			this->servers.back().setServerNames(split(splited[1], ','));
-		else if (serverMap[splited[1]] == Server::LIMIT)
-			this->servers.back().setLimit(std::strtoull(splited[1].c_str(), 0, 10));
-		else if (serverMap[splited[1]] == Server::ERROR)
+		else if (serverMap[splited[0]] == Server::LIMIT) {
+			this->servers.back().setLimit(std::strtoull(splited[1].c_str(), 0, 10) == 0 ?
+			std::numeric_limits<size_t>::max() : std::strtoull(splited[1].c_str(), 0, 10));
+		} else if (serverMap[splited[0]] == Server::ERROR)
 			addErrors(splited[1], this->servers.back());
 		else
 			addRoutes(file, this->servers.back());
@@ -171,35 +110,7 @@ void	Config::addServers(const char* filename) throw (std::runtime_error)
 	file.close();
 }
 
-void	addRoutes(std::ifstream& file, ServerConfig& server)
-{
-	std::map<std::string, Route::Keywords>	routeMap(buildRouteMap());
-	std::string	line("");
-
-	server.setRoutes(RouteConfig());
-	while (line != "}") {
-		std::getline(file, line);
-		trim(line, "\t \n");
-		if (line.empty() || line[0] == '}')
-			break;
-
-		std::vector<std::string> splited = split(line, ' ');
-
-		splited.at(1)[splited[1].size() - 1] = 0;
-		if (routeMap[splited[1]] == Route::INDEX)
-			server.getRoutes().back().setIndex(split(splited[1], ','));
-		else if (routeMap[splited[1]] == Route::REDIRECT)
-			addRedirect(splited[1], server.getRoutes().back());
-		else if (routeMap[splited[1]] == Route::ROOT)
-			server.getRoutes().back().setRoot(splited[1]);
-		else if (routeMap[splited[1]] == Route::METHODS)
-			addMethods(splited[1], server.getRoutes().back());
-		else if (routeMap[splited[1]] == Route::LISTING)
-			server.getRoutes().back().setDirList(splited[1] == "on");
-	}
-}
-
-bool	Config::configIsValid(const char* filename)
+bool	Config::configIsValid(char* filename)
 {
 	std::map<std::string, Server::Keywords> serverMap(buildServerMap());
 	std::ifstream	file(filename);

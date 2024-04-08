@@ -54,8 +54,8 @@ class Config
 			size_t const size,
 			unsigned int const port)
 			const throw(ServerNotFound);
-		void	addServers(const char* filename) throw (std::runtime_error);
-		bool	configIsValid(const char* filename);
+		void	addServers(char* filename) throw (std::runtime_error);
+		bool	configIsValid(char* filename);
 };
 
 std::map<std::string, Server::Keywords>	buildServerMap();
@@ -80,5 +80,6 @@ bool	validateLimitConfig(std::string& limit);
 bool	validatePortConfig(std::string& port);
 bool	validateRedirectConfig(std::string& redirect);
 bool	validateMethodsConfig(std::string& methods);
+void	addErrors(std::string const& error, ServerConfig& server);
 
 std::ostream&	operator<<(std::ostream& o, const Config& webserv);

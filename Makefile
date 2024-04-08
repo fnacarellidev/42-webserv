@@ -4,9 +4,9 @@ PATH_INCS = ./includes/
 PATH_SRCS = ./srcs/
 PATH_OBJS = ./objects/
 
-FILES = main Request \
-				configs/Config configs/configValidation configs/RouteConfig configs/ServerConfig configs/staticConfig \
-				utils/split utils/trim
+CONFIGURATION_FILES = $(basename $(wildcard srcs/configs/*.cpp))
+
+FILES = main Request $(CONFIGURATION_FILES) utils/split utils/trim
 SRCS = ${FILES:%=$(PATH_OBJS)%.cpp}
 OBJS = ${FILES:%=$(PATH_OBJS)%.o}
 FLAGS = -Wall -Wextra -Werror -std=c++98 -g3
@@ -31,7 +31,11 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re debug
+.PHONY: all clean fclean re debug re_debug
 
 debug:
 	c++ $(FLAGS) $(wildcard srcs/configs/*.cpp) $(wildcard srcs/utils/*.cpp) srcs/Request.cpp srcs/main_test.cpp -o debug_server
+
+re_debug:
+	rm -rf debug_server
+	make debug
