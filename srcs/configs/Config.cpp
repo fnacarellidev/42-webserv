@@ -11,10 +11,10 @@ std::ostream&	operator<<(std::ostream& o, const Config& webserv) {
 		o << "\tlimit: " << its->getLimit() << std::endl;
 		o << "\thost: " << its->getHost() << std::endl;
 
-		TStatusPage erros = its->getErrors();
+		std::map<int, std::string> erros = its->getErrors();
 		std::vector<std::string> nomes = its->getNames();
 
-		for (TStatusPage::iterator ite = erros.begin(); ite != erros.end(); ite++)
+		for (std::map<int, std::string>::iterator ite = erros.begin(); ite != erros.end(); ite++)
 			o << "\terror: " << ite->first << " " << ite->second << std::endl;
 		for (std::vector<std::string>::iterator itn = nomes.begin(); itn != nomes.end(); itn++)
 			o << "\tserver_name: " << *itn << std::endl;

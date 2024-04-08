@@ -8,7 +8,7 @@ ServerConfig::ServerConfig() {
 	_routes.push_back(RouteConfig());
 }
 
-TStatusPage ServerConfig::getErrors() const {
+std::map<int, std::string> ServerConfig::getErrors() const {
 	return _errors;
 }
 
@@ -32,12 +32,8 @@ size_t	ServerConfig::getLimit() const {
 	return _bodyLimit;
 }
 
-void ServerConfig::setErrors(TStatusPage errors) {
+void ServerConfig::setErrors(std::map<int, std::string> errors) {
 	_errors = errors;
-}
-
-void ServerConfig::setErrors(std::pair<HttpStatus::Code, std::string> error) {
-	_errors.push_back(error);
 }
 
 void ServerConfig::setRoutes(std::vector<RouteConfig> routeConfigs) {
@@ -66,4 +62,8 @@ void	ServerConfig::setHost(std::string host) {
 
 void	ServerConfig::setLimit(size_t limit) {
 	_bodyLimit = limit;
+}
+
+void	ServerConfig::insertError(int code, std::string path) {
+	_errors[code] = path;
 }

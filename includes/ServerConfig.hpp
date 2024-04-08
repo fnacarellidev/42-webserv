@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <utility>
+#include <map>
 
 #include "HttpStatus.hpp"
 #include "RouteConfig.hpp"
@@ -13,11 +14,9 @@
 #define DEFAULT_HOST "127.0.0.1"
 #define DEFAULT_PORT 80
 
-typedef std::vector<std::pair<HttpStatus::Code, std::string> > TStatusPage;
-
 class ServerConfig {
 	private:
-		TStatusPage	_errors;
+		std::map<int, std::string>	_errors;
 		std::vector<RouteConfig>	_routes;
 		unsigned int	_port;
 		std::vector<std::string>	_serverNames;
@@ -31,7 +30,7 @@ class ServerConfig {
 	*/
 	public:
 		ServerConfig();
-		TStatusPage getErrors() const;
+		std::map<int, std::string> getErrors() const;
 		std::vector<RouteConfig> getRoutes() const;
 		std::vector<std::string> getNames() const;
 		unsigned int getPort() const;
@@ -39,8 +38,8 @@ class ServerConfig {
 		size_t	getLimit() const;
 		void	setHost(std::string host);
 		void	setLimit(size_t limit);
-		void	setErrors(TStatusPage errors);
-		void	setErrors(std::pair<HttpStatus::Code, std::string> error);
+		void	insertError(int code, std::string path);
+		void	setErrors(std::map<int, std::string> errors);
 		void	setRoutes(RouteConfig routeConfig);
 		void	setRoutes(std::vector<RouteConfig> routeConfigs);
 		void	setPort(unsigned int port);

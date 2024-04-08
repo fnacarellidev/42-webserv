@@ -2,36 +2,14 @@
 #include "../../includes/utils.hpp"
 #include "../../includes/HttpStatus.hpp"
 
-static HttpStatus::Code	matchStatus(std::string const& status) {
-	int code = std::atoi(status.c_str());
-
-	switch (code / 100) {
-		case 2:
-			switch (code) {
-				case 200:
-					return HttpStatus::OK;
-			}
-		break;
-		case 4:
-			switch (code) {
-				case 403:
-					return HttpStatus::FORBIDDEN;
-				case 404:
-					return HttpStatus::NOTFOUND;
-				case 405:
-					return HttpStatus::NOTALLOWED;
-			}
-	}
-	return HttpStatus::NOTFOUND;
-}
-
 void	addErrors(std::string const& error, ServerConfig& server) {
 	std::vector<std::string> splited = split(error, ',');
 
 	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
 		std::vector<std::string> error = split(*it, '=');
+		int code = std::atoi(error[0].c_str());
 
-		server.setErrors(std::make_pair(matchStatus(error[0]), error[1]));
+		server.insertError(code, error[1]);
 	}
 }
 
