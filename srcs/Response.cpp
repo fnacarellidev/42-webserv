@@ -122,6 +122,20 @@ Response::Response(int status, std::string bodyFile) {
 	this->generateFullResponse();
 }
 
+Response	&Response::operator=(const Response &other) {
+	if (this != &other) {
+		this->_body = other._body;
+		this->_status = other._status;
+		this->_bodyFile = other._bodyFile;
+		this->_mimeTypes = other._mimeTypes;
+		this->_statusLine = other._statusLine;
+		this->_headerFields = other._headerFields;
+		this->_fullResponse = other._fullResponse;
+		this->_statusMessages = other._statusMessages;
+	}
+	return (*this);
+}
+
 std::string	Response::response() const {
 	return (this->_fullResponse);
 }
