@@ -63,3 +63,20 @@ unsigned short getBitmaskFromMethod(Methods method) {
 	};
 }
 
+Response Request::runRequest() {
+	unsigned short methodBitmask = getBitmaskFromMethod(method);
+
+	if (!(methodBitmask & _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask()))
+		return Response(405);
+	switch (fileGood(filePath.c_str())) {
+		case ENOENT:
+			return Response(404);
+
+		case EACCES:
+			return Response (403);
+
+		default:
+			break;
+	}
+	return Response(200, filePath);
+}

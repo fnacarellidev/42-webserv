@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <list>
+#include "Response.hpp"
 #include "ServerConfig.hpp"
 
 enum Methods {
@@ -18,9 +19,10 @@ enum RequestLine {
 
 class Request {
 	private:
-		std::list<ServerConfig> _serverConfigs;
+		std::vector<ServerConfig> _serverConfigs;
 	public:
 		Methods method;
 		std::string filePath;
-		Request(std::string request, std::list<ServerConfig> serverConfigs);
+		Response runRequest();
+		Request(std::string request, std::vector<ServerConfig> serverConfigs);
 };
