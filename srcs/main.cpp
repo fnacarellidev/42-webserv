@@ -69,8 +69,6 @@ int main(int argc, char **argv) {
 
 		config.addServers(argv[1]);
 
-		std::cout << config;
-
 		Request req(buffer, config.servers);
 		Response res = req.runRequest();
 		
