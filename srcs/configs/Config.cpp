@@ -28,7 +28,9 @@ std::ostream&	operator<<(std::ostream& o, const Config& webserv)
 		for (std::vector<RouteConfig>::iterator itr = rotas.begin(); itr != rotas.end(); itr++) {
 			o << "\tRoute " << j++ << ":" <<std::endl;
 			o << std::boolalpha << "\t\tdir_list: " << itr->getDirList() << std::endl;
-			o << "\t\tmethods: " << (itr->getAcceptMethodsBitmask() | GET_OK ? "GET " : "") << (itr->getAcceptMethodsBitmask() | POST_OK ? "POST " : "") << (itr->getAcceptMethodsBitmask() | DELETE_OK ? "DELETE" : "") << std::endl;
+			o << "\t\tmethods: " << (itr->getAcceptMethodsBitmask() & GET_OK ? "GET " : "") <<
+				(itr->getAcceptMethodsBitmask() & POST_OK ? "POST " : "") <<
+				(itr->getAcceptMethodsBitmask() & DELETE_OK ? "DELETE" : "") << std::endl;
 			o << "\t\troot: " << itr->getRoot() << std::endl;
 			o << "\t\tredir: " << itr->getRedirect().first << " " << itr->getRedirect().second << std::endl;
 			
@@ -112,7 +114,11 @@ static void	addRedirect(std::string const& redirect, RouteConfig& route)
 	route.setRedirect(std::make_pair(splited[0], splited[1]));
 }
 
-ServerConfig&	Config::findByHostNamePort(std::string const& host, std::string const* names, size_t const size, unsigned int const port) const throw(ServerNotFound)
+ServerConfig&	Config::findByHostNamePort(std::string const& host,
+std::string const* names,
+size_t const size,
+unsigned int const port)
+const throw(ServerNotFound)
 {
 	ServerConfig* foundConfig = NULL;
 	std::vector<ServerConfig>&	servers = const_cast<std::vector<ServerConfig>&>(this->servers);
@@ -197,8 +203,7 @@ bool	Config::configIsValid(const char* filename)
 {
 	std::map<std::string, Server::Keywords> serverMap(buildServerMap());
 	std::ifstream	file(filename);
-	std::string line;
-	std::string word;
+	std::string line, word;
 	bool openBrackets = false;
 
 	if (!file.is_open())
@@ -227,4 +232,3 @@ ret_error:
 	file.close();
 	return false;
 }
-

@@ -39,10 +39,12 @@ std::map<std::string, Route::Keywords>	buildRouteMap()
 }
 
 
-ServerConfig&	searchViaHost(std::string const& host, unsigned int const port, std::vector<ServerConfig>& servers) throw(ServerNotFound)
+ServerConfig&	searchViaHost(std::string const& host,
+unsigned int const port,
+std::vector<ServerConfig>& servers)
+throw(ServerNotFound)
 {
-	std::vector<ServerConfig>::iterator end(servers.end());
-	std::vector<ServerConfig>::iterator begin(servers.begin());
+	std::vector<ServerConfig>::iterator end(servers.end()), begin(servers.begin());
 
 	while (begin != end) {
 		if (begin->getHost() == host && begin->getPort() == port)
@@ -52,10 +54,11 @@ ServerConfig&	searchViaHost(std::string const& host, unsigned int const port, st
 	throw ServerNotFound();
 }
 
-ServerConfig*	searchViaName(std::string const name, unsigned int const port, std::vector<ServerConfig>& servers)
+ServerConfig*	searchViaName(std::string const name,
+unsigned int const port,
+std::vector<ServerConfig>& servers)
 {
-	std::vector<ServerConfig>::iterator end(servers.end());
-	std::vector<ServerConfig>::iterator begin(servers.begin());
+	std::vector<ServerConfig>::iterator end(servers.end()), begin(servers.begin());
 
 	while (begin != end) {
 		std::vector<std::string> names = begin->getNames();
@@ -103,7 +106,7 @@ bool	validateHostConfig(std::string& ip)
 
 		long int nbr = std::strtol(it->c_str(), 0, 10);
 
-		if (errno == ERANGE || (nbr < 0 || nbr > 255))
+		if (errno == ERANGE || nbr < 0 || nbr > 255)
 			return true;
 	}
 	return false;
@@ -116,7 +119,7 @@ bool	validateLimitConfig(std::string& limit)
 	errno = 0;
 
 	char*	rest = NULL;
-	size_t	nbr = std::strtoull(limit.c_str(), &rest, 10); // se estourar ele seta pra SIZE_MAX
+	size_t	nbr = std::strtoull(limit.c_str(), &rest, 10);
 	
 	if (errno == ERANGE)
 		return true;
@@ -129,7 +132,8 @@ bool	validateLimitConfig(std::string& limit)
 		*it = std::tolower(*it);
 	if (byteType != "b" && byteType != "kb" && byteType != "mb" && byteType != "gb")
 		return true;
-	return ((byteType == "gb" && nbr > (size_t)GIGA_LIMIT) || (byteType == "mb" && nbr > (size_t)MEGA_LIMIT) || (byteType == "kb" && nbr > (size_t)KILO_LIMIT));
+	return ((byteType == "gb" && nbr > (size_t)GIGA_LIMIT) || (byteType == "mb" && nbr > (size_t)MEGA_LIMIT) ||
+	(byteType == "kb" && nbr > (size_t)KILO_LIMIT));
 }
 
 bool	validatePortConfig(std::string& port)

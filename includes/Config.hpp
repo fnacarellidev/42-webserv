@@ -49,17 +49,30 @@ class Config
 	public:
 		std::vector<ServerConfig>	servers;
 
-		ServerConfig&	findByHostNamePort(std::string const& host, std::string const* names, size_t const size, unsigned int const port) const throw(ServerNotFound);
+		ServerConfig&	findByHostNamePort(std::string const& host,
+			std::string const* names,
+			size_t const size,
+			unsigned int const port)
+			const throw(ServerNotFound);
 		void	addServers(const char* filename) throw (std::runtime_error);
 		bool	configIsValid(const char* filename);
 };
 
 std::map<std::string, Server::Keywords>	buildServerMap();
 std::map<std::string, Route::Keywords>	buildRouteMap();
-void	checkInsideRoute(std::ifstream& file, std::string& line) throw(std::runtime_error);
-ServerConfig*	searchViaName(std::string const name, unsigned int const port, std::vector<ServerConfig>& servers);
-ServerConfig&	searchViaHost(std::string const& host, unsigned int const port, std::vector<ServerConfig>& servers) throw(ServerNotFound);
-bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBrackets, std::map<std::string, Server::Keywords>& serverMap);
+void	checkInsideRoute(std::ifstream& file, std::string& line)
+	throw(std::runtime_error);
+ServerConfig*	searchViaName(std::string const name,
+	unsigned int const port,
+	std::vector<ServerConfig>& servers);
+ServerConfig&	searchViaHost(std::string const& host,
+	unsigned int const port,
+	std::vector<ServerConfig>& servers)
+	throw(ServerNotFound);
+bool	invalidServerInputs(std::ifstream& file,
+	std::string& line,
+	bool* serverBrackets,
+	std::map<std::string, Server::Keywords>& serverMap);
 void	addRoutes(std::ifstream& file, ServerConfig& server);
 bool	validateErrorConfig(std::string& errors);
 bool	validateHostConfig(std::string& ip);

@@ -31,4 +31,7 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re debug
+
+debug:
+	c++ $(FLAGS) $(wildcard srcs/configs/*.cpp) $(wildcard srcs/utils/*.cpp) srcs/Request.cpp srcs/main_test.cpp -o debug_server

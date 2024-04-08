@@ -5,24 +5,24 @@
 
 static bool	serverKeyMatch(Server::Keywords key)
 {
-	return key == Server::HOST || key == Server::PORT || key == Server::NAMES || key == Server::LIMIT || key == Server::ERROR;
+	return key == Server::HOST || key == Server::PORT || key == Server::NAMES || key == Server::LIMIT ||
+	key == Server::ERROR;
 }
 
 static bool	routeKeyMatch(Route::Keywords key)
 {
-	return key == Route::INDEX || key == Route::REDIRECT || key == Route::ROOT || key == Route::METHODS || key == Route::LISTING;
+	return key == Route::INDEX || key == Route::REDIRECT || key == Route::ROOT || key == Route::METHODS ||
+	key == Route::LISTING;
 }
 
 // needed to validate:
-// methods are acceptable by PDF
-// dirlist is on or off
 // problably some CGI things
-void	checkInsideRoute(std::ifstream& file, std::string& line) throw(std::runtime_error)
+void	checkInsideRoute(std::ifstream& file, std::string& line)
+throw(std::runtime_error)
 {
 	std::map<std::string, Route::Keywords> routeMap(buildRouteMap());
 	bool routeBrackets = false, error = false;
 
-	// routeBrackets = error = false;
 	while (!file.eof()) {
 		std::vector<std::string> splited = split(line, ' ');
 
@@ -40,7 +40,9 @@ void	checkInsideRoute(std::ifstream& file, std::string& line) throw(std::runtime
 				throw std::runtime_error("");
 			else if (key == Route::ROUTE)
 				routeBrackets = !routeBrackets;
-			else if (routeKeyMatch(key) && (splited[1].find_first_of(';') == std::string::npos || splited[1].find_last_of(';') != splited[1].find_first_of(';')))
+			else if (routeKeyMatch(key) &&
+			(splited[1].find_first_of(';') == std::string::npos ||
+			splited[1].find_last_of(';') != splited[1].find_first_of(';')))
 				throw std::runtime_error("");
 			else if (splited[1].size() == 1 && splited[1] != "{")
 				throw std::runtime_error("");
@@ -62,7 +64,10 @@ void	checkInsideRoute(std::ifstream& file, std::string& line) throw(std::runtime
 	}
 }
 
-bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBrackets, std::map<std::string, Server::Keywords>& serverMap)
+bool	invalidServerInputs(std::ifstream& file,
+std::string& line,
+bool* serverBrackets,
+std::map<std::string, Server::Keywords>& serverMap)
 {
 	bool	error = false;
 
@@ -91,7 +96,9 @@ bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBra
 				}
 			} else if (key == Server::SERVER)
 				*serverBrackets = !*serverBrackets;
-			else if (serverKeyMatch(key) && (splited[1].find_first_of(';') == std::string::npos || splited[1].find_last_of(';') != splited[1].find_first_of(';'))) 
+			else if (serverKeyMatch(key) &&
+			(splited[1].find_first_of(';') == std::string::npos ||
+			splited[1].find_last_of(';') != splited[1].find_first_of(';')))
 				return true;
 			else if (splited[1].size() == 1 && splited[1] != "{")
 				return true;
@@ -113,4 +120,3 @@ bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBra
 	}
 	return false;
 }
-
