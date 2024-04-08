@@ -6,9 +6,7 @@
 #include <map>
 #include "utils.hpp"
 #include "errorPages.hpp"
-
-#define SERVER_NAME "webserver/1.0"
-#define HTTP_VERSION "HTTP/1.1"
+#include "ServerConfig.hpp"
 
 typedef std::pair<std::string, std::string> t_fields;
 

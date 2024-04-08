@@ -9,6 +9,9 @@
 #include "HttpStatus.hpp"
 #include "RouteConfig.hpp"
 
+#define SERVER_NAME "webserver/1.0"
+#define HTTP_VERSION "HTTP/1.1"
+
 class ServerConfig
 {
 	private:
