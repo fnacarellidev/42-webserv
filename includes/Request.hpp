@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <list>
-#include "../includes/ServerConfig.hpp"
+#include "ServerConfig.hpp"
 
 enum Methods {
 	GET,

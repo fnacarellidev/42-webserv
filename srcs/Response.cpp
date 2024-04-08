@@ -122,8 +122,30 @@ Response::Response(int status, std::string bodyFile) {
 	this->generateFullResponse();
 }
 
-std::string	Response::response() const {
+Response	&Response::operator=(const Response &other) {
+	if (this != &other) {
+		this->_body = other._body;
+		this->_status = other._status;
+		this->_bodyFile = other._bodyFile;
+		this->_mimeTypes = other._mimeTypes;
+		this->_statusLine = other._statusLine;
+		this->_headerFields = other._headerFields;
+		this->_fullResponse = other._fullResponse;
+		this->_statusMessages = other._statusMessages;
+	}
+	return (*this);
+}
+
+std::string	Response::getFullResponse() const {
 	return (this->_fullResponse);
+}
+
+const char	*Response::response() const {
+	return (this->_fullResponse.c_str());
+}
+
+size_t		Response::size() const {
+	return (this->_fullResponse.length());
 }
 
 std::string	Response::getContentType(const std::string &filename) const {
@@ -167,6 +189,8 @@ void	Response::addNewField(std::string key, std::string value) {
 void	Response::_success() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
+	if (this->_bodyFile.empty())
+		return ;
 	switch (this->_status) {
 		case 200:
 			this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
@@ -186,6 +210,8 @@ void	Response::_success() {
 void	Response::_redirection() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
+	if (this->_bodyFile.empty())
+		return ;
 	switch (this->_status) {
 		case 301:
 			this->addNewField("Location:", "/path/to/some?");
@@ -201,7 +227,7 @@ void	Response::_redirection() {
 void	Response::_error() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!_bodyFile.empty()) {
+	if (!this->_bodyFile.empty()) {
 		this->_body = getFileContent(this->_bodyFile);
 		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
 		this->addNewField("Content-Type", getContentType(this->_bodyFile));
@@ -216,7 +242,7 @@ void	Response::_error() {
 void	Response::_serverError() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!_bodyFile.empty()) {
+	if (!this->_bodyFile.empty()) {
 		this->_body = getFileContent(this->_bodyFile);
 		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
 		this->addNewField("Content-Type", getContentType(this->_bodyFile));

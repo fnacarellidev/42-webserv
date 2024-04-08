@@ -6,9 +6,7 @@
 #include <map>
 #include "utils.hpp"
 #include "errorPages.hpp"
-
-#define SERVER_NAME "webserver/1.0"
-#define HTTP_VERSION "HTTP/1.1"
+#include "ServerConfig.hpp"
 
 typedef std::pair<std::string, std::string> t_fields;
 
@@ -29,7 +27,10 @@ class Response {
 	public:
 		Response(int status);
 		Response(int status, std::string bodyFile);
-		std::string	response() const;
+		Response	&operator=(const Response &other);
+		size_t		size() const;
+		const char	*response() const;
+		std::string	getFullResponse() const;
 		std::string	getContentType(const std::string &filename) const;
 		std::string	getStatusMessage(int status) const;
 		void		defineStatusLine(int status);
