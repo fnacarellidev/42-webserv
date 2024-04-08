@@ -1,5 +1,6 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
+#include <unistd.h>
 #include <sstream>
 
 static std::vector<std::string> getRequestLineParams(std::string request) {
@@ -36,4 +37,15 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 
 	method = getMethod(requestLineParams[METHOD]);
 	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
+}
+
+int    fileGood(const char *filePath) {
+	bool fileExists = !access(filePath, F_OK);
+	bool canRead = !access(filePath, R_OK);
+
+	if (!fileExists)
+		return ENOENT;
+	else if (!canRead)
+		return EACCES;
+	return 0;
 }
