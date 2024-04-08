@@ -1,20 +1,36 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
 #include <utility>
 
+#define NONE_OK 0b0000
 #define GET_OK 0b0001
 #define POST_OK 0b0010
 #define DELETE_OK 0b0100
 
-class RouteConfig
-{
+#define DEFAULT_ROOT "/var/www/html"
+#define DEFAULT_INDEX "index.html"
+#define DEFAULT_DIRLIST false
+#define DEFAULT_ACCEPT_METHODS GET_OK
+
+class RouteConfig {
 	private:
-		std::pair< std::string, std::string >	_redirect;
+		std::pair<std::string, std::string>	_redirect;
+		std::vector<std::string>	_index;
 		std::string	_root;
-		unsigned short	_allowedMethodsBitmask;
+		unsigned short	_acceptMethodsBitmask;
+		bool	_dirList;
 	public:
 		RouteConfig();
-		std::string getRoot() { return _root; };
-		unsigned short getAllowedMethodsBitmask() { return _allowedMethodsBitmask; };
+		bool getDirList() const;
+		std::string getRoot() const;
+		std::vector<std::string> getIndex() const;
+		std::pair<std::string, std::string> getRedirect() const;
+		unsigned short getAcceptMethodsBitmask() const;
+		void setRoot(std::string root);
+		void setIndex(std::vector<std::string> index);
+		void setDirList(bool dirList);
+		void setRedirect(std::pair<std::string, std::string> redirect);
+		void setAcceptMethodsBitmask(unsigned short acceptMethodsBitmask);
 };
