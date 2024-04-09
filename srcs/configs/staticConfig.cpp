@@ -11,6 +11,7 @@ std::map<std::string, Server::Keywords>	buildServerMap() {
 	map["limit"] = Server::LIMIT;
 	map["error"] = Server::ERROR;
 	map["route"] = Server::ROUTE;
+	map["root"] = Server::ROOT;
 
 	return map;
 }

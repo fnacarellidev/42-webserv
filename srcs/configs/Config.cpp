@@ -10,11 +10,12 @@ std::ostream&	operator<<(std::ostream& o, const Config& webserv) {
 		o << "\tport: " << its->getPort() << std::endl;
 		o << "\tlimit: " << its->getLimit() << std::endl;
 		o << "\thost: " << its->getHost() << std::endl;
+		o << "\troot: " << its->getServerRoot() << std::endl;
 
-		TStatusPage erros = its->getErrors();
+		std::map<int, std::string> erros = its->getErrors();
 		std::vector<std::string> nomes = its->getNames();
 
-		for (TStatusPage::iterator ite = erros.begin(); ite != erros.end(); ite++)
+		for (std::map<int, std::string>::iterator ite = erros.begin(); ite != erros.end(); ite++)
 			o << "\terror: " << ite->first << " " << ite->second << std::endl;
 		for (std::vector<std::string>::iterator itn = nomes.begin(); itn != nomes.end(); itn++)
 			o << "\tserver_name: " << *itn << std::endl;
@@ -94,9 +95,14 @@ void	Config::addServers(char* filename) throw (std::runtime_error) {
 			std::numeric_limits<size_t>::max() : std::strtoull(splited[1].c_str(), 0, 10));
 		} else if (serverMap[splited[0]] == Server::ERROR)
 			addErrors(splited[1], this->servers.back());
+		else if (serverMap[splited[0]] == Server::ROOT) {
+			if (*(splited[1].end() - 1) != '/')
+				splited[1].insert(splited[1].end(), '/');
+			servers.back().setServerRoot(splited[1]);
+		}
 		else
 			addRoutes(file, this->servers.back());
-		}
+	}
 	file.close();
 }
 

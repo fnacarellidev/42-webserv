@@ -2,36 +2,16 @@
 #include "../../includes/utils.hpp"
 #include "../../includes/HttpStatus.hpp"
 
-static HttpStatus::Code	matchStatus(std::string const& status) {
-	int code = std::atoi(status.c_str());
-
-	switch (code / 100) {
-		case 2:
-			switch (code) {
-				case 200:
-					return HttpStatus::OK;
-			}
-		break;
-		case 4:
-			switch (code) {
-				case 403:
-					return HttpStatus::FORBIDDEN;
-				case 404:
-					return HttpStatus::NOTFOUND;
-				case 405:
-					return HttpStatus::NOTALLOWED;
-			}
-	}
-	return HttpStatus::NOTFOUND;
-}
-
 void	addErrors(std::string const& error, ServerConfig& server) {
 	std::vector<std::string> splited = split(error, ',');
 
 	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
 		std::vector<std::string> error = split(*it, '=');
+		int code = std::atoi(error[0].c_str());
+		if (error[1][0] == '/')
+			error[1].erase(0, 1);
 
-		server.setErrors(std::make_pair(matchStatus(error[0]), error[1]));
+		server.insertError(code, server.getServerRoot() + error[1]);
 	}
 }
 
@@ -77,13 +57,21 @@ void	addRoutes(std::ifstream& file, ServerConfig& server) {
 
 		if (routeMap[splited[0]] == Route::ROUTE)
 			server.setRoutes(RouteConfig());
-		else if (routeMap[splited[0]] == Route::INDEX)
-			routes.back().setIndex(split(splited[1], ','));
-		else if (routeMap[splited[0]] == Route::REDIRECT)
+		else if (routeMap[splited[0]] == Route::INDEX) {
+			std::vector<std::string> indexes = split(splited[1], ',');
+
+			for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
+				if (*it->begin() == '/')
+					it->erase(it->begin());
+			}
+			routes.back().setIndex(indexes);
+		} else if (routeMap[splited[0]] == Route::REDIRECT)
 			addRedirect(splited[1], routes.back());
-		else if (routeMap[splited[0]] == Route::ROOT)
+		else if (routeMap[splited[0]] == Route::ROOT) {
+			if (*(splited[1].end() - 1) != '/')
+				splited[1].insert(splited[1].end(), '/');
 			routes.back().setRoot(splited[1]);
-		else if (routeMap[splited[0]] == Route::METHODS)
+		} else if (routeMap[splited[0]] == Route::METHODS)
 			addMethods(splited[1], routes.back());
 		else if (routeMap[splited[0]] == Route::LISTING)
 			routes.back().setDirList(splited[1] == "on");
