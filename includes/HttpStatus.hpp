@@ -6,6 +6,7 @@ namespace HttpStatus {
 		NOCONTENT = 204,
 		FORBIDDEN = 403,
 		NOTFOUND = 404,
-		NOTALLOWED = 405
+		NOTALLOWED = 405,
+		SERVERERR = 500
 	};
 };

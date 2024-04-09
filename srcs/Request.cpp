@@ -1,6 +1,5 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
-#include <unistd.h>
 #include <sstream>
 
 static std::vector<std::string> getRequestLineParams(std::string request) {
@@ -71,44 +70,62 @@ unsigned short getBitmaskFromMethod(Methods method) {
 	};
 }
 
-Response Request::runRequest() {
-	int status = 200;
-	bool failed = false;
-	struct stat statbuf;
+static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask) {
 	unsigned short methodBitmask = getBitmaskFromMethod(method);
-	stat(filePath.c_str(), &statbuf);
 
-	if (!(methodBitmask & _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask())) {
-		std::string* errPath = _serverConfigs.front().getFilePathFromStatusCode(405);
-		if (errPath)
-			return Response(405, *errPath);
-		return Response(405);
-	}
-	switch (fileGood(filePath.c_str())) {
+	return !(methodBitmask & allowedMethodsBitmask);
+}
+
+Response Request::runGet() {
+	struct stat statbuf;
+	std::string* errPagePath;
+	int status = HttpStatus::OK;
+
+	stat(filePath.c_str(), &statbuf);
+	switch (fileGood(this->filePath.c_str())) {
 		case ENOENT:
-			failed = true;
-			status = 404;
+			status = HttpStatus::NOTFOUND;
 			break;
 
 		case EACCES:
-			status = 403;
-			failed = true;
+			status = HttpStatus::FORBIDDEN;
 			break;
 
 		default:
 			break;
 	}
-	if (failed) {
-		std::string* errPath = _serverConfigs.front().getFilePathFromStatusCode(status);
-		if (errPath)
-			return Response(status, *errPath);
-		return Response(status);
+	if (status != HttpStatus::OK) {
+		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
 		return Response((*(filePath.end() - 1) != '/' ? 301 :
-		(_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403)),
-		filePath);
+		(_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403)), filePath);
 	}
 	return Response(200, filePath);
+}
+
+Response Request::runRequest() {
+	unsigned short allowedMethodsBitmask = _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask();
+
+	if (methodIsAllowed(method, allowedMethodsBitmask)) {
+		int status = HttpStatus::NOTALLOWED;
+		std::string* errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		return errPagePath ? Response(status, *errPagePath) : Response(status);
+	}
+	switch (method) {
+		case GET:
+			return runGet();
+
+		/* case POST: */
+		/* 	runPost(); */
+
+		/* case DELETE: */
+		/* 	runDelete(); */
+
+		default:
+			break;
+	}
+	return Response(200);
 }
