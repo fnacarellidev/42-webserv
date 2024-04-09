@@ -37,6 +37,10 @@ void	addMethods(std::string const& methods, RouteConfig& route) {
 void	addRedirect(std::string const& redirect, RouteConfig& route) {
 	std::vector<std::string> splited = split(redirect, '=');
 
+	if (*splited[0].begin() == '/')
+		splited[0].erase(splited[0].begin());
+	if (*splited[1].begin() == '/')
+		splited[1].erase(splited[1].begin());
 	route.setRedirect(std::make_pair(splited[0], splited[1]));
 }
 
