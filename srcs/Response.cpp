@@ -16,14 +16,23 @@ static std::string	generateDirectoryListing(const std::string &path) {
 	dirListing += "<a href=\"..\">../</a>\n";
 	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
 		std::string modTime = getLastModifiedOfFile(path + item->d_name);
+		std::string file = item->d_name;
 
-		dirListing += "<a href=\"" + std::string(item->d_name) + "\">" + std::string(item->d_name) + (item->d_type == DT_DIR ? "/" : "");
-		dirListing += "</a>";
+		dirListing += "<a href=\"" + file + "\">" + file;
 		if (item->d_type == DT_DIR) {
-			dirListing += "\t" + modTime + "\t-";
-		} else
-			dirListing += "\t" + modTime + "\t" + getFileSize(path + item->d_name);
-		dirListing += "\n";
+			dirListing += "/";
+			dirListing += "</a>";
+			dirListing.append(64 - file.size() - 1, ' ');
+			dirListing += modTime;
+			dirListing.append(19, ' ');
+			dirListing += "-\n";
+		} else {
+			dirListing += "</a>";
+			dirListing.append(64 - file.size(), ' ');
+			dirListing += modTime;
+			dirListing.append(20 - getFileSize(path + item->d_name).size(), ' ');
+			dirListing += getFileSize(path + item->d_name) + "\n";
+		}
 	}
 	closedir(dir);
 	dirListing += "</pre>\n<hr>\n</body>\n</html>\n";
