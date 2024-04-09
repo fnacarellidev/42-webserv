@@ -75,14 +75,33 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 	return !(methodBitmask & allowedMethodsBitmask);
 }
 
+bool Request::shouldRedirect() {
+	std::pair<std::string, std::string> redirect = _serverConfigs.front().getRoutes().front().getRedirect();
+
+	return file == redirect.first;
+}
+
 Response Request::runGet() {
 	struct stat statbuf;
 	std::string* errPagePath;
 	int status = HttpStatus::OK;
 
+	std::cout << "[DEBUG] FILEPATH: " << filePath << std::endl;
 	stat(filePath.c_str(), &statbuf);
+	if (shouldRedirect()) {
+		std::cout << "[DEBUG] REDIRECTING...\n";
+		std::string routeRoot = _serverConfigs.front().getRoutes().front().getRoot();
+		std::string redirectFile = _serverConfigs.front().getRoutes().front().getRedirect().second;
+		std::string redirectPath = routeRoot + redirectFile;
+
+		std::cout << redirectPath << std::endl;
+		if (stat(redirectPath.c_str(), &statbuf) == -1)
+			return Response(HttpStatus::NOTFOUND);
+		return Response(HttpStatus::MOVED_PERMANENTLY, redirectPath, "http://localhost:8080/" + redirectFile);
+	}
 	switch (fileGood(this->filePath.c_str())) {
 		case ENOENT:
+			std::cout << "Couldn't find " << filePath << std::endl;
 			status = HttpStatus::NOTFOUND;
 			break;
 
@@ -94,13 +113,15 @@ Response Request::runGet() {
 			break;
 	}
 	if (status != HttpStatus::OK) {
+		std::cout << "[DEBUG] STATUS DIFF OK\n";
 		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
 		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
+		std::cout << "[DEBUG] DETECTED DIR\n";
 		return Response((*(filePath.end() - 1) != '/' ? 301 :
-		(_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403)), filePath);
+					(_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403)), filePath);
 	}
 	return Response(200, filePath);
 }
