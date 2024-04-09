@@ -51,6 +51,7 @@ static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::str
 Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _serverConfigs(serverConfigs) {
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 
+	file = requestLineParams[REQUESTURI].erase(0, 1);
 	method = getMethod(requestLineParams[METHOD]);
 	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
 }
