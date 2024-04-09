@@ -55,13 +55,21 @@ void	addRoutes(std::ifstream& file, ServerConfig& server) {
 
 		if (routeMap[splited[0]] == Route::ROUTE)
 			server.setRoutes(RouteConfig());
-		else if (routeMap[splited[0]] == Route::INDEX)
-			routes.back().setIndex(split(splited[1], ','));
-		else if (routeMap[splited[0]] == Route::REDIRECT)
+		else if (routeMap[splited[0]] == Route::INDEX) {
+			std::vector<std::string> indexes = split(splited[1], ',');
+
+			for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
+				if (*it->begin() == '/')
+					it->erase(it->begin());
+			}
+			routes.back().setIndex(indexes);
+		} else if (routeMap[splited[0]] == Route::REDIRECT)
 			addRedirect(splited[1], routes.back());
-		else if (routeMap[splited[0]] == Route::ROOT)
+		else if (routeMap[splited[0]] == Route::ROOT) {
+			if (*(splited[1].end() - 1) != '/')
+				splited[1].insert(splited[1].end() - 1, '/');
 			routes.back().setRoot(splited[1]);
-		else if (routeMap[splited[0]] == Route::METHODS)
+		} else if (routeMap[splited[0]] == Route::METHODS)
 			addMethods(splited[1], routes.back());
 		else if (routeMap[splited[0]] == Route::LISTING)
 			routes.back().setDirList(splited[1] == "on");
