@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <list>
+#include <unistd.h>
 #include "Response.hpp"
 #include "ServerConfig.hpp"
 
