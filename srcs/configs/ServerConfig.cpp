@@ -13,6 +13,12 @@ std::map<int, std::string> ServerConfig::getErrors() const {
 	return _errors;
 }
 
+std::string *ServerConfig::getFilePathFromStatusCode(int status) {
+	if (_errors.find(status) == _errors.end())
+		return NULL;
+	return &_errors[status];
+}
+
 std::vector<RouteConfig> ServerConfig::getRoutes() const {
 	return _routes;
 }
