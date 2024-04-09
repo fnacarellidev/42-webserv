@@ -44,8 +44,6 @@ static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::str
 				return root + *it;
 		}
 	}
-	if (root[root.size() - 1] == '/')
-		root.erase(root.size() - 1);
 
 	return root + requestUri;
 }
