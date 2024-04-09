@@ -93,17 +93,13 @@ void	Config::addServers(char* filename) throw (std::runtime_error) {
 		else if (serverMap[splited[0]] == Server::LIMIT) {
 			this->servers.back().setLimit(std::strtoull(splited[1].c_str(), 0, 10) == 0 ?
 			std::numeric_limits<size_t>::max() : std::strtoull(splited[1].c_str(), 0, 10));
-		} else if (serverMap[splited[0]] == Server::ERROR) {
-			std::vector<std::string> errors = split(splited[1], ',');
-			for (std::vector<std::string>::iterator it = errors.begin(); it != errors.end(); ++it) {
-				std::string::iterator itEqual = std::find(it->begin(), it->end(), '=');
-				if (*(itEqual + 1) == '/')
-					it->erase(itEqual + 1);
-			}
+		} else if (serverMap[splited[0]] == Server::ERROR)
 			addErrors(splited[1], this->servers.back());
-		}
-		else if (serverMap[splited[0]] == Server::ROOT)
+		else if (serverMap[splited[0]] == Server::ROOT) {
+			if (*(splited[1].end() - 1) != '/')
+				splited[1].insert(splited[1].end(), '/');
 			servers.back().setServerRoot(splited[1]);
+		}
 		else
 			addRoutes(file, this->servers.back());
 	}

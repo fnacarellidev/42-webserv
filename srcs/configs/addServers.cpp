@@ -7,6 +7,8 @@ void	addErrors(std::string const& error, ServerConfig& server) {
 
 	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
 		std::vector<std::string> error = split(*it, '=');
+		if (error[1][0] == '/')
+			error[1].erase(0, 1);
 		int code = std::atoi(error[0].c_str());
 
 		server.insertError(code, error[1]);
@@ -67,7 +69,7 @@ void	addRoutes(std::ifstream& file, ServerConfig& server) {
 			addRedirect(splited[1], routes.back());
 		else if (routeMap[splited[0]] == Route::ROOT) {
 			if (*(splited[1].end() - 1) != '/')
-				splited[1].insert(splited[1].end() - 1, '/');
+				splited[1].insert(splited[1].end(), '/');
 			routes.back().setRoot(splited[1]);
 		} else if (routeMap[splited[0]] == Route::METHODS)
 			addMethods(splited[1], routes.back());
