@@ -7,11 +7,11 @@ void	addErrors(std::string const& error, ServerConfig& server) {
 
 	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
 		std::vector<std::string> error = split(*it, '=');
+		int code = std::atoi(error[0].c_str());
 		if (error[1][0] == '/')
 			error[1].erase(0, 1);
-		int code = std::atoi(error[0].c_str());
 
-		server.insertError(code, error[1]);
+		server.insertError(code, server.getServerRoot() + error[1]);
 	}
 }
 
