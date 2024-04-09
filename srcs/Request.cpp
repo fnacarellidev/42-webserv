@@ -77,34 +77,25 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 	return !(methodBitmask & allowedMethodsBitmask);
 }
 
-Response Request::runRequest() {
-	int status = HttpStatus::OK;
+Response Request::runGet() {
 	struct stat statbuf;
-	bool failed = false;
 	std::string* errPagePath;
-	unsigned short allowedMethodsBitmask = _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask();
+	int status = HttpStatus::OK;
 
 	stat(filePath.c_str(), &statbuf);
-	if (methodIsAllowed(method, allowedMethodsBitmask)) {
-		status = HttpStatus::NOTALLOWED;
-		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
-	}
-	switch (fileGood(filePath.c_str())) {
+	switch (fileGood(this->filePath.c_str())) {
 		case ENOENT:
-			failed = true;
 			status = HttpStatus::NOTFOUND;
 			break;
 
 		case EACCES:
 			status = HttpStatus::FORBIDDEN;
-			failed = true;
 			break;
 
 		default:
 			break;
 	}
-	if (failed) {
+	if (status != HttpStatus::OK) {
 		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
 		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
@@ -115,4 +106,28 @@ Response Request::runRequest() {
 		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 	return Response(200, filePath);
+}
+
+Response Request::runRequest() {
+	unsigned short allowedMethodsBitmask = _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask();
+
+	if (methodIsAllowed(method, allowedMethodsBitmask)) {
+		int status = HttpStatus::NOTALLOWED;
+		std::string* errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		return errPagePath ? Response(status, *errPagePath) : Response(status);
+	}
+	switch (method) {
+		case GET:
+			return runGet();
+
+		/* case POST: */
+		/* 	runPost(); */
+
+		/* case DELETE: */
+		/* 	runDelete(); */
+
+		default:
+			break;
+	}
+	return Response(200);
 }
