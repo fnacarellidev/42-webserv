@@ -105,9 +105,13 @@ Response Request::runRequest() {
 		return Response(status);
 	}
 
-	if (S_ISDIR(statbuf.st_mode) && *(filePath.end() - 1) != '/')
-		return Response(301, filePath.append("/"));
-	if (S_ISDIR(statbuf.st_mode) && *(filePath.end() - 1) == '/')
-		return Response(200, filePath);
+	if (S_ISDIR(statbuf.st_mode)) {
+		return Response((*(filePath.end() - 1) != '/' ? 301 :
+		(_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403)),
+		filePath);
+	}
+	// 	return Response(301, filePath.append("/"));
+	// if (S_ISDIR(statbuf.st_mode) && *(filePath.end() - 1) == '/')
+	// 	return Response((_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403), filePath);
 	return Response(200, filePath);
 }
