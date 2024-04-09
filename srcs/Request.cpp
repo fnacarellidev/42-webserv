@@ -71,27 +71,33 @@ unsigned short getBitmaskFromMethod(Methods method) {
 	};
 }
 
-Response Request::runRequest() {
-	int status = 200;
-	bool failed = false;
-	struct stat statbuf;
+static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask) {
 	unsigned short methodBitmask = getBitmaskFromMethod(method);
-	stat(filePath.c_str(), &statbuf);
 
-	if (!(methodBitmask & _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask())) {
-		std::string* errPath = _serverConfigs.front().getFilePathFromStatusCode(405);
-		if (errPath)
-			return Response(405, *errPath);
-		return Response(405);
+	return !(methodBitmask & allowedMethodsBitmask);
+}
+
+Response Request::runRequest() {
+	int status = HttpStatus::OK;
+	struct stat statbuf;
+	bool failed = false;
+	std::string* errPagePath;
+	unsigned short allowedMethodsBitmask = _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask();
+
+	stat(filePath.c_str(), &statbuf);
+	if (methodIsAllowed(method, allowedMethodsBitmask)) {
+		status = HttpStatus::NOTALLOWED;
+		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 	switch (fileGood(filePath.c_str())) {
 		case ENOENT:
 			failed = true;
-			status = 404;
+			status = HttpStatus::NOTFOUND;
 			break;
 
 		case EACCES:
-			status = 403;
+			status = HttpStatus::FORBIDDEN;
 			failed = true;
 			break;
 
@@ -99,17 +105,14 @@ Response Request::runRequest() {
 			break;
 	}
 	if (failed) {
-		std::string* errPath = _serverConfigs.front().getFilePathFromStatusCode(status);
-		if (errPath)
-			return Response(status, *errPath);
-		return Response(status);
+		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
-		std::string* errPath = _serverConfigs.front().getFilePathFromStatusCode(500);
-		if (errPath)
-			return Response(status, *errPath);
-		return Response(500);
+		status = HttpStatus::SERVERERR;
+		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 	return Response(200, filePath);
 }
