@@ -79,6 +79,8 @@ void	addRoutes(std::ifstream& file, ServerConfig& server) {
 			addMethods(splited[1], routes.back());
 		else if (routeMap[splited[0]] == Route::LISTING)
 			routes.back().setDirList(splited[1] == "on");
+		else if (routeMap[splited[0]] == Route::PATH)
+			routes.back()._path = (splited[1][0] == '/' ? splited[1].erase(0, 1) : splited[1]); 
 	}
 	server.getRoutes().erase(server.getRoutes().end() - 1);
 	server.setRoutes(routes);
