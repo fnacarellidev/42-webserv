@@ -76,6 +76,32 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 	return !(methodBitmask & allowedMethodsBitmask);
 }
 
+static bool dirExists(const std::string &dir) {
+	struct stat statbuff;
+
+	if (stat(dir.c_str(), &statbuff) == 0)
+		return (true);
+	return (false);
+}
+
+static std::string	getDir(const std::string &fullPath) {
+	if (fullPath[fullPath.size() - 1] == '/' || fullPath.rfind("/") == std::string::npos)
+		return (fullPath);
+	return (fullPath.substr(0, fullPath.rfind("/")));
+}
+
+Response Request::runPost() {
+	if (!dirExists(getDir(this->filePath)))
+		return (Response(404));
+
+	std::cout << "File Path: " << this->filePath << std::endl;
+	std::ofstream	newFile(this->filePath.c_str());
+	newFile.write("oi", 3);
+	newFile.close();
+
+	return Response(201);
+}
+
 Response Request::runGet() {
 	struct stat statbuf;
 	std::string* errPagePath;
@@ -118,8 +144,8 @@ Response Request::runRequest() {
 		case GET:
 			return runGet();
 
-		/* case POST: */
-		/* 	runPost(); */
+		case POST:
+			return runPost();
 
 		/* case DELETE: */
 		/* 	runDelete(); */

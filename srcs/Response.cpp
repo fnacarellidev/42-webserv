@@ -244,8 +244,8 @@ void	Response::_success() {
 			}
 			break ;
 		case 201:
-			this->addNewField("Location:", "/path/to/some?");
-			this->_body = getFileContent(this->_bodyFile);
+			this->addNewField("Content-Type", getContentType(this->_bodyFile));
+			this->_body = "File created";
 			break ;
 		case 204:
 			break ;
