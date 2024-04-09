@@ -72,21 +72,37 @@ unsigned short getBitmaskFromMethod(Methods method) {
 }
 
 Response Request::runRequest() {
+	int status = 200;
+	bool failed = false;
 	struct stat statbuf;
 	unsigned short methodBitmask = getBitmaskFromMethod(method);
 	stat(filePath.c_str(), &statbuf);
 
-	if (!(methodBitmask & _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask()))
+	if (!(methodBitmask & _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask())) {
+		std::string* errPath = _serverConfigs.front().getFilePathFromStatusCode(405);
+		if (errPath)
+			return Response(405, *errPath);
 		return Response(405);
+	}
 	switch (fileGood(filePath.c_str())) {
 		case ENOENT:
-			return Response(404);
+			failed = true;
+			status = 404;
+			break;
 
 		case EACCES:
-			return Response (403);
+			status = 403;
+			failed = true;
+			break;
 
 		default:
 			break;
+	}
+	if (failed) {
+		std::string* errPath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		if (errPath)
+			return Response(status, *errPath);
+		return Response(status);
 	}
 
 	if (S_ISDIR(statbuf.st_mode) && *(filePath.end() - 1) != '/')

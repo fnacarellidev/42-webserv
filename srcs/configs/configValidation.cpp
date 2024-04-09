@@ -106,6 +106,8 @@ std::map<std::string, Server::Keywords>& serverMap) {
 				error = validateLimitConfig(splited[1]);
 			else if (key == Server::PORT)
 				error = validatePortConfig(splited[1]);
+			else if (key == Server::ROOT)
+				error = splited.at(1)[0] != '/';
 			if (error)
 				return error;
 		}
