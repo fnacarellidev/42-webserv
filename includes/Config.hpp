@@ -24,7 +24,8 @@ namespace Server {
 		NAMES,
 		LIMIT,
 		ERROR,
-		ROUTE
+		ROUTE,
+		ROOT
 	};
 };
 
@@ -43,7 +44,6 @@ namespace Route {
 class Config {
 	public:
 		std::vector<ServerConfig>	servers;
-
 		ServerConfig&	findByHostNamePort(std::string const& host,
 			std::string const* names,
 			size_t const size,

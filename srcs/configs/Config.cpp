@@ -10,6 +10,7 @@ std::ostream&	operator<<(std::ostream& o, const Config& webserv) {
 		o << "\tport: " << its->getPort() << std::endl;
 		o << "\tlimit: " << its->getLimit() << std::endl;
 		o << "\thost: " << its->getHost() << std::endl;
+		o << "\troot: " << its->getServerRoot() << std::endl;
 
 		std::map<int, std::string> erros = its->getErrors();
 		std::vector<std::string> nomes = its->getNames();
@@ -94,9 +95,11 @@ void	Config::addServers(char* filename) throw (std::runtime_error) {
 			std::numeric_limits<size_t>::max() : std::strtoull(splited[1].c_str(), 0, 10));
 		} else if (serverMap[splited[0]] == Server::ERROR)
 			addErrors(splited[1], this->servers.back());
+		else if (serverMap[splited[0]] == Server::ROOT)
+			servers.back().setServerRoot(splited[1]);
 		else
 			addRoutes(file, this->servers.back());
-		}
+	}
 	file.close();
 }
 

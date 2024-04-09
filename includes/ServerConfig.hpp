@@ -18,6 +18,7 @@ class ServerConfig {
 	private:
 		std::map<int, std::string>	_errors;
 		std::vector<RouteConfig>	_routes;
+		std::string _root;
 		unsigned int	_port;
 		std::vector<std::string>	_serverNames;
 		std::string	_host;
@@ -45,4 +46,7 @@ class ServerConfig {
 		void	setPort(unsigned int port);
 		void	setServerNames(std::vector<std::string> serverNames);
 		void	setServerNames(std::string serverName);
+		void	setServerRoot(std::string serverRoot);
+		std::string	getServerRoot();
+		std::string *getFilePathFromStatusCode(int status);
 };
