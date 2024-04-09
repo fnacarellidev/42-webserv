@@ -1,5 +1,40 @@
 #include "../includes/Response.hpp"
 
+static std::string	generateDirectoryListing(const std::string &path) {
+	std::string	dirListing;
+	DIR	*dir = opendir(path.c_str());
+
+	readdir(dir);
+	readdir(dir);
+	dirListing += "<html>\n<head>\n<title>Directory listing for " + path + "</title>\n</head>\n<body>\n";
+	dirListing += "<h1>Directory listing for " + path + "</h1>\n";
+	dirListing += "<hr><pre>\n";
+	dirListing += "<a href=\"..\">../</a>\n";
+	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
+		std::string modTime = getLastModifiedOfFile(path + item->d_name);
+		std::string file = item->d_name;
+
+		dirListing += "<a href=\"" + file + "\">" + file;
+		if (item->d_type == DT_DIR) {
+			dirListing += "/";
+			dirListing += "</a>";
+			dirListing.append(64 - file.size() - 1, ' ');
+			dirListing += modTime;
+			dirListing.append(19, ' ');
+			dirListing += "-\n";
+		} else {
+			dirListing += "</a>";
+			dirListing.append(64 - file.size(), ' ');
+			dirListing += modTime;
+			dirListing.append(20 - getFileSize(path + item->d_name).size(), ' ');
+			dirListing += getFileSize(path + item->d_name) + "\n";
+		}
+	}
+	closedir(dir);
+	dirListing += "</pre>\n<hr>\n</body>\n</html>\n";
+	return (dirListing);
+}
+
 static std::string	getErrInformation(int status)
 {
 	switch (status) {
@@ -98,7 +133,7 @@ Response::Response(int status) {
 
 Response::Response(int status, std::string bodyFile) {
 	this->_status = status;
-	this->_bodyFile = bodyFile;
+	this->_bodyFile = (status == 301 ? bodyFile.append("/") : bodyFile);
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
@@ -150,7 +185,12 @@ size_t		Response::size() const {
 
 std::string	Response::getContentType(const std::string &filename) const {
 	std::map<std::string, std::string>::const_iterator	it;
-	std::string	extension = filename.substr(filename.find_last_of("."));
+	std::string	extension;
+	if (filename.empty())
+		return ("text/plain");
+	if (filename.find_last_of(".") == std::string::npos)
+		return (*(filename.end() - 1) == '/' ? "text/html" : "text/plain");
+	extension = filename.substr(filename.find_last_of("."));
 	it = this->_mimeTypes.find(extension);
 	if (it != this->_mimeTypes.end())
 		return (it->second);
@@ -193,10 +233,15 @@ void	Response::_success() {
 		return ;
 	switch (this->_status) {
 		case 200:
-			this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
-			this->addNewField("Content-Length", getFileSize(this->_bodyFile));
-			this->addNewField("Content-Type", getContentType(this->_bodyFile));
-			this->_body = getFileContent(this->_bodyFile);
+			if (*(this->_bodyFile.end() - 1) != '/') {
+				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
+				this->addNewField("Content-Length", getFileSize(this->_bodyFile));
+				this->addNewField("Content-Type", getContentType(this->_bodyFile));
+				this->_body = getFileContent(this->_bodyFile);
+			} else {
+				this->addNewField("Content-Type", "text/html");
+				this->_body = generateDirectoryListing(this->_bodyFile);
+			}
 			break ;
 		case 201:
 			this->addNewField("Location:", "/path/to/some?");

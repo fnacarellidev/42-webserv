@@ -4,6 +4,9 @@
 #include <vector>
 #include <ctime>
 #include <map>
+#include <dirent.h>
+#include <sys/types.h>
+#include <iomanip>
 #include "utils.hpp"
 #include "errorPages.hpp"
 #include "ServerConfig.hpp"

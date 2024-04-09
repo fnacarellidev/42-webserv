@@ -100,9 +100,8 @@ Response Request::runGet() {
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
-		status = HttpStatus::SERVERERR;
-		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+		return Response((*(filePath.end() - 1) != '/' ? 301 :
+		(_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403)), filePath);
 	}
 	return Response(200, filePath);
 }
