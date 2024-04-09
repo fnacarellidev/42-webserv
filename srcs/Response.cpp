@@ -150,7 +150,12 @@ size_t		Response::size() const {
 
 std::string	Response::getContentType(const std::string &filename) const {
 	std::map<std::string, std::string>::const_iterator	it;
-	std::string	extension = filename.substr(filename.find_last_of("."));
+	std::string	extension; //filename.substr(filename.find_last_of("."));
+	if (filename.empty())
+		return ("text/plain");
+	if (filename.find_last_of(".") == std::string::npos)
+		return (*(filename.end() - 1) == '/' ? "text/html" : "text/plain");
+	extension = filename.substr(filename.find_last_of("."));
 	it = this->_mimeTypes.find(extension);
 	if (it != this->_mimeTypes.end())
 		return (it->second);
