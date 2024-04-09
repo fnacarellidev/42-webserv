@@ -1,13 +1,9 @@
 #include "../includes/Response.hpp"
-#include <dirent.h>
-#include <sys/types.h>
-#include <iomanip>
 
 static std::string	generateDirectoryListing(const std::string &path) {
 	std::string	dirListing;
 	DIR	*dir = opendir(path.c_str());
 
-	// skip ./ and ../
 	readdir(dir);
 	readdir(dir);
 	dirListing += "<html>\n<head>\n<title>Directory listing for " + path + "</title>\n</head>\n<body>\n";
@@ -189,7 +185,7 @@ size_t		Response::size() const {
 
 std::string	Response::getContentType(const std::string &filename) const {
 	std::map<std::string, std::string>::const_iterator	it;
-	std::string	extension; //filename.substr(filename.find_last_of("."));
+	std::string	extension;
 	if (filename.empty())
 		return ("text/plain");
 	if (filename.find_last_of(".") == std::string::npos)
