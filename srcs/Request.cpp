@@ -89,7 +89,9 @@ Response Request::runRequest() {
 			break;
 	}
 
-	if (S_ISDIR(statbuf.st_mode))
-		return Response(500);
+	if (S_ISDIR(statbuf.st_mode) && *(filePath.end() - 1) != '/')
+		return Response(301, filePath.append("/"));
+	if (S_ISDIR(statbuf.st_mode) && *(filePath.end() - 1) == '/')
+		return Response(200, filePath);
 	return Response(200, filePath);
 }
