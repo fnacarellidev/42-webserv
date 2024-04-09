@@ -111,20 +111,15 @@ Response::Response(int status) {
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
+	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
 	switch (status / 100) {
-		// case 1: // 1xx
-		//	this->_informatiol
-		// 	break ;
-		case 2: // 2xx
+		case 2:
 			this->_success();
 			break ;
-		case 3: // 3xx
-			this->_redirection();
-			break ;
-		case 4: // 4xx
+		case 4:
 			this->_error();
 			break ;
-		case 5: // 5xx
+		case 5:
 			this->_serverError();
 			break ;
 	}
@@ -137,25 +132,31 @@ Response::Response(int status, std::string bodyFile) {
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
+	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
 	switch (status / 100) {
-		// case 1: // 1xx
-		//	this->_informatiol
-		// 	break ;
-		case 2: // 2xx
+		case 2:
 			this->_success();
 			break ;
-		case 3: // 3xx
-			this->_redirection();
-			break ;
-		case 4: // 4xx
+		case 4:
 			this->_error();
 			break ;
-		case 5: // 5xx
+		case 5:
 			this->_serverError();
 			break ;
 	}
 	this->generateFullResponse();
 }
+
+Response::Response(int status, std::string bodyFile, std::string locationHeader) {
+	this->_status = status;
+	this->_bodyFile = (status == 301 ? bodyFile.append("/") : bodyFile);
+	this->_mimeTypes = defaultMimeTypes();
+	this->_statusMessages = defaultStatusMessages();
+	this->defineStatusLine(status);
+	this->_redirection(locationHeader);
+	this->generateFullResponse();
+}
+
 
 Response	&Response::operator=(const Response &other) {
 	if (this != &other) {
@@ -252,21 +253,12 @@ void	Response::_success() {
 	}
 }
 
-void	Response::_redirection() {
+void	Response::_redirection(std::string locationHeader) {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	if (this->_bodyFile.empty())
 		return ;
-	switch (this->_status) {
-		case 301:
-			this->addNewField("Location:", "/path/to/some?");
-			break ;
-		case 302:
-			this->addNewField("Location:", "/path/to/some?");
-			break ;
-		case 304:
-			break ;
-	}
+	addNewField("Location", locationHeader);
 }
 
 void	Response::_error() {
