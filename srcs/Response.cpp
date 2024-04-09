@@ -239,7 +239,7 @@ void	Response::_success() {
 		case 200:
 			if (*(this->_bodyFile.end() - 1) != '/') {
 				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
-				this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
+				this->addNewField("Content-Length", getFileSize(this->_bodyFile));
 				this->addNewField("Content-Type", getContentType(this->_bodyFile));
 				this->_body = getFileContent(this->_bodyFile);
 			} else {
@@ -278,12 +278,12 @@ void	Response::_error() {
 	this->addNewField("Server", SERVER_NAME);
 	if (!this->_bodyFile.empty()) {
 		this->_body = getFileContent(this->_bodyFile);
-		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
+		this->addNewField("Content-Length", getFileSize(this->_bodyFile));
 		this->addNewField("Content-Type", getContentType(this->_bodyFile));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
-		this->addNewField("Content-Lenght", toString(this->_body.size()));
+		this->addNewField("Content-Length", toString(this->_body.size()));
 		this->addNewField("Content-Type", "text/html");
 	}
 }
@@ -293,12 +293,12 @@ void	Response::_serverError() {
 	this->addNewField("Server", SERVER_NAME);
 	if (!this->_bodyFile.empty()) {
 		this->_body = getFileContent(this->_bodyFile);
-		this->addNewField("Content-Lenght", getFileSize(this->_bodyFile));
+		this->addNewField("Content-Length", getFileSize(this->_bodyFile));
 		this->addNewField("Content-Type", getContentType(this->_bodyFile));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
-		this->addNewField("Content-Lenght", toString(this->_body.size()));
+		this->addNewField("Content-Length", toString(this->_body.size()));
 		this->addNewField("Content-Type", "text/html");
 	}
 }
