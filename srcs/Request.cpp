@@ -142,12 +142,10 @@ Response Request::runPost() {
 		default:
 			break ;
 	}
-
 	std::string content = getContentOfRequest(this->_fullRequest);
 	std::ofstream	newFile(this->filePath.c_str());
 	newFile.write(content.c_str(), content.length());
 	newFile.close();
-
 	return Response(201);
 }
 
