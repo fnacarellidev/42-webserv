@@ -104,7 +104,7 @@ static bool pathExists(const std::string &dir) {
 	return (false);
 }
 
-static std::string	getPrevDir(const std::string &fullPath) {
+static std::string	getPrevPath(const std::string &fullPath) {
 	if (fullPath[fullPath.size() - 1] == '/' || fullPath.rfind("/") == std::string::npos)
 		return (fullPath);
 	return (fullPath.substr(0, fullPath.rfind("/")));
@@ -131,8 +131,8 @@ Response Request::runPost() {
 		default:
 			return (Response(409));
 	}
-	std::string prevDir = getPrevDir(filePath);
-	switch (checkPath(prevDir)) {
+	std::string prevPath = getPrevPath(filePath);
+	switch (checkPath(prevPath)) {
 		case ENOENT:
 			return (Response(404));
 		case EACCES:
