@@ -20,6 +20,7 @@ enum RequestLine {
 
 class Request {
 	private:
+		std::string	_fullRequest;
 		std::vector<ServerConfig> _serverConfigs;
 		Response runGet();
 		Response runPost();

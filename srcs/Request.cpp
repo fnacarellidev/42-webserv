@@ -1,6 +1,7 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 #include <sstream>
+#include <cstdlib>
 
 static std::vector<std::string> getRequestLineParams(std::string request) {
 	std::string firstLine;
@@ -53,6 +54,7 @@ static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::str
 Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _serverConfigs(serverConfigs) {
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 
+	this->_fullRequest = request;
 	method = getMethod(requestLineParams[METHOD]);
 	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
 }
@@ -76,7 +78,13 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 	return !(methodBitmask & allowedMethodsBitmask);
 }
 
-static bool dirExists(const std::string &dir) {
+static struct stat	pathInfo(const std::string &path) {
+	struct stat info;
+	stat(path.c_str(), &info);
+	return (info);
+}
+
+static bool pathExists(const std::string &dir) {
 	struct stat statbuff;
 
 	if (stat(dir.c_str(), &statbuff) == 0)
@@ -90,13 +98,35 @@ static std::string	getDir(const std::string &fullPath) {
 	return (fullPath.substr(0, fullPath.rfind("/")));
 }
 
+static std::string	getContentOfRequest(std::string fullRequest) {
+	std::string			line;
+	std::string			content;
+	std::stringstream	ss(fullRequest);
+
+	while (std::getline(ss, line) && line != "\r") {
+		continue ;
+	}
+	while (std::getline(ss, line)) {
+		content += line;
+	}
+	return (content);
+}
+
 Response Request::runPost() {
-	if (!dirExists(getDir(this->filePath)))
+	std::string directoryPath = getDir(this->filePath);
+	if (!pathExists(directoryPath) || !S_ISDIR(pathInfo(directoryPath.c_str()).st_mode))
 		return (Response(404));
 
-	std::cout << "File Path: " << this->filePath << std::endl;
+	if (S_ISDIR(pathInfo(this->filePath.c_str()).st_mode))
+		return (Response(409));
+
+	if (pathExists(this->filePath))
+		return (Response(200));
+
+	std::string content = getContentOfRequest(this->_fullRequest);
+
 	std::ofstream	newFile(this->filePath.c_str());
-	newFile.write("oi", 3);
+	newFile.write(content.c_str(), content.length());
 	newFile.close();
 
 	return Response(201);
