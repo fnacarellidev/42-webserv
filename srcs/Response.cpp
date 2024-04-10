@@ -239,13 +239,15 @@ void	Response::addNewField(std::string key, std::string value) {
 }
 
 void	Response::_success() {
+	struct stat fileInfo;
+	stat(this->_bodyFile.c_str(), &fileInfo);
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	if (this->_bodyFile.empty())
 		return ;
 	switch (this->_status) {
 		case 200:
-			if (*(this->_bodyFile.end() - 1) != '/') {
+			if (!S_ISDIR(fileInfo.st_mode)){
 				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
 				this->addNewField("Content-Length", getFileSize(this->_bodyFile));
 				this->addNewField("Content-Type", getContentType(this->_bodyFile));
