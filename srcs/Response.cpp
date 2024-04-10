@@ -99,6 +99,7 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	statusMessages[404] = "Not Found";
 	statusMessages[405] = "Method Not Allowed";
 	statusMessages[408] = "Request Timeout";
+	statusMessages[409] = "Conflict";
 	statusMessages[500] = "Internal Server Error";
 	statusMessages[502] = "Bad Gateway";
 	statusMessages[503] = "Service Unavailable";
