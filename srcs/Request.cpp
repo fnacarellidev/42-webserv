@@ -1,7 +1,5 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
-#include <sstream>
-#include <cstdlib>
 
 static std::vector<std::string> getRequestLineParams(std::string request) {
 	std::string firstLine;
