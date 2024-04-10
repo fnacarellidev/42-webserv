@@ -15,7 +15,7 @@
 #define DEFAULT_PORT 80
 
 class ServerConfig {
-	private:
+	public:
 		std::map<int, std::string>	_errors;
 		std::vector<RouteConfig>	_routes;
 		std::string _root;
@@ -29,7 +29,6 @@ class ServerConfig {
 	*	"Make it work with POST and GET methods."???????
 	*	accept uploaded file... only if POST is set? where to save them?
 	*/
-	public:
 		ServerConfig();
 		std::map<int, std::string> getErrors() const;
 		std::vector<RouteConfig> getRoutes() const;
