@@ -78,26 +78,6 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 	return !(methodBitmask & allowedMethodsBitmask);
 }
 
-static struct stat	pathInfo(const std::string &path) {
-	struct stat info;
-	stat(path.c_str(), &info);
-	return (info);
-}
-
-static bool pathExists(const std::string &dir) {
-	struct stat statbuff;
-
-	if (stat(dir.c_str(), &statbuff) == 0)
-		return (true);
-	return (false);
-}
-
-static std::string	getDir(const std::string &fullPath) {
-	if (fullPath[fullPath.size() - 1] == '/' || fullPath.rfind("/") == std::string::npos)
-		return (fullPath);
-	return (fullPath.substr(0, fullPath.rfind("/")));
-}
-
 static std::string	getContentOfRequest(std::string fullRequest) {
 	std::string			line;
 	std::string			content;
@@ -112,19 +92,60 @@ static std::string	getContentOfRequest(std::string fullRequest) {
 	return (content);
 }
 
+static struct stat	pathInfo(const std::string &path) {
+	struct stat info;
+	stat(path.c_str(), &info);
+	return (info);
+}
+
+static bool pathExists(const std::string &dir) {
+	struct stat statbuff;
+
+	if (stat(dir.c_str(), &statbuff) == 0)
+		return (true);
+	return (false);
+}
+
+static std::string	getPrevDir(const std::string &fullPath) {
+	if (fullPath[fullPath.size() - 1] == '/' || fullPath.rfind("/") == std::string::npos)
+		return (fullPath);
+	return (fullPath.substr(0, fullPath.rfind("/")));
+}
+
+static int	checkPath(std::string &path) {
+	if (!pathExists(path))
+		return (ENOENT);
+	if (access(path.c_str(), R_OK) != 0)
+		return (EACCES);
+	if (!S_ISDIR(pathInfo(path.c_str()).st_mode))
+		return (ENOTDIR);
+	return (0);
+}
+
 Response Request::runPost() {
-	std::string directoryPath = getDir(this->filePath);
-	if (!pathExists(directoryPath) || !S_ISDIR(pathInfo(directoryPath.c_str()).st_mode))
-		return (Response(404));
-
-	if (S_ISDIR(pathInfo(this->filePath.c_str()).st_mode))
-		return (Response(409));
-
-	if (pathExists(this->filePath))
-		return (Response(200));
+	switch (checkPath(this->filePath)) {
+		case ENOENT:
+			break ;
+		case EACCES:
+			return (Response(403));
+		case ENOTDIR:
+			return (Response(200));
+		default:
+			return (Response(409));
+	}
+	std::string prevDir = getPrevDir(filePath);
+	switch (checkPath(prevDir)) {
+		case ENOENT:
+			return (Response(404));
+		case EACCES:
+			return (Response(403));
+		case ENOTDIR:
+			return (Response(400));
+		default:
+			break ;
+	}
 
 	std::string content = getContentOfRequest(this->_fullRequest);
-
 	std::ofstream	newFile(this->filePath.c_str());
 	newFile.write(content.c_str(), content.length());
 	newFile.close();
