@@ -27,8 +27,18 @@ int main(int argc, char **argv) {
 	char buffer[BUFFER_SIZE] = { 0 };
 	socklen_t addrLen = sizeof(sockAddr);
 	int opt = 1;
-	if (argc == 0)
+	Config config;
+
+	if (argc > 2) {
+		std::cerr << "Usage: " << argv[0] << " [config file]" << std::endl;
 		exit (1);
+	}
+	if (argc == 1)
+		config.servers.push_back(ServerConfig());
+	else if (argc == 2 && config.configIsValid(argv[1]))
+		config.addServers(argv[1]);
+	else
+		exit(2);
 
 	if (serverFd < 0) {
 		perror("socket failed");
@@ -40,7 +50,7 @@ int main(int argc, char **argv) {
 	}
 	// memset(&sockAddr, 0, sizeof(sockAddr));
 	sockAddr.sa_family = AF_INET;
-	unsigned short port = htons(8080);
+	unsigned short port = htons(config.servers.front().getPort());
 	memcpy(&sockAddr.sa_data, &port, sizeof(port));
 	if (bind(serverFd, &sockAddr, sizeof(sockAddr)) < 0) {
 		perror("bind failed");
@@ -65,9 +75,6 @@ int main(int argc, char **argv) {
 		buffer[ret] = 0;
 		stringstream copy(buffer);
 		string line;
-		Config config;
-
-		config.addServers(argv[1]);
 
 		Request req(buffer, config.servers);
 		Response res = req.runRequest();
