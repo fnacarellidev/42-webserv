@@ -32,10 +32,9 @@ int    fileGood(const char *filePath) {
 	return 0;
 }
 
-static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::string requestUri) {
-	std::vector<RouteConfig> routeConfigs = serverConfigs.front().getRoutes();
-	std::string root = routeConfigs.front().getRoot();
-	std::vector<std::string> indexes = routeConfigs.front().getIndex();
+static std::string getFilePath(RouteConfig *route, std::string requestUri) {
+	std::string root = route->getRoot();
+	std::vector<std::string> indexes = route->getIndex();
 
 	if (requestUri == "/") {
 		for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
@@ -52,9 +51,11 @@ static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::str
 
 Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _serverConfigs(serverConfigs) {
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
+	std::string requestUri = requestLineParams[REQUESTURI];
 
 	method = getMethod(requestLineParams[METHOD]);
-	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
+	_route = _serverConfigs.front().getRouteByPath(requestUri);
+	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
 }
 
 unsigned short getBitmaskFromMethod(Methods method) {
@@ -105,8 +106,12 @@ Response Request::runGet() {
 }
 
 Response Request::runRequest() {
-	unsigned short allowedMethodsBitmask = _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask();
+	unsigned short allowedMethodsBitmask = _route->getAcceptMethodsBitmask();
 
+	if (!_route) {
+		std::cout << "[DEBUG] No match for this route\n";
+		return Response(404);
+	}
 	if (methodIsAllowed(method, allowedMethodsBitmask)) {
 		int status = HttpStatus::NOTALLOWED;
 		std::string* errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);

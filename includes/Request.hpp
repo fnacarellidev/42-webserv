@@ -22,6 +22,7 @@ class Request {
 	private:
 		std::vector<ServerConfig> _serverConfigs;
 		Response runGet();
+		RouteConfig* _route;
 		/* Response runPost(); */
 		/* Response runDelete(); */
 	public:
