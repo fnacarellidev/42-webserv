@@ -120,25 +120,31 @@ static int	checkPath(std::string &path) {
 	return (0);
 }
 
+Response	getResponsePage(int status, std::vector<ServerConfig> &serverConfigs) {
+	std::string *errPagePath;
+	errPagePath = serverConfigs.front().getFilePathFromStatusCode(status);
+	return errPagePath ? Response(status, *errPagePath) : Response(status);
+}
+
 Response Request::runPost() {
 	switch (checkPath(this->filePath)) {
 		case ENOENT:
 			break ;
 		case EACCES:
-			return (Response(403));
+			return (getResponsePage(HttpStatus::FORBIDDEN, _serverConfigs));
 		case ENOTDIR:
 			return (Response(200));
 		default:
-			return (Response(409));
+			return (getResponsePage(409, _serverConfigs));
 	}
 	std::string prevPath = getPrevPath(filePath);
 	switch (checkPath(prevPath)) {
 		case ENOENT:
-			return (Response(404));
+			return (getResponsePage(HttpStatus::NOTFOUND, _serverConfigs));
 		case EACCES:
-			return (Response(403));
+			return (getResponsePage(HttpStatus::FORBIDDEN, _serverConfigs));
 		case ENOTDIR:
-			return (Response(400));
+			return (getResponsePage(400, _serverConfigs));
 		default:
 			break ;
 	}
@@ -150,40 +156,27 @@ Response Request::runPost() {
 }
 
 Response Request::runGet() {
-	struct stat statbuf;
-	std::string* errPagePath;
-	int status = HttpStatus::OK;
-
-	stat(filePath.c_str(), &statbuf);
-	switch (fileGood(this->filePath.c_str())) {
+	switch (checkPath(this->filePath)) {
 		case ENOENT:
-			status = HttpStatus::NOTFOUND;
-			break;
+			return (getResponsePage(HttpStatus::NOTFOUND, _serverConfigs));
 
 		case EACCES:
-			status = HttpStatus::FORBIDDEN;
-			break;
+			return (getResponsePage(HttpStatus::FORBIDDEN, _serverConfigs));
 
 		default:
-			break;
-	}
-	if (status != HttpStatus::OK) {
-		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+			break ;
 	}
 
-	if (S_ISDIR(statbuf.st_mode))
+	if (S_ISDIR(pathInfo(this->filePath).st_mode))
 		return Response((_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403), filePath);
-	return Response(200, filePath);
+	return Response(200, this->filePath);
 }
 
 Response Request::runRequest() {
 	unsigned short allowedMethodsBitmask = _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask();
 
 	if (methodIsAllowed(method, allowedMethodsBitmask)) {
-		int status = HttpStatus::NOTALLOWED;
-		std::string* errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+		return (getResponsePage(HttpStatus::NOTALLOWED, _serverConfigs));
 	}
 	switch (method) {
 		case GET:
