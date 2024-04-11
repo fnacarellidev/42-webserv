@@ -5,7 +5,7 @@ PATH_SRCS = ./srcs/
 PATH_OBJS = ./objects/
 
 CONFIGURATION_FILES = $(addprefix configs/,addServers Config configValidation RouteConfig ServerConfig staticConfig)
-FILES = main Response $(CONFIGURATION_FILES) utils/fileInfo utils/time utils/split utils/trim Request
+FILES = main Response $(CONFIGURATION_FILES) utils/fileInfo utils/time utils/split utils/trim utils/strEndsWith Request
 SRCS = ${FILES:%=$(PATH_OBJS)%.cpp}
 OBJS = ${FILES:%=$(PATH_OBJS)%.o}
 FLAGS = -Wall -Wextra -Werror -std=c++98 -g3

@@ -83,20 +83,26 @@ std::string	ServerConfig::getServerRoot() {
 }
 
 RouteConfig* ServerConfig::getRouteByPath(std::string requestUri) {
-	std::vector<RouteConfig*> routes = getRoutes();
 	std::string path(requestUri);
-	std::size_t lastSlash = requestUri.find_last_of('/');
+	std::vector<RouteConfig*> routes = getRoutes();
+	std::size_t uriLastSlash = requestUri.find_last_of('/');
 	bool isPath = requestUri.find('.') == std::string::npos;
-	bool endsWithSlash = *(path.end() - 1) == '/';
 
-	if (!isPath && lastSlash != std::string::npos)
-		path.erase(lastSlash + 1);
-	if (isPath && !endsWithSlash)
-		path.append("/");
+	if (!isPath && uriLastSlash != std::string::npos)
+		path.erase(uriLastSlash + 1);
 
-	for  (std::vector<RouteConfig*>::iterator it = routes.begin(); it != routes.end(); ++it) {
-		if (path == (*it)->getPath()) {
+	for (std::vector<RouteConfig*>::iterator it = routes.begin(); it != routes.end(); ++it) {
+		if (path + "/" == (*it)->getPath() || path == (*it)->getPath())
 			return *it;
+	}
+
+	while (path != "/") {
+		if (path.find_first_of('/') != std::string::npos)
+			path.erase(path.find_last_of('/'));
+
+		for (std::vector<RouteConfig*>::iterator it = routes.begin(); it != routes.end(); ++it) {
+			if (path + "/" == (*it)->getPath() || path == (*it)->getPath())
+				return *it;
 		}
 	}
 	return NULL;

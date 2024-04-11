@@ -124,7 +124,6 @@ int main(int argc, char **argv) {
 						Request req(buffer, config.servers);
 						Response res = req.runRequest();
 						
-						std::cout << res.response();
 						send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
 						close(pollFds[i].fd);
 						movePollFd(pollFds, i, serverCount);
