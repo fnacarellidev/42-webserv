@@ -76,7 +76,7 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 	return !(methodBitmask & allowedMethodsBitmask);
 }
 
-static std::string	getContentOfRequest(std::string fullRequest) {
+static std::string	getBodyOfRequest(std::string fullRequest) {
 	std::string			line;
 	std::string			content;
 	std::stringstream	ss(fullRequest);
@@ -148,10 +148,10 @@ Response Request::runPost() {
 		default:
 			break ;
 	}
-	std::string content = getContentOfRequest(this->_fullRequest);
-	std::ofstream	newFile(this->filePath.c_str());
-	newFile.write(content.c_str(), content.length());
-	newFile.close();
+	std::string		content = getBodyOfRequest(this->_fullRequest);
+	std::ofstream	file(this->filePath.c_str());
+	file.write(content.c_str(), content.length());
+	file.close();
 	return Response(201);
 }
 
