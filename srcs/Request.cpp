@@ -65,7 +65,7 @@ unsigned short getBitmaskFromMethod(Methods method) {
 			return POST_OK;
 		case DELETE:
 			return DELETE_OK;
-		case UNKNOWNMETHOD:
+		default:
 			return NONE_OK;
 	};
 }
