@@ -18,7 +18,7 @@ std::string *ServerConfig::getFilePathFromStatusCode(int status) {
 	return &_errors[status];
 }
 
-std::vector<RouteConfig> ServerConfig::getRoutes() const {
+std::vector<RouteConfig*> ServerConfig::getRoutes() const {
 	return _routes;
 }
 
@@ -42,11 +42,11 @@ void ServerConfig::setErrors(std::map<int, std::string> errors) {
 	_errors = errors;
 }
 
-void ServerConfig::setRoutes(std::vector<RouteConfig> routeConfigs) {
+void ServerConfig::setRoutes(std::vector<RouteConfig*> routeConfigs) {
 	_routes = routeConfigs;
 }
 
-void ServerConfig::setRoutes(RouteConfig routeConfig) {
+void ServerConfig::setRoutes(RouteConfig* routeConfig) {
 	_routes.push_back(routeConfig);
 }
 
@@ -83,7 +83,7 @@ std::string	ServerConfig::getServerRoot() {
 }
 
 RouteConfig* ServerConfig::getRouteByPath(std::string requestUri) {
-	std::vector<RouteConfig> routes = getRoutes();
+	std::vector<RouteConfig*> routes = getRoutes();
 	std::string path(requestUri);
 	std::size_t lastSlash = requestUri.find_last_of('/');
 	bool isPath = requestUri.find('.') == std::string::npos;
@@ -94,9 +94,9 @@ RouteConfig* ServerConfig::getRouteByPath(std::string requestUri) {
 	if (isPath && !endsWithSlash)
 		path.append("/");
 
-	for  (std::vector<RouteConfig>::iterator it = routes.begin(); it != routes.end(); ++it) {
-		if (path == it->getPath()) {
-			return &(*it);
+	for  (std::vector<RouteConfig*>::iterator it = routes.begin(); it != routes.end(); ++it) {
+		if (path == (*it)->getPath()) {
+			return *it;
 		}
 	}
 	return NULL;
