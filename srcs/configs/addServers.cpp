@@ -44,20 +44,23 @@ void    addRedirect(std::string const& redirect, RouteConfig& route) {
 	route._redirect = std::make_pair(splited[0], splited[1]);
 }
 
-void    addRoutes(std::ifstream& file, ServerConfig& server) {
+void    addRoutes(std::ifstream& file, std::string& line, ServerConfig& server) {
 	std::map<std::string, Route::Keywords>  routeMap(buildRouteMap());
-	std::string     line("");
 
 	while (line != "}") {
-		if (line.empty() || line[0] == '}')
-			break;
+		if (line.empty()) {
+			std::getline(file, line);
+			trim(line, "\t \n");
+			continue ;
+		}
 		if (line.find_first_of(";") != std::string::npos)
 			line.erase(line.end() - 1);
 
 		std::vector<std::string> splited = split(line, ' ');
 
-		if (routeMap[splited[0]] == Route::ROUTE)
+		if (routeMap[splited[0]] == Route::ROUTE) {
 			server.setRoutes(RouteConfig());
+		}
 		else if (routeMap[splited[0]] == Route::INDEX) {
 			std::vector<std::string> indexes = split(splited[1], ',');
 

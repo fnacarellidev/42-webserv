@@ -69,7 +69,7 @@ bool	invalidServerInputs(std::ifstream& file,
 	std::string& line,
 	bool* serverBrackets,
 	std::map<std::string, Server::Keywords>& serverMap);
-void	addRoutes(std::ifstream& file, ServerConfig& server);
+void	addRoutes(std::ifstream& file, std::string& line, ServerConfig& server);
 bool	validateErrorConfig(std::string& errors);
 bool	validateHostConfig(std::string& ip);
 bool	validateLimitConfig(std::string& limit);

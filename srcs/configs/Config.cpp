@@ -30,6 +30,7 @@ std::ostream&   operator<<(std::ostream& o, const Config& webserv) {
 																(itr->getAcceptMethodsBitmask() & POST_OK ? "POST " : "") <<
 																(itr->getAcceptMethodsBitmask() & DELETE_OK ? "DELETE" : "") << std::endl;
 												o << "\t\troot: " << itr->getRoot() << std::endl;
+												o << "\t\tpath: " << itr->_path << std::endl;
 												o << "\t\tredir: " << itr->getRedirect().first << " " << itr->getRedirect().second << std::endl;
 
 												std::vector<std::string> index = itr->getIndex();
@@ -106,7 +107,7 @@ void    Config::addServers(char* filename) throw (std::runtime_error) {
 				splited[1].insert(splited[1].end(), '/');
 			servers.back()._root = splited[1];
 		} else
-			addRoutes(file, this->servers.back());
+			addRoutes(file, line, this->servers.back());
 	}
 	file.close();
 }
