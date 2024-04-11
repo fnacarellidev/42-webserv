@@ -49,9 +49,9 @@ ServerConfig&   Config::findByHostNamePort(std::string const& host,
 std::string const* names,
 size_t const size,
 unsigned int const port)
-const throw(std::runtime_error) {
+throw(std::runtime_error) {
 	ServerConfig* foundConfig = NULL;
-	std::vector<ServerConfig>&      servers = const_cast<std::vector<ServerConfig>&>(this->servers);
+	std::vector<ServerConfig>&      servers = this->servers;
 
 	if (!host.empty())
 		return searchViaHost(host, port, servers);

@@ -50,7 +50,7 @@ class Config {
 			std::string const* names,
 			size_t const size,
 			unsigned int const port)
-			const throw(std::runtime_error);
+			throw(std::runtime_error);
 		void	addServers(char* filename) throw (std::runtime_error);
 		bool	configIsValid(char* filename);
 };
