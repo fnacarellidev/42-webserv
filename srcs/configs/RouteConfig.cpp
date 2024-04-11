@@ -5,6 +5,7 @@ RouteConfig::RouteConfig() {
 	_index.push_back(DEFAULT_INDEX);
 	_dirList = DEFAULT_DIRLIST;
 	_acceptMethodsBitmask = DEFAULT_ACCEPT_METHODS;
+	_path = "/";
 }
 
 void RouteConfig::setRoot(std::string root) {

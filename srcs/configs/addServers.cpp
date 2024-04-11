@@ -37,6 +37,10 @@ void	addMethods(std::string const& methods, RouteConfig& route) {
 void	addRedirect(std::string const& redirect, RouteConfig& route) {
 	std::vector<std::string> splited = split(redirect, '=');
 
+	if (*splited[0].begin() == '/')
+		splited[0].erase(splited[0].begin());
+	if (*splited[1].begin() == '/')
+		splited[1].erase(splited[1].begin());
 	route.setRedirect(std::make_pair(splited[0], splited[1]));
 }
 
@@ -75,6 +79,8 @@ void	addRoutes(std::ifstream& file, ServerConfig& server) {
 			addMethods(splited[1], routes.back());
 		else if (routeMap[splited[0]] == Route::LISTING)
 			routes.back().setDirList(splited[1] == "on");
+		else if (routeMap[splited[0]] == Route::PATH)
+			routes.back()._path = (splited[1][0] == '/' ? splited[1].erase(0, 1) : splited[1]); 
 	}
 	server.getRoutes().erase(server.getRoutes().end() - 1);
 	server.setRoutes(routes);

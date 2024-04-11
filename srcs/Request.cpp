@@ -172,10 +172,8 @@ Response Request::runGet() {
 		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 
-	if (S_ISDIR(statbuf.st_mode)) {
-		return Response((*(filePath.end() - 1) != '/' ? 301 :
-		(_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403)), filePath);
-	}
+	if (S_ISDIR(statbuf.st_mode))
+		return Response((_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403), filePath);
 	return Response(200, filePath);
 }
 

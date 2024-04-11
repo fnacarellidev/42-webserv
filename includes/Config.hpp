@@ -37,6 +37,7 @@ namespace Route {
 		ROOT,
 		METHODS,
 		LISTING,
+		PATH,
 		CGI
 	};
 };

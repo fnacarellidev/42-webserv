@@ -15,13 +15,14 @@
 #define DEFAULT_ACCEPT_METHODS GET_OK
 
 class RouteConfig {
-	private:
+	public:
+		std::string	_path;
 		std::pair<std::string, std::string>	_redirect;
 		std::vector<std::string>	_index;
 		std::string	_root;
 		unsigned short	_acceptMethodsBitmask;
 		bool	_dirList;
-	public:
+
 		RouteConfig();
 		bool getDirList() const;
 		std::string getRoot() const;

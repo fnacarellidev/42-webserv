@@ -4,12 +4,12 @@
 
 static bool	serverKeyMatch(Server::Keywords key) {
 	return key == Server::HOST || key == Server::PORT || key == Server::NAMES || key == Server::LIMIT ||
-	key == Server::ERROR;
+	key == Server::ERROR || key == Server::ROOT;
 }
 
 static bool	routeKeyMatch(Route::Keywords key) {
 	return key == Route::INDEX || key == Route::REDIRECT || key == Route::ROOT || key == Route::METHODS ||
-	key == Route::LISTING;
+	key == Route::LISTING || key == Route::PATH;
 }
 
 // needed to validate:
@@ -51,6 +51,8 @@ throw(std::runtime_error) {
 				error = splited.at(1)[0] != '/';
 			else if (key == Route::LISTING)
 				error = (splited[1] != "on" && splited[1] != "off");
+			else if (key == Route::PATH)
+				error = (*splited[1].begin() != '/');
 			if (error)
 				throw std::runtime_error("");
 		}
