@@ -55,7 +55,3 @@ std::string RouteConfig::getPath() const {
 unsigned short RouteConfig::getAcceptMethodsBitmask() const {
 	return _acceptMethodsBitmask;
 }
-
-std::string RouteConfig::getPath() const {
-	return _path;
-}
