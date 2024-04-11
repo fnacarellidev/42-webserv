@@ -25,6 +25,7 @@ std::ostream&	operator<<(std::ostream& o, const Config& webserv) {
 
 		for (std::vector<RouteConfig>::iterator itr = rotas.begin(); itr != rotas.end(); itr++) {
 			o << "\tRoute " << j++ << ":" <<std::endl;
+			o << "\t\tpath: " << itr->getPath() << std::endl;
 			o << std::boolalpha << "\t\tdir_list: " << itr->getDirList() << std::endl;
 			o << "\t\tmethods: " << (itr->getAcceptMethodsBitmask() & GET_OK ? "GET " : "") <<
 				(itr->getAcceptMethodsBitmask() & POST_OK ? "POST " : "") <<
