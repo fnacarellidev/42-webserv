@@ -66,9 +66,10 @@ unsigned short getBitmaskFromMethod(Methods method) {
 			return POST_OK;
 		case DELETE:
 			return DELETE_OK;
-		case UNKNOWNMETHOD:
-			return NONE_OK;
+		default:
+			break;
 	};
+	return NONE_OK;
 }
 
 static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask) {
