@@ -62,6 +62,7 @@ int main(int argc, char **argv) {
 	}
 
 	while (true) {
+		std::cout << std::endl;
 		if ((newSocket = accept(serverFd, &sockAddr, &addrLen))
 				< 0) {
 			perror("accept");
@@ -83,6 +84,7 @@ int main(int argc, char **argv) {
 		std::cout << res.response();
 		send(newSocket, res.response(), res.size(), 0);
 		close(newSocket);
+		std::cout << std::endl;
 	}
 	close(serverFd);
 
