@@ -87,16 +87,22 @@ RouteConfig* ServerConfig::getRouteByPath(std::string requestUri) {
 	std::string path(requestUri);
 	std::size_t lastSlash = requestUri.find_last_of('/');
 	bool isPath = requestUri.find('.') == std::string::npos;
-	bool endsWithSlash = *(path.end() - 1) == '/';
 
 	if (!isPath && lastSlash != std::string::npos)
 		path.erase(lastSlash + 1);
-	if (isPath && !endsWithSlash)
-		path.append("/");
-
 	for  (std::vector<RouteConfig*>::iterator it = routes.begin(); it != routes.end(); ++it) {
-		if (path == (*it)->getPath()) {
+		if (path + "/" == (*it)->getPath() || path == (*it)->getPath())
 			return *it;
+	}
+	while (path != "/") {
+		std::size_t lastSlash = path.find_last_of('/');
+
+		if (path.find_first_of('/') != std::string::npos)
+			path.erase(lastSlash);
+
+		for  (std::vector<RouteConfig*>::iterator it = routes.begin(); it != routes.end(); ++it) {
+			if (path + "/" == (*it)->getPath() || path == (*it)->getPath())
+				return *it;
 		}
 	}
 	return NULL;
