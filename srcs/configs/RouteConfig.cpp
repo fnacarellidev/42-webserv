@@ -47,3 +47,7 @@ std::pair<std::string, std::string> RouteConfig::getRedirect() const {
 unsigned short RouteConfig::getAcceptMethodsBitmask() const {
 	return _acceptMethodsBitmask;
 }
+
+std::string RouteConfig::getPath() const {
+	return _path;
+}
