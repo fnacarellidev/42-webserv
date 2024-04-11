@@ -23,6 +23,8 @@ class Request {
 		std::vector<ServerConfig> _serverConfigs;
 		Response runGet();
 		RouteConfig* _route;
+		std::string _reqUri;
+		bool _dirListEnabled;
 		/* Response runPost(); */
 		/* Response runDelete(); */
 	public:
