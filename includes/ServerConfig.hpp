@@ -30,6 +30,7 @@ class ServerConfig {
 	*	accept uploaded file... only if POST is set? where to save them?
 	*/
 		ServerConfig();
+		~ServerConfig();
 		std::map<int, std::string> getErrors() const;
 		std::vector<RouteConfig*> getRoutes() const;
 		std::vector<std::string> getNames() const;

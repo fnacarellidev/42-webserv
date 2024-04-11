@@ -8,6 +8,11 @@ ServerConfig::ServerConfig() {
 	_serverNames.push_back(_host);
 }
 
+ServerConfig::~ServerConfig() {
+	for (std::vector<RouteConfig*>::iterator it = _routes.begin(); it != _routes.end(); ++it)
+		delete *it;
+}
+
 std::map<int, std::string> ServerConfig::getErrors() const {
 	return _errors;
 }
