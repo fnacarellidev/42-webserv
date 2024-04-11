@@ -12,7 +12,7 @@
 #define HTTP_VERSION "HTTP/1.1"
 #define DEFAULT_LIMIT 1000000
 #define DEFAULT_HOST "127.0.0.1"
-#define DEFAULT_PORT 80
+#define DEFAULT_PORT 8080
 
 class ServerConfig {
 	public:
