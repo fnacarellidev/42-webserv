@@ -44,6 +44,18 @@ void    addRedirect(std::string const& redirect, RouteConfig* route) {
 	route->_redirect = std::make_pair(splited[0], splited[1]);
 }
 
+static std::string	removeExtraSlashes(std::string str) {
+	
+	std::string	finalStr = "/";
+	std::vector<std::string>	splited = split(str, '/');
+	std::vector<std::string>::iterator	it;
+	for (it = splited.begin(); it != splited.end(); it++) {
+		if (!(*it).empty())
+			finalStr += *it + "/";
+	}
+	return (finalStr);
+}
+
 void    addRoutes(std::ifstream& file, std::string& line, ServerConfig& server) {
 	std::map<std::string, Route::Keywords>  routeMap(buildRouteMap());
 
@@ -80,8 +92,6 @@ void    addRoutes(std::ifstream& file, std::string& line, ServerConfig& server) 
 		else if (routeMap[splited[0]] == Route::LISTING)
 			server._routes.back()->_dirList = (splited[1] == "on");
 		else if (routeMap[splited[0]] == Route::PATH)
-			server._routes.back()->_path = (splited[1][0] == '/' ? splited[1].erase(0, 1) : splited[1]);
-		std::getline(file, line);
-		trim(line, "\t \n");
+			routes.back().setPath(removeExtraSlashes(splited[1]));
 	}
 }
