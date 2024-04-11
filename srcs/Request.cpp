@@ -110,9 +110,12 @@ Response Request::runGet() {
 	if (S_ISDIR(statbuf.st_mode))
 		return Response((_serverConfigs.front().getRoutes().front()->getDirList() ? 200 : 403), filePath);
 	if (strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
+		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
 		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
-			return Response(HttpStatus::FORBIDDEN);
-		return Response(HttpStatus::NOTFOUND);
+			status = HttpStatus::FORBIDDEN;
+		else
+			status = HttpStatus::NOTFOUND;
+		return Response(status, *errPagePath);
 	}
 	return Response(200, filePath);
 }
