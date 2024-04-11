@@ -2,46 +2,46 @@
 #include "../../includes/utils.hpp"
 
 std::ostream&   operator<<(std::ostream& o, const Config& webserv) {
-	size_t i = 0;
-	std::vector<ServerConfig> servers = webserv.servers;
+				size_t i = 0;
+				std::vector<ServerConfig> servers = webserv.servers;
 
-	for (std::vector<ServerConfig>::iterator its = servers.begin(); its != servers.end(); its++) {
-		o << "server " << i++ << ":" << std::endl;
-		o << "\tport: " << its->getPort() << std::endl;
-		o << "\tlimit: " << its->getLimit() << std::endl;
-		o << "\thost: " << its->getHost() << std::endl;
-		o << "\troot: " << its->getServerRoot() << std::endl;
+				for (std::vector<ServerConfig>::iterator its = servers.begin(); its != servers.end(); its++) {
+								o << "server " << i++ << ":" << std::endl;
+								o << "\tport: " << its->getPort() << std::endl;
+								o << "\tlimit: " << its->getLimit() << std::endl;
+								o << "\thost: " << its->getHost() << std::endl;
+								o << "\troot: " << its->getServerRoot() << std::endl;
 
-		std::map<int, std::string> erros = its->getErrors();
-		std::vector<std::string> nomes = its->getNames();
+								std::map<int, std::string> erros = its->getErrors();
+								std::vector<std::string> nomes = its->getNames();
 
-		for (std::map<int, std::string>::iterator ite = erros.begin(); ite != erros.end(); ite++)
-			o << "\terror: " << ite->first << " " << ite->second << std::endl;
-		for (std::vector<std::string>::iterator itn = nomes.begin(); itn != nomes.end(); itn++)
-			o << "\tserver_name: " << *itn << std::endl;
+								for (std::map<int, std::string>::iterator ite = erros.begin(); ite != erros.end(); ite++)
+												o << "\terror: " << ite->first << " " << ite->second << std::endl;
+								for (std::vector<std::string>::iterator itn = nomes.begin(); itn != nomes.end(); itn++)
+												o << "\tserver_name: " << *itn << std::endl;
 
-		std::vector<RouteConfig*> rotas = its->getRoutes();
-		size_t j = 0;
+								std::vector<RouteConfig> rotas = its->getRoutes();
+								size_t j = 0;
 
-		for (std::vector<RouteConfig*>::iterator itr = rotas.begin(); itr != rotas.end(); itr++) {
-			o << "\tRoute " << j++ << ":" <<std::endl;
-			o << std::boolalpha << "\t\tdir_list: " << (*itr)->getDirList() << std::endl;
-			o << "\t\tmethods: " << ((*itr)->getAcceptMethodsBitmask() & GET_OK ? "GET " : "") <<
-				((*itr)->getAcceptMethodsBitmask() & POST_OK ? "POST " : "") <<
-				((*itr)->getAcceptMethodsBitmask() & DELETE_OK ? "DELETE" : "") << std::endl;
-			o << "\t\troot: " << (*itr)->getRoot() << std::endl;
-			o << "\t\tpath: " << (*itr)->_path << std::endl;
-			o << "\t\tredir: " << (*itr)->getRedirect().first << " " << (*itr)->getRedirect().second << std::endl;
+								for (std::vector<RouteConfig>::iterator itr = rotas.begin(); itr != rotas.end(); itr++) {
+												o << "\tRoute " << j++ << ":" <<std::endl;
+												o << std::boolalpha << "\t\tdir_list: " << itr->getDirList() << std::endl;
+												o << "\t\tmethods: " << (itr->getAcceptMethodsBitmask() & GET_OK ? "GET " : "") <<
+																(itr->getAcceptMethodsBitmask() & POST_OK ? "POST " : "") <<
+																(itr->getAcceptMethodsBitmask() & DELETE_OK ? "DELETE" : "") << std::endl;
+												o << "\t\troot: " << itr->getRoot() << std::endl;
+												o << "\t\tpath: " << itr->_path << std::endl;
+												o << "\t\tredir: " << itr->getRedirect().first << " " << itr->getRedirect().second << std::endl;
 
-			std::vector<std::string> index = (*itr)->getIndex();
+												std::vector<std::string> index = itr->getIndex();
 
-			for (std::vector<std::string>::iterator iti = index.begin(); iti != index.end(); iti++)
-				o << "\t\tindex: " << *iti << std::endl;
-			o << std::endl;
-		}
-		o << std::endl;
-	}
-	return o;
+												for (std::vector<std::string>::iterator iti = index.begin(); iti != index.end(); iti++)
+																o << "\t\tindex: " << *iti << std::endl;
+												o << std::endl;
+								}
+								o << std::endl;
+				}
+				return o;
 }
 
 
@@ -71,7 +71,7 @@ void    Config::addServers(char* filename) throw (std::runtime_error) {
 
 	if (!file.is_open()) {
 		this->servers.push_back(ServerConfig());
-		this->servers.back()._routes.push_back(new RouteConfig());
+		this->servers.back()._routes.push_back(RouteConfig());
 		throw std::runtime_error("File not found.");
 	}
 	while (!file.eof()) {
@@ -81,7 +81,7 @@ void    Config::addServers(char* filename) throw (std::runtime_error) {
 			continue;
 		if (line[0] == '}') {
 				if (this->servers.back()._routes.size() == 0)
-					this->servers.back()._routes.push_back(new RouteConfig());
+					this->servers.back()._routes.push_back(RouteConfig());
 				continue ;
 		}
 

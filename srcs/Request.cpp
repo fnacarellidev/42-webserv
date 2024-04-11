@@ -102,7 +102,7 @@ Response Request::runGet() {
 	}
 
 	if (S_ISDIR(statbuf.st_mode))
-		return Response((_serverConfigs.front().getRoutes().front()->getDirList() ? 200 : 403), filePath);
+		return Response((_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403), filePath);
 	return Response(200, filePath);
 }
 
