@@ -6,7 +6,6 @@ ServerConfig::ServerConfig() {
 	_root = DEFAULT_ROOT;
 	_bodyLimit = DEFAULT_LIMIT;
 	_serverNames.push_back(_host);
-	_routes.push_back(RouteConfig());
 }
 
 std::map<int, std::string> ServerConfig::getErrors() const {

@@ -49,6 +49,7 @@ void	addRoutes(std::ifstream& file, ServerConfig& server) {
 	std::string	line("");
 	std::vector<RouteConfig>	routes = server.getRoutes();
 
+	routes.push_back(RouteConfig());
 	while (line != "}") {
 		std::getline(file, line);
 		trim(line, "\t \n");
@@ -82,6 +83,4 @@ void	addRoutes(std::ifstream& file, ServerConfig& server) {
 		else if (routeMap[splited[0]] == Route::PATH)
 			routes.back()._path = (splited[1][0] == '/' ? splited[1].erase(0, 1) : splited[1]); 
 	}
-	server.getRoutes().erase(server.getRoutes().end() - 1);
-	server.setRoutes(routes);
 }

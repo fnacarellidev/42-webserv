@@ -21,13 +21,13 @@
 # define BUFFER_SIZE 4096
 #endif
 
-static void moveServerAndPollFd(int* serverFds, struct pollfd* pollFds, int i, int serverCount) {
-	std::memmove(&serverFds[i], &serverFds[i + 1], serverCount - i);
-	std::memmove(&pollFds[i], &pollFds[i + 1], serverCount - i);
+static void movePollFd(struct pollfd* pollFds, int i, int serverCount) {
+	std::memmove(pollFds + i, pollFds + i + 1, serverCount - i);
 }
 
 int main(int argc, char **argv) {
-	int serverCount = 0;
+	int serverFds[CONNECTIONS] = {0}, serverCount = 0;
+	struct pollfd pollFds[CONNECTIONS] = {};
 	Config config;
 
 	if (argc > 2) {
@@ -40,10 +40,6 @@ int main(int argc, char **argv) {
 		config.addServers(argv[1]);
 	else
 		return EXIT_FAILURE;
-
-	int serverFds[CONNECTIONS];
-	struct pollfd pollFds[CONNECTIONS];
-
 	for (size_t i = 0; i < config.servers.size(); i++) {
 		int opt = 1, serverFd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -57,10 +53,10 @@ int main(int argc, char **argv) {
 		}
 
 		struct sockaddr_in sockAddr;
+
 		sockAddr.sin_family = AF_INET;
 		sockAddr.sin_port = htons(config.servers[i].getPort());
 		sockAddr.sin_addr.s_addr = INADDR_ANY;
-
 		if (bind(serverFd, (struct sockaddr*)&sockAddr, sizeof(sockAddr)) < 0) {
 			perror("bind failed");
 			return EXIT_FAILURE;
@@ -87,44 +83,34 @@ int main(int argc, char **argv) {
 			return EXIT_FAILURE;
 		}
 		for (int i = 0; i < serverCount; i++) {
-			std::cout << "FD: " << pollFds[i].fd << " EVENTO: " << pollFds[i].events << " REVENTO: " << pollFds[i].revents << std::endl;
-			if (pollFds[i].revents & POLLOUT) {
-				std::cout << "[DEBUG] VAMO LER" << std::endl;
-			}
 			if (pollFds[i].revents & POLLIN) {
 				if (pollFds[i].fd == serverFds[i]) {
 					int newSocket = accept(serverFds[i], NULL, NULL);
 
 					if (newSocket < 0) {
-						// PQ VC FICA ENTRANDO AQUI ???
 						perror("accept");
-						exit(130);
+						continue;
 					}
 					if (serverCount < CONNECTIONS) {
 						struct pollfd pollFd = {};
 
 						pollFd.fd = newSocket;
 						pollFd.events = POLLIN;
-						pollFd.revents = POLLOUT;
 						pollFds[serverCount] = pollFd;
-						serverFds[serverCount] = newSocket;
 						serverCount++;
 					} else {
 						std::cerr << "We are full" << std::endl;
 						close(newSocket);
 					}
 				} else {
-						std::cout << "[DEBUG] lendo request" << std::endl;
 					char buffer[BUFFER_SIZE] = { 0 };
 					int ret = recv(pollFds[i].fd, buffer, BUFFER_SIZE, 0);
 
 					if (ret < 0) {
-						std::cout << "[DEBUG] DEU RUIM" << std::endl;
 						close(pollFds[i].fd);
-						moveServerAndPollFd(serverFds, pollFds, i, serverCount);
+						movePollFd(pollFds, i, serverCount);
 						serverCount--;
 					} else {
-						std::cout << "[DEBUG] MANDEI" << std::endl;
 						buffer[ret] = 0;
 
 						Request req(buffer, config.servers);
@@ -133,11 +119,12 @@ int main(int argc, char **argv) {
 						std::cout << res.response();
 						send(pollFds[i].fd, res.response(), res.size(), 0);
 						close(pollFds[i].fd);
+						movePollFd(pollFds, i, serverCount);
+						serverCount--;
 					}
 				}
 			}
 		}
 	}
-
 	return 0;
 }
