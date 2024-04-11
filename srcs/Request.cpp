@@ -32,10 +32,9 @@ int    fileGood(const char *filePath) {
 	return 0;
 }
 
-static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::string requestUri) {
-	std::vector<RouteConfig> routeConfigs = serverConfigs.front().getRoutes();
-	std::string root = routeConfigs.front().getRoot();
-	std::vector<std::string> indexes = routeConfigs.front().getIndex();
+static std::string getFilePath(RouteConfig *route, std::string requestUri) {
+	std::string root = route->getRoot();
+	std::vector<std::string> indexes = route->getIndex();
 
 	if (requestUri == "/") {
 		for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
@@ -52,9 +51,11 @@ static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::str
 
 Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _serverConfigs(serverConfigs) {
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
+	std::string requestUri = requestLineParams[REQUESTURI];
 
 	method = getMethod(requestLineParams[METHOD]);
-	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
+	_route = _serverConfigs.front().getRouteByPath(requestUri);
+	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
 }
 
 unsigned short getBitmaskFromMethod(Methods method) {
@@ -65,7 +66,7 @@ unsigned short getBitmaskFromMethod(Methods method) {
 			return POST_OK;
 		case DELETE:
 			return DELETE_OK;
-		case UNKNOWNMETHOD:
+		default:
 			return NONE_OK;
 	};
 }
@@ -100,14 +101,16 @@ Response Request::runGet() {
 	}
 
 	if (S_ISDIR(statbuf.st_mode))
-		return Response((_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403), filePath);
+		return Response((_serverConfigs.front().getRoutes().front()->getDirList() ? 200 : 403), filePath);
 	return Response(200, filePath);
 }
 
 Response Request::runRequest() {
-	unsigned short allowedMethodsBitmask = _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask();
-
-	if (methodIsAllowed(method, allowedMethodsBitmask)) {
+	if (!_route) {
+		std::cout << "[DEBUG] No match for this route\n";
+		return Response(404);
+	}
+	if (methodIsAllowed(method, _route->getAcceptMethodsBitmask())) {
 		int status = HttpStatus::NOTALLOWED;
 		std::string* errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
 		return errPagePath ? Response(status, *errPagePath) : Response(status);

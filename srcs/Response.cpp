@@ -60,6 +60,8 @@ static std::string	getErrInformation(int status)
 			return (E404);
 		case 405:
 			return (E405);
+		case 413:
+			return (E413);
 		case 500:
 			return (E500);
 		case 502:
@@ -111,6 +113,7 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	statusMessages[404] = "Not Found";
 	statusMessages[405] = "Method Not Allowed";
 	statusMessages[408] = "Request Timeout";
+	statusMessages[413] = "Payload Too Large";
 	statusMessages[500] = "Internal Server Error";
 	statusMessages[502] = "Bad Gateway";
 	statusMessages[503] = "Service Unavailable";

@@ -30,6 +30,7 @@ class RouteConfig {
 		std::vector<std::string> getIndex() const;
 		std::pair<std::string, std::string> getRedirect() const;
 		unsigned short getAcceptMethodsBitmask() const;
+		std::string getPath() const;
 		void setRoot(std::string root);
 		void setPath(std::string path);
 		void setIndex(std::vector<std::string> index);
