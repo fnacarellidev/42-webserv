@@ -17,7 +17,7 @@
 class ServerConfig {
 	public:
 		std::map<int, std::string>	_errors;
-		std::vector<RouteConfig>	_routes;
+		std::vector<RouteConfig*>	_routes;
 		std::string _root;
 		unsigned int	_port;
 		std::vector<std::string>	_serverNames;
@@ -30,9 +30,8 @@ class ServerConfig {
 	*	accept uploaded file... only if POST is set? where to save them?
 	*/
 		ServerConfig();
-		~ServerConfig();
 		std::map<int, std::string> getErrors() const;
-		std::vector<RouteConfig> getRoutes() const;
+		std::vector<RouteConfig*> getRoutes() const;
 		std::vector<std::string> getNames() const;
 		unsigned int getPort() const;
 		std::string	getHost() const;
@@ -41,8 +40,8 @@ class ServerConfig {
 		void	setLimit(size_t limit);
 		void	insertError(int code, std::string path);
 		void	setErrors(std::map<int, std::string> errors);
-		void	setRoutes(RouteConfig routeConfig);
-		void	setRoutes(std::vector<RouteConfig> routeConfigs);
+		void	setRoutes(RouteConfig* routeConfig);
+		void	setRoutes(std::vector<RouteConfig*> routeConfigs);
 		void	setPort(unsigned int port);
 		void	setServerNames(std::vector<std::string> serverNames);
 		void	setServerNames(std::string serverName);

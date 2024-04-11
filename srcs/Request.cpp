@@ -102,18 +102,16 @@ Response Request::runGet() {
 	}
 
 	if (S_ISDIR(statbuf.st_mode))
-		return Response((_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403), filePath);
+		return Response((_serverConfigs.front().getRoutes().front()->getDirList() ? 200 : 403), filePath);
 	return Response(200, filePath);
 }
 
 Response Request::runRequest() {
-	unsigned short allowedMethodsBitmask = _route->getAcceptMethodsBitmask();
-
 	if (!_route) {
 		std::cout << "[DEBUG] No match for this route\n";
 		return Response(404);
 	}
-	if (methodIsAllowed(method, allowedMethodsBitmask)) {
+	if (methodIsAllowed(method, _route->getAcceptMethodsBitmask())) {
 		int status = HttpStatus::NOTALLOWED;
 		std::string* errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
 		return errPagePath ? Response(status, *errPagePath) : Response(status);
