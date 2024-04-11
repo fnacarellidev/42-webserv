@@ -95,6 +95,7 @@ RouteConfig* ServerConfig::getRouteByPath(std::string requestUri) {
 		if (path + "/" == (*it)->getPath() || path == (*it)->getPath())
 			return *it;
 	}
+
 	while (path != "/") {
 		if (path.find_first_of('/') != std::string::npos)
 			path.erase(path.find_last_of('/'));

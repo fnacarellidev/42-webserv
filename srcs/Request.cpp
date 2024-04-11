@@ -37,30 +37,19 @@ static std::string getFilePath(RouteConfig *route, std::string requestUri) {
 	std::vector<std::string> indexes = route->getIndex();
 	std::string file = requestUri.substr(route->getPath().size() - 1, std::string::npos);
 
-	std::cout << "[DEBUG] START CALL\n\n";
-
 	if (strEndsWith(requestUri, '/')) {
 		file.erase(file.end() - 1);
-		std::cout << "[DEBUG][GETFILEPATH] SINCE REQURI ENDED WITH SLASH, RETURNING: " << root + file << std::endl;
-		std::cout << "\n[DEBUG] END CALL\n";
 		return root + file;
 	}
 	if (file.empty()) {
 		for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
-			std::cout << "[DEBUG][GETFILEPATH] TESTING ACCESS FOR " << root + *it << std::endl;
 			bool fileExists = access((root + *it).c_str(), F_OK) == 0;
-			if (fileExists) {
-				std::cout << "[DEBUG][GETFILEPATH] FOUND INDEX FOR THIS ROUTE, RETURNING " << root + *it << std::endl;
-				std::cout << "\n[DEBUG] END CALL\n";
+			if (fileExists)
 				return root + *it;
-			}
 		}
 	}
 	if (*file.begin() == '/')
 		file.erase(file.begin());
-
-	std::cout << "[DEBUG][GETFILEPATH] RETURNING " << root + file << std::endl;
-	std::cout << "\n[DEBUG] END CALL\n";
 
 	return root + file;
 }
@@ -129,10 +118,8 @@ Response Request::runGet() {
 }
 
 Response Request::runRequest() {
-	if (!_route) {
-		std::cout << "[DEBUG] No match for this route\n";
+	if (!_route)
 		return Response(404);
-	}
 
 	if (methodIsAllowed(method, _route->getAcceptMethodsBitmask())) {
 		int status = HttpStatus::NOTALLOWED;
