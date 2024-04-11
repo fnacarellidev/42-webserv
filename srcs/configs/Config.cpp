@@ -49,9 +49,9 @@ ServerConfig&   Config::findByHostNamePort(std::string const& host,
 std::string const* names,
 size_t const size,
 unsigned int const port)
-const throw(std::runtime_error) {
+throw(std::runtime_error) {
 	ServerConfig* foundConfig = NULL;
-	std::vector<ServerConfig>&      servers = const_cast<std::vector<ServerConfig>&>(this->servers);
+	std::vector<ServerConfig>&      servers = this->servers;
 
 	if (!host.empty())
 		return searchViaHost(host, port, servers);
@@ -79,7 +79,7 @@ void    Config::addServers(char* filename) throw (std::runtime_error) {
 		trim(line, "\t \n");
 		if (line.empty())
 			continue;
-		if (line[0] == '}') {
+		if (line == "}") {
 				if (this->servers.back()._routes.size() == 0)
 					this->servers.back()._routes.push_back(new RouteConfig());
 				continue ;

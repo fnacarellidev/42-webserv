@@ -45,11 +45,12 @@ namespace Route {
 class Config {
 	public:
 		std::vector<ServerConfig>	servers;
+
 		ServerConfig&	findByHostNamePort(std::string const& host,
 			std::string const* names,
 			size_t const size,
 			unsigned int const port)
-			const throw(std::runtime_error);
+			throw(std::runtime_error);
 		void	addServers(char* filename) throw (std::runtime_error);
 		bool	configIsValid(char* filename);
 };
