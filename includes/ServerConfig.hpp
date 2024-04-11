@@ -46,6 +46,7 @@ class ServerConfig {
 		void	setServerNames(std::vector<std::string> serverNames);
 		void	setServerNames(std::string serverName);
 		void	setServerRoot(std::string serverRoot);
+		RouteConfig* getRouteByPath(std::string requestUri);
 		std::string	getServerRoot();
 		std::string *getFilePathFromStatusCode(int status);
 };
