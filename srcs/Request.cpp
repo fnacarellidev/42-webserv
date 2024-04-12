@@ -33,9 +33,9 @@ int    fileGood(const char *filePath) {
 }
 
 static std::string getFilePath(RouteConfig *route, std::string requestUri) {
-	std::string root = route->getRoot();
-	std::vector<std::string> indexes = route->getIndex();
-	std::string file = requestUri.substr(route->getPath().size() - 1, std::string::npos);
+	std::string root = route->root;
+	std::vector<std::string> indexes = route->index;
+	std::string file = requestUri.substr(route->path.size() - 1, std::string::npos);
 
 	if (strEndsWith(requestUri, '/')) {
 		file.erase(file.end() - 1);
@@ -95,6 +95,8 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 		_dirListEnabled = _route->getDirList();
 		_shouldRedirect = requestUri.substr(_route->getPath().size()) == _route->getRedirect().first;
 	}
+	if (_route)
+		_dirListEnabled = _route->dirList;
 	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
 }
 
@@ -172,7 +174,7 @@ Response Request::runRequest() {
 	if (!_route)
 		return Response(404);
 
-	if (methodIsAllowed(method, _route->getAcceptMethodsBitmask())) {
+	if (methodIsAllowed(method, _route->acceptMethodsBitmask)) {
 		int status = HttpStatus::NOTALLOWED;
 		std::string* errPagePath = _server.getFilePathFromStatusCode(status);
 		return errPagePath ? Response(status, *errPagePath) : Response(status);

@@ -16,13 +16,14 @@ static std::string	generateDirectoryListing(const std::string &path) {
 	std::string	dirListing;
 	DIR	*dir = opendir(path.c_str());
 
-	readdir(dir);
-	readdir(dir);
-	dirListing += "<html>\n<head>\n<title>Directory listing for " + path + "</title>\n</head>\n<body>\n";
-	dirListing += "<h1>Directory listing for " + path + "</h1>\n";
-	dirListing += "<hr><pre>\n";
+	dirListing += "<html><head><title>Directory listing for " + path + "</title></head><body>";
+	dirListing += "<h1>Directory listing for " + path + "</h1>";
+	dirListing += "<hr><pre>";
 	dirListing += "<a href=\"..\">../</a>\n";
 	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
+		if (std::strcmp(item->d_name, ".") == 0 || std::strcmp(item->d_name, "..") == 0)
+			continue ;
+
 		std::string modTime, bytesSize, file = item->d_name;
 
 		getDateAndBytes(path + item->d_name, modTime, bytesSize);
@@ -30,20 +31,20 @@ static std::string	generateDirectoryListing(const std::string &path) {
 		if (item->d_type == DT_DIR) {
 			dirListing += "/";
 			dirListing += "</a>";
-			dirListing.append(64 - file.size() - 1, ' ');
+			dirListing.append(255 - file.size() - 1, ' ');
 			dirListing += modTime;
 			dirListing.append(19, ' ');
 			dirListing += "-\n";
 		} else {
 			dirListing += "</a>";
-			dirListing.append(64 - file.size(), ' ');
+			dirListing.append(255 - file.size(), ' ');
 			dirListing += modTime;
 			dirListing.append(20 - bytesSize.size(), ' ');
 			dirListing += bytesSize + "\n";
 		}
 	}
 	closedir(dir);
-	dirListing += "</pre>\n<hr>\n</body>\n</html>\n";
+	dirListing += "</pre><hr></body></html>";
 	return (dirListing);
 }
 
