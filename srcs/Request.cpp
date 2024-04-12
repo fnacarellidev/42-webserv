@@ -123,6 +123,15 @@ Response Request::runGet() {
 	int status = HttpStatus::OK;
 
 	stat(filePath.c_str(), &statbuf);
+	if (_shouldRedirect) {
+		std::string redirectFile = _route->getRedirect().second;
+		std::string sysFilePath = _route->getRoot() + _route->getRedirect().second;
+		std::string requestUrl = "http://localhost:8080" + _route->getPath() + redirectFile;
+
+		if (stat(sysFilePath.c_str(), &statbuf) == -1)
+			return Response(HttpStatus::NOTFOUND);
+		return Response(HttpStatus::MOVED_PERMANENTLY, sysFilePath, requestUrl);
+	}
 	switch (fileGood(this->filePath.c_str())) {
 		case ENOENT:
 			status = HttpStatus::NOTFOUND;
