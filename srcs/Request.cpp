@@ -71,7 +71,7 @@ std::string getHostHeader(std::string request) {
 
 ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host) {
 	for (std::vector<ServerConfig>::iterator it = serverConfigs.begin(); it != serverConfigs.end(); ++it) {
-		std::vector<std::string> names = it->getNames();
+		std::vector<std::string> names = it->serverNames;
 		for (std::vector<std::string>::iterator namesIt = names.begin(); namesIt != names.end(); ++namesIt) {
 			if (host == *namesIt)
 				return *it;
@@ -80,16 +80,21 @@ ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host
 	return serverConfigs.front();
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) {
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _shouldRedirect(false) {
+	std::string host = getHostHeader(request);
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::string requestUri = requestLineParams[REQUESTURI];
-	std::string host = getHostHeader(request);
 
-	method = getMethod(requestLineParams[METHOD]);
-	_server = getServer(serverConfigs, host);
 	_reqUri = requestUri;
+	_server = getServer(serverConfigs, host);
+	method = getMethod(requestLineParams[METHOD]);
 	_route = _server.getRouteByPath(requestUri);
 	_dirListEnabled = false;
+
+	if (_route && _route->path.size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
+		_dirListEnabled = _route->dirList;
+		_shouldRedirect = requestUri.substr(_route->path.size()) == _route->redirect.first;
+	}
 	if (_route)
 		_dirListEnabled = _route->dirList;
 	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
@@ -120,6 +125,15 @@ Response Request::runGet() {
 	int status = HttpStatus::OK;
 
 	stat(filePath.c_str(), &statbuf);
+	if (_shouldRedirect) {
+		std::string redirectFile = _route->redirect.second;
+		std::string sysFilePath = _route->root + _route->redirect.second;
+		std::string requestUrl = "http://localhost:" + toString(_server.port) + _route->path + redirectFile;
+
+		if (stat(sysFilePath.c_str(), &statbuf) == -1)
+			return Response(HttpStatus::NOTFOUND);
+		return Response(HttpStatus::MOVED_PERMANENTLY, sysFilePath, requestUrl);
+	}
 	switch (fileGood(this->filePath.c_str())) {
 		case ENOENT:
 			status = HttpStatus::NOTFOUND;
@@ -138,7 +152,7 @@ Response Request::runGet() {
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
-		if (_route->getDirList())
+		if (_route->dirList)
 			return Response(status, filePath);
 		else
 			status = HttpStatus::FORBIDDEN;

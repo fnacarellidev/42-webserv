@@ -25,12 +25,13 @@ class Response {
 		std::map<std::string, std::string>	_mimeTypes;
 		std::string					_fullResponse;
 		void	_success();
-		void	_redirection();
+		void	_redirection(std::string locationHeader);
 		void	_error();
 		void	_serverError();
 	public:
 		Response(int status);
 		Response(int status, std::string bodyFile);
+		Response(int status, std::string bodyFile, std::string locationHeader);
 		Response	&operator=(const Response &other);
 		size_t		size() const;
 		const char	*response() const;

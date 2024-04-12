@@ -22,6 +22,7 @@ class Request {
 	private:
 		ServerConfig _server;
 		Response runGet();
+		bool _shouldRedirect;
 		RouteConfig* _route;
 		std::string _reqUri;
 		bool _dirListEnabled;
@@ -29,6 +30,7 @@ class Request {
 		/* Response runDelete(); */
 	public:
 		Methods method;
+		std::string file;
 		std::string filePath;
 		Response runRequest();
 		Request(std::string request, std::vector<ServerConfig> serverConfigs);
