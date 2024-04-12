@@ -12,7 +12,7 @@
 #include <arpa/inet.h>
 #include <poll.h>
 #include "../includes/Request.hpp"
-#include "../includes/Config.hpp"
+#include "../includes/WebServer.hpp"
 
 #define OPT 1
 #define CONNECTIONS 1000
@@ -27,7 +27,7 @@ static void movePollFd(struct pollfd* pollFds, int i, int serverCount) {
 int main(int argc, char **argv) {
 	int serverFds[CONNECTIONS] = {0}, serverCount = 0;
 	struct pollfd pollFds[CONNECTIONS] = {};
-	Config config;
+	WebServer config;
 
 	if (argc > 2) {
 		std::cerr << "Usage: " << argv[0] << " [config file]" << std::endl;
@@ -35,9 +35,9 @@ int main(int argc, char **argv) {
 	}
 	if (argc == 1) {
 		config.servers.push_back(ServerConfig());
-		config.servers.back()._routes.push_back(new RouteConfig());
-	} else if (argc == 2 && config.configIsValid(argv[1]))
-		config.addServers(argv[1]);
+		config.servers.back().routes.push_back(new RouteConfig());
+	} else if (argc == 2 && WebServer::configIsValid(argv[1]))
+		config.setupConfig(argv[1]);
 	else
 		return EXIT_FAILURE;
 	for (size_t i = 0; i < config.servers.size(); i++) {
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
 		struct sockaddr_in sockAddr;
 
 		sockAddr.sin_family = AF_INET;
-		sockAddr.sin_port = htons(config.servers[i].getPort());
+		sockAddr.sin_port = htons(config.servers[i].port);
 		sockAddr.sin_addr.s_addr = INADDR_ANY;
 		if (bind(serverFd, (struct sockaddr*)&sockAddr, sizeof(sockAddr)) < 0) {
 			perror("bind failed");
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 
 						Request req(buffer, config.servers);
 						Response res = req.runRequest();
-						
+
 						send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
 						close(pollFds[i].fd);
 						movePollFd(pollFds, i, serverCount);

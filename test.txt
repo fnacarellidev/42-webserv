@@ -1,0 +1,27 @@
+server {
+	host 42.0.0.1;
+	port 1234;
+	names 42saopaulo.com,42saopaulo.com.br;
+	route {
+		index index.html;
+		redirect /tmp/dir2=/tmp/dir;
+		root /tmp;
+		methods DELETE,POST,GET;
+		listing on;
+		path /;
+	}
+	limit 1gb;
+	error 404=/tmp/tests.html;
+	root /root;
+	route {
+		index elefante.php;
+		redirect /tmp/tests/cgi=/tmp/tests/elefantes;
+		root /tmp/tests;
+		methods GET;
+		listing off;
+		path /elefante;
+	}
+}
+
+server {
+}
