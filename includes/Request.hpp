@@ -20,7 +20,7 @@ enum RequestLine {
 
 class Request {
 	private:
-		std::vector<ServerConfig> _serverConfigs;
+		ServerConfig _server;
 		Response runGet();
 		RouteConfig* _route;
 		std::string _reqUri;

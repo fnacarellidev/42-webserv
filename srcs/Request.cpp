@@ -54,7 +54,7 @@ static std::string getFilePath(RouteConfig *route, std::string requestUri) {
 	return root + file;
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _serverConfigs(serverConfigs) {
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) {
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::string requestUri = requestLineParams[REQUESTURI];
 
