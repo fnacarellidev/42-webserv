@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "Response.hpp"
 #include "ServerConfig.hpp"
+#include "utils.hpp"
 
 enum Methods {
 	GET,
