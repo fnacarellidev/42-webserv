@@ -93,5 +93,7 @@ void    addRoutes(std::ifstream& file, std::string& line, ServerConfig& server) 
 			server._routes.back()->_dirList = (splited[1] == "on");
 		else if (routeMap[splited[0]] == Route::PATH)
 			server._routes.back()->setPath(removeExtraSlashes(splited[1]));
+		std::getline(file, line);
+		trim(line, "\t \n");
 	}
 }
