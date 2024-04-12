@@ -127,32 +127,37 @@ Response	getResponsePage(int status, std::vector<ServerConfig> &serverConfigs) {
 }
 
 Response Request::runPost() {
-	switch (checkPath(this->filePath)) {
-		case ENOENT:
+	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos)
+		return (Response(501));
+	if (this->_fullRequest.find("text/plain") != std::string::npos) {
+		switch (checkPath(this->filePath)) {
+			case ENOENT:
+				break ;
+			case EACCES:
+				return (getResponsePage(HttpStatus::FORBIDDEN, _serverConfigs));
+			case ENOTDIR:
+				return (Response(200));
+			default:
+				return (getResponsePage(409, _serverConfigs));
+		}
+		std::string prevPath = getPrevPath(filePath);
+		switch (checkPath(prevPath)) {
+			case ENOENT:
+				return (getResponsePage(HttpStatus::NOTFOUND, _serverConfigs));
+			case EACCES:
+				return (getResponsePage(HttpStatus::FORBIDDEN, _serverConfigs));
+			case ENOTDIR:
+				return (getResponsePage(400, _serverConfigs));
+			default:
 			break ;
-		case EACCES:
-			return (getResponsePage(HttpStatus::FORBIDDEN, _serverConfigs));
-		case ENOTDIR:
-			return (Response(200));
-		default:
-			return (getResponsePage(409, _serverConfigs));
+		}
+		std::string		content = getBodyOfRequest(this->_fullRequest);
+		std::ofstream	file(this->filePath.c_str());
+		file.write(content.c_str(), content.length());
+		file.close();
+		return Response(201);
 	}
-	std::string prevPath = getPrevPath(filePath);
-	switch (checkPath(prevPath)) {
-		case ENOENT:
-			return (getResponsePage(HttpStatus::NOTFOUND, _serverConfigs));
-		case EACCES:
-			return (getResponsePage(HttpStatus::FORBIDDEN, _serverConfigs));
-		case ENOTDIR:
-			return (getResponsePage(400, _serverConfigs));
-		default:
-			break ;
-	}
-	std::string		content = getBodyOfRequest(this->_fullRequest);
-	std::ofstream	file(this->filePath.c_str());
-	file.write(content.c_str(), content.length());
-	file.close();
-	return Response(201);
+	return (Response(501));
 }
 
 Response Request::runGet() {
