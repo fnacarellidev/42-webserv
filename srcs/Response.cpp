@@ -1,5 +1,17 @@
 #include "../includes/Response.hpp"
 
+static void	getDateAndBytes(const std::string &path, std::string &modTime, std::string &bytesSize) {
+	struct stat	fileStat;
+	struct tm	*timeInfo;
+	char	buffer[20];
+
+	stat(path.c_str(), &fileStat);
+	timeInfo = gmtime(&fileStat.st_mtime);
+	strftime(buffer, 20, "%d-%b-%Y %H:%M", timeInfo);
+	modTime = buffer;
+	bytesSize = toString(fileStat.st_size);
+}
+
 static std::string	generateDirectoryListing(const std::string &path) {
 	std::string	dirListing;
 	DIR	*dir = opendir(path.c_str());
@@ -11,9 +23,9 @@ static std::string	generateDirectoryListing(const std::string &path) {
 	dirListing += "<hr><pre>\n";
 	dirListing += "<a href=\"..\">../</a>\n";
 	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
-		std::string modTime = getLastModifiedOfFile(path + item->d_name);
-		std::string file = item->d_name;
+		std::string modTime, bytesSize, file = item->d_name;
 
+		getDateAndBytes(path + item->d_name, modTime, bytesSize);
 		dirListing += "<a href=\"" + file + "\">" + file;
 		if (item->d_type == DT_DIR) {
 			dirListing += "/";
@@ -26,8 +38,8 @@ static std::string	generateDirectoryListing(const std::string &path) {
 			dirListing += "</a>";
 			dirListing.append(64 - file.size(), ' ');
 			dirListing += modTime;
-			dirListing.append(20 - getFileSize(path + item->d_name).size(), ' ');
-			dirListing += getFileSize(path + item->d_name) + "\n";
+			dirListing.append(20 - bytesSize.size(), ' ');
+			dirListing += bytesSize + "\n";
 		}
 	}
 	closedir(dir);
@@ -48,6 +60,8 @@ static std::string	getErrInformation(int status)
 			return (E404);
 		case 405:
 			return (E405);
+		case 413:
+			return (E413);
 		case 500:
 			return (E500);
 		case 502:
@@ -99,6 +113,7 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	statusMessages[404] = "Not Found";
 	statusMessages[405] = "Method Not Allowed";
 	statusMessages[408] = "Request Timeout";
+	statusMessages[413] = "Payload Too Large";
 	statusMessages[500] = "Internal Server Error";
 	statusMessages[502] = "Bad Gateway";
 	statusMessages[503] = "Service Unavailable";
@@ -228,13 +243,15 @@ void	Response::addNewField(std::string key, std::string value) {
 }
 
 void	Response::_success() {
+	struct stat fileInfo;
+	stat(this->_bodyFile.c_str(), &fileInfo);
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	if (this->_bodyFile.empty())
 		return ;
 	switch (this->_status) {
 		case 200:
-			if (*(this->_bodyFile.end() - 1) != '/') {
+			if (!S_ISDIR(fileInfo.st_mode)){
 				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
 				this->addNewField("Content-Length", getFileSize(this->_bodyFile));
 				this->addNewField("Content-Type", getContentType(this->_bodyFile));

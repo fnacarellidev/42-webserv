@@ -37,6 +37,7 @@ namespace Route {
 		ROOT,
 		METHODS,
 		LISTING,
+		PATH,
 		CGI
 	};
 };
@@ -44,11 +45,12 @@ namespace Route {
 class Config {
 	public:
 		std::vector<ServerConfig>	servers;
+
 		ServerConfig&	findByHostNamePort(std::string const& host,
 			std::string const* names,
 			size_t const size,
 			unsigned int const port)
-			const throw(std::runtime_error);
+			throw(std::runtime_error);
 		void	addServers(char* filename) throw (std::runtime_error);
 		bool	configIsValid(char* filename);
 };
@@ -68,7 +70,7 @@ bool	invalidServerInputs(std::ifstream& file,
 	std::string& line,
 	bool* serverBrackets,
 	std::map<std::string, Server::Keywords>& serverMap);
-void	addRoutes(std::ifstream& file, ServerConfig& server);
+void	addRoutes(std::ifstream& file, std::string& line, ServerConfig& server);
 bool	validateErrorConfig(std::string& errors);
 bool	validateHostConfig(std::string& ip);
 bool	validateLimitConfig(std::string& limit);

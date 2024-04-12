@@ -6,7 +6,6 @@ ServerConfig::ServerConfig() {
 	_root = DEFAULT_ROOT;
 	_bodyLimit = DEFAULT_LIMIT;
 	_serverNames.push_back(_host);
-	_routes.push_back(RouteConfig());
 }
 
 std::map<int, std::string> ServerConfig::getErrors() const {
@@ -19,7 +18,7 @@ std::string *ServerConfig::getFilePathFromStatusCode(int status) {
 	return &_errors[status];
 }
 
-std::vector<RouteConfig> ServerConfig::getRoutes() const {
+std::vector<RouteConfig*> ServerConfig::getRoutes() const {
 	return _routes;
 }
 
@@ -43,11 +42,11 @@ void ServerConfig::setErrors(std::map<int, std::string> errors) {
 	_errors = errors;
 }
 
-void ServerConfig::setRoutes(std::vector<RouteConfig> routeConfigs) {
+void ServerConfig::setRoutes(std::vector<RouteConfig*> routeConfigs) {
 	_routes = routeConfigs;
 }
 
-void ServerConfig::setRoutes(RouteConfig routeConfig) {
+void ServerConfig::setRoutes(RouteConfig* routeConfig) {
 	_routes.push_back(routeConfig);
 }
 
@@ -81,4 +80,30 @@ void	ServerConfig::setServerRoot(std::string serverRoot) {
 
 std::string	ServerConfig::getServerRoot() {
 	return _root;
+}
+
+RouteConfig* ServerConfig::getRouteByPath(std::string requestUri) {
+	std::string path(requestUri);
+	std::vector<RouteConfig*> routes = getRoutes();
+	std::size_t uriLastSlash = requestUri.find_last_of('/');
+	bool isPath = requestUri.find('.') == std::string::npos;
+
+	if (!isPath && uriLastSlash != std::string::npos)
+		path.erase(uriLastSlash + 1);
+
+	for (std::vector<RouteConfig*>::iterator it = routes.begin(); it != routes.end(); ++it) {
+		if (path + "/" == (*it)->getPath() || path == (*it)->getPath())
+			return *it;
+	}
+
+	while (path != "/") {
+		if (path.find_first_of('/') != std::string::npos)
+			path.erase(path.find_last_of('/'));
+
+		for (std::vector<RouteConfig*>::iterator it = routes.begin(); it != routes.end(); ++it) {
+			if (path + "/" == (*it)->getPath() || path == (*it)->getPath())
+				return *it;
+		}
+	}
+	return NULL;
 }

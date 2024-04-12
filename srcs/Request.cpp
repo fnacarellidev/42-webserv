@@ -32,28 +32,40 @@ int    fileGood(const char *filePath) {
 	return 0;
 }
 
-static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::string requestUri) {
-	std::vector<RouteConfig> routeConfigs = serverConfigs.front().getRoutes();
-	std::string root = routeConfigs.front().getRoot();
-	std::vector<std::string> indexes = routeConfigs.front().getIndex();
+static std::string getFilePath(RouteConfig *route, std::string requestUri) {
+	std::string root = route->getRoot();
+	std::vector<std::string> indexes = route->getIndex();
+	std::string file = requestUri.substr(route->getPath().size() - 1, std::string::npos);
 
-	if (requestUri == "/") {
+	if (strEndsWith(requestUri, '/')) {
+		file.erase(file.end() - 1);
+		return root + file;
+	}
+	if (file.empty()) {
 		for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
 			bool fileExists = access((root + *it).c_str(), F_OK) == 0;
 			if (fileExists)
 				return root + *it;
 		}
 	}
+	if (*file.begin() == '/')
+		file.erase(file.begin());
 
-	return root + requestUri;
+	return root + file;
 }
 
 Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _serverConfigs(serverConfigs) {
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
+	std::string requestUri = requestLineParams[REQUESTURI];
 
 	file = requestLineParams[REQUESTURI].erase(0, 1);
 	method = getMethod(requestLineParams[METHOD]);
-	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
+	_reqUri = requestUri;
+	_route = _serverConfigs.front().getRouteByPath(requestUri);
+	_dirListEnabled = false;
+	if (_route)
+		_dirListEnabled = _route->getDirList();
+	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
 }
 
 unsigned short getBitmaskFromMethod(Methods method) {
@@ -64,7 +76,7 @@ unsigned short getBitmaskFromMethod(Methods method) {
 			return POST_OK;
 		case DELETE:
 			return DELETE_OK;
-		case UNKNOWNMETHOD:
+		default:
 			return NONE_OK;
 	};
 }
@@ -118,18 +130,24 @@ Response Request::runGet() {
 		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 
-	if (S_ISDIR(statbuf.st_mode)) {
-		std::cout << "[DEBUG] DETECTED DIR\n";
-		return Response((*(filePath.end() - 1) != '/' ? 301 :
-					(_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403)), filePath);
+	if (S_ISDIR(statbuf.st_mode))
+		return Response((_serverConfigs.front().getRoutes().front()->getDirList() ? 200 : 403), filePath);
+	if (strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
+		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
+			status = HttpStatus::FORBIDDEN;
+		else
+			status = HttpStatus::NOTFOUND;
+		return Response(status, *errPagePath);
 	}
 	return Response(200, filePath);
 }
 
 Response Request::runRequest() {
-	unsigned short allowedMethodsBitmask = _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask();
+	if (!_route)
+		return Response(404);
 
-	if (methodIsAllowed(method, allowedMethodsBitmask)) {
+	if (methodIsAllowed(method, _route->getAcceptMethodsBitmask())) {
 		int status = HttpStatus::NOTALLOWED;
 		std::string* errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
 		return errPagePath ? Response(status, *errPagePath) : Response(status);

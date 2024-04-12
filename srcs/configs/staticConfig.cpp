@@ -25,6 +25,7 @@ std::map<std::string, Route::Keywords>	buildRouteMap() {
 	map["root"] = Route::ROOT;
 	map["methods"] = Route::METHODS;
 	map["listing"] = Route::LISTING;
+	map["path"] = Route::PATH;
 	map["cgi"] = Route::CGI;
 
 	return map;
