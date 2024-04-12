@@ -33,9 +33,9 @@ int    fileGood(const char *filePath) {
 }
 
 static std::string getFilePath(RouteConfig *route, std::string requestUri) {
-	std::string root = route->getRoot();
-	std::vector<std::string> indexes = route->getIndex();
-	std::string file = requestUri.substr(route->getPath().size() - 1, std::string::npos);
+	std::string root = route->root;
+	std::vector<std::string> indexes = route->index;
+	std::string file = requestUri.substr(route->path.size() - 1, std::string::npos);
 
 	if (strEndsWith(requestUri, '/')) {
 		file.erase(file.end() - 1);
@@ -63,7 +63,7 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 	_route = _serverConfigs.front().getRouteByPath(requestUri);
 	_dirListEnabled = false;
 	if (_route)
-		_dirListEnabled = _route->getDirList();
+		_dirListEnabled = _route->dirList;
 	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
 }
 
@@ -110,7 +110,7 @@ Response Request::runGet() {
 	}
 
 	if (S_ISDIR(statbuf.st_mode))
-		return Response((_serverConfigs.front().getRoutes().front()->getDirList() ? 200 : 403), filePath);
+		return Response((_serverConfigs.front().routes.front()->dirList ? 200 : 403), filePath);
 	if (strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
 		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
 		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
@@ -126,7 +126,7 @@ Response Request::runRequest() {
 	if (!_route)
 		return Response(404);
 
-	if (methodIsAllowed(method, _route->getAcceptMethodsBitmask())) {
+	if (methodIsAllowed(method, _route->acceptMethodsBitmask)) {
 		int status = HttpStatus::NOTALLOWED;
 		std::string* errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
 		return errPagePath ? Response(status, *errPagePath) : Response(status);

@@ -117,7 +117,7 @@ throw(std::runtime_error) {
 					routeBrackets = !routeBrackets;
 					break;
 				default:
-					if (splited[1].find_first_of(";") != std::string::npos ||
+					if (splited[1].find_first_of(";") == std::string::npos ||
 					splited[1].find_last_of(';') != splited[1].find_first_of(';') ||
 					*(splited[1].end() - 1) != ';')
 						throw std::runtime_error("");
@@ -185,7 +185,7 @@ std::map<std::string, Server::Keywords>& serverMap) {
 					}
 					break;
 				default:
-					if (splited[1].find_first_of(";") != std::string::npos ||
+					if (splited[1].find_first_of(";") == std::string::npos ||
 					splited[1].find_last_of(';') != splited[1].find_first_of(';') ||
 					*(splited[1].end() - 1) != ';')
 						return true;

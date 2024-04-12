@@ -11,8 +11,29 @@ static void	addErrors(std::string const& error, ServerConfig& server) {
 
 		if (error[1][0] == '/')
 			error[1].erase(0, 1);
-		server.insertError(code, server.root + error[1]);
+		server.insertError(code, server.root + "/" + error[1]);
 	}
+}
+
+static size_t addLimit(std::string& limit) {
+	char* rest = NULL;
+	size_t nbr = std::strtoull(limit.c_str(), &rest, 10);
+
+	if (*rest == 0 && nbr == 0)
+		return (std::numeric_limits<size_t>::max());
+	switch (*rest) {
+		case 'G': case 'g':
+			nbr *= ONE_GIGA;
+			break;
+		case 'M': case 'm':
+			nbr *= ONE_MEGA;
+			break;
+		case 'K': case 'k':
+			nbr *= ONE_KILO;
+			break;
+		default:;
+	}
+	return (nbr);
 }
 
 void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
@@ -31,7 +52,6 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 		}
 
 		std::vector<std::string> splited = split(line, ' ');
-		size_t	limit;
 
 		if (splited[1].find_first_of(";") != std::string::npos)
 			splited[1].erase(splited[1].end() - 1);
@@ -49,10 +69,7 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 				servers.back().serverNames = split(splited[1], ',');
 				break;
 			case Server::LIMIT:
-				limit = std::strtoull(splited[1].c_str(), NULL, 10);
-				if (limit == 0)
-					limit = std::numeric_limits<size_t>::max();
-				servers.back().bodyLimit = limit;
+				servers.back().bodyLimit = addLimit(splited[1]);
 				break;
 			case Server::ERROR:
 				addErrors(splited[1], servers.back());

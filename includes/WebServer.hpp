@@ -15,6 +15,9 @@
 #define GIGA_LIMIT 184467e10
 #define MEGA_LIMIT 1844674e13
 #define KILO_LIMIT 1844674e16
+#define ONE_GIGA 1000000000
+#define ONE_MEGA 1000000
+#define ONE_KILO 1000
 
 namespace Server {
 	enum Keywords {
@@ -66,4 +69,4 @@ bool	invalidServerInputs(std::ifstream& file,
 void	addRoutes(std::ifstream& file, std::string& line, ServerConfig& server);
 void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers);
 
-std::ostream&	operator<<(std::ostream& o, const WebServer& webserv);
+std::ostream&	operator<<(std::ostream& o, WebServer& webserv);

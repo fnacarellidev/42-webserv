@@ -49,8 +49,11 @@ std::ostream&	operator<<(std::ostream& o, ServerConfig& server) {
 		o << *it << " ";
 	o << std::endl;
 	o << "\tErrors: ";
-	for (std::map<int, std::string>::iterator it = server.errors.begin(); it != server.errors.end(); ++it)
-		o << it->first << " " << it->second << (it != --server.errors.end() ? ", " : "");
+	for (std::map<int, std::string>::iterator it = server.errors.begin(); it != server.errors.end(); ++it) {
+		o << it->first << " " << it->second;
+		if (it != --server.errors.end())
+			o << ", ";
+	}
 	o << std::endl;
 
 	size_t n = 1;

@@ -30,4 +30,4 @@ class ServerConfig {
 		std::string*	getFilePathFromStatusCode(int status);
 };
 
-std::ostream&	operator<<(std::ostream& os, ServerConfig const& serverConfig);
+std::ostream&	operator<<(std::ostream& os, ServerConfig& serverConfig);

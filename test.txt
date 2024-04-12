@@ -11,7 +11,7 @@ server {
 		path /;
 	}
 	limit 1gb;
-	error 404=/tmp/tests.html;
+	error 404=/tmp/tests.html,403=teste.php,100=nexiste.txt;
 	root /root;
 	route {
 		index elefante.php;
