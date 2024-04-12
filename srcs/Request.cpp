@@ -61,7 +61,9 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 	method = getMethod(requestLineParams[METHOD]);
 	_reqUri = requestUri;
 	_route = _serverConfigs.front().getRouteByPath(requestUri);
-	_dirListEnabled = _route->getDirList();
+	_dirListEnabled = false;
+	if (_route)
+		_dirListEnabled = _route->getDirList();
 	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
 }
 
