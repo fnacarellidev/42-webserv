@@ -80,19 +80,21 @@ ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host
 	return serverConfigs.front();
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) {
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _shouldRedirect(false) {
+	std::string host = getHostHeader(request);
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::string requestUri = requestLineParams[REQUESTURI];
-	std::string host = getHostHeader(request);
 
-	file = requestLineParams[REQUESTURI].erase(0, 1);
-	method = getMethod(requestLineParams[METHOD]);
-	_server = getServer(serverConfigs, host);
 	_reqUri = requestUri;
+	_server = getServer(serverConfigs, host);
+	method = getMethod(requestLineParams[METHOD]);
 	_route = _server.getRouteByPath(requestUri);
 	_dirListEnabled = false;
-	if (_route)
+
+	if (_route && _route->getPath().size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
 		_dirListEnabled = _route->getDirList();
+		_shouldRedirect = requestUri.substr(_route->getPath().size()) == _route->getRedirect().first;
+	}
 	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
 }
 
