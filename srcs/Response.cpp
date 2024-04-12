@@ -62,6 +62,8 @@ static std::string	getErrInformation(int status)
 			return (E405);
 		case 500:
 			return (E500);
+		case 501:
+			return (E501);
 		case 502:
 			return (E502);
 		case 503:
@@ -113,6 +115,7 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	statusMessages[408] = "Request Timeout";
 	statusMessages[409] = "Conflict";
 	statusMessages[500] = "Internal Server Error";
+	statusMessages[501] = "Not Implemented";
 	statusMessages[502] = "Bad Gateway";
 	statusMessages[503] = "Service Unavailable";
 	return (statusMessages);
