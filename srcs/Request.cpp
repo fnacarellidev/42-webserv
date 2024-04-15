@@ -1,10 +1,16 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
-static Response	deleteEverythingInsideDir(const std::string& dirPath) {
+static Response	tryToDelete(const std::string& filePath, ServerConfig& server) {
+	if (std::remove(filePath.c_str()) == -1)
+		return getResponsePage(HttpStatus::SERVERERR, server);
+	return getResponsePage(HttpStatus::NOCONTENT, server);
+}
+
+static Response	deleteEverythingInsideDir(const std::string& dirPath, ServerConfig& server) {
 	// TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	(void)dirPath;
-	return (Response(HttpStatus::FORBIDDEN)); // yes it will always return forbidden
+	return getResponsePage(HttpStatus::FORBIDDEN, server); // yes it will always return forbidden
 }
 
 static std::vector<std::string> getRequestLineParams(std::string request) {
@@ -233,22 +239,22 @@ Response Request::runGet() {
 Response	Request::runDelete() {
 	struct stat	statbuf;
 	std::string*	errPagePath;
+	bool	deleteAll = false;
 
-	if (_route->acceptMethodsBitmask & DELETE_OK == 0)
-		return (Response(HttpStatus::NOTALLOWED));
-	else if (access(filePath.c_str(), F_OK))
-		return (Response(HttpStatus::NOTFOUND));
-	else if (access(filePath.c_str(), X_OK))
-		return (Response(HttpStatus::FORBIDDEN));
-	else if (stat(filePath.c_str(), &statbuf))
-		return (Response(HttpStatus::SERVERERR));
-	else if (S_ISDIR(statbuf.st_mode)) {
+	if (access(filePath.c_str(), F_OK))
+		return getResponsePage(HttpStatus::NOTFOUND, this->_server);
+	if (stat(filePath.c_str(), &statbuf))
+		return getResponsePage(HttpStatus::SERVERERR, this->_server);
+	if (S_ISDIR(statbuf.st_mode)) {
 		if (strEndsWith(_reqUri, '/'))
-			return (deleteEverythingInsideDir(filePath));
-		return (Response(HttpStatus::CONFLICT));
+			deleteAll = true;
+		else
+			return getResponsePage(HttpStatus::CONFLICT, this->_server);
 	}
-
-	return Response(HttpStatus::NOCONTENT);
+// TODAS AS PASTAS ATE O ARQUIVO TEM Q TER PERMISSAO DE ESCRITA E EXECUCAO
+	if (deleteAll)
+		return deleteEverythingInsideDir(filePath, this->_server);
+	return tryToDelete(filePath, this->_server);
 }
 
 
