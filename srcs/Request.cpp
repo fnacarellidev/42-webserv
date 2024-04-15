@@ -1,6 +1,5 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
-#include <sstream>
 
 static std::vector<std::string> getRequestLineParams(std::string request) {
 	std::string firstLine;
@@ -85,6 +84,7 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::string requestUri = requestLineParams[REQUESTURI];
 
+	_fullRequest = request;
 	_reqUri = requestUri;
 	_server = getServer(serverConfigs, host);
 	method = getMethod(requestLineParams[METHOD]);
@@ -119,6 +119,58 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 	unsigned short methodBitmask = getBitmaskFromMethod(method);
 
 	return !(methodBitmask & allowedMethodsBitmask);
+}
+
+static std::string	getBodyOfRequest(std::string fullRequest) {
+	std::string			line;
+	std::string			content;
+	std::stringstream	ss(fullRequest);
+
+	while (std::getline(ss, line) && line != "\r") ;
+	while (std::getline(ss, line)) {
+		content += line;
+	}
+	return (content);
+}
+
+static Response	getResponsePage(int status, ServerConfig &server) {
+	std::string *errPagePath;
+	errPagePath = server.getFilePathFromStatusCode(status);
+	return errPagePath ? Response(status, *errPagePath) : Response(status);
+}
+
+Response Request::runPost() {
+	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos)
+		return (Response(501));
+	if (this->_fullRequest.find("text/plain") != std::string::npos) {
+		switch (checkPath(this->filePath)) {
+			case ENOENT:
+				break ;
+			case EACCES:
+				return (getResponsePage(HttpStatus::FORBIDDEN, _server));
+			case ENOTDIR:
+				return (Response(200));
+			default:
+				return (getResponsePage(409, _server));
+		}
+		std::string prevPath = getPrevPath(filePath);
+		switch (checkPath(prevPath)) {
+			case ENOENT:
+				return (getResponsePage(HttpStatus::NOTFOUND, _server));
+			case EACCES:
+				return (getResponsePage(HttpStatus::FORBIDDEN, _server));
+			case ENOTDIR:
+				return (getResponsePage(400, _server));
+			default:
+				break ;
+		}
+		std::string		content = getBodyOfRequest(this->_fullRequest);
+		std::ofstream	file(this->filePath.c_str());
+		file.write(content.c_str(), content.length());
+		file.close();
+		return Response(201);
+	}
+	return (Response(501));
 }
 
 Response Request::runGet() {
@@ -177,16 +229,14 @@ Response Request::runRequest() {
 		return Response(404);
 
 	if (methodIsAllowed(method, _route->acceptMethodsBitmask)) {
-		int status = HttpStatus::NOTALLOWED;
-		std::string* errPagePath = _server.getFilePathFromStatusCode(status);
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+		return (getResponsePage(HttpStatus::NOTALLOWED, _server));
 	}
 	switch (method) {
 		case GET:
 			return runGet();
 
-		/* case POST: */
-		/* 	runPost(); */
+		case POST:
+			return runPost();
 
 		/* case DELETE: */
 		/* 	runDelete(); */

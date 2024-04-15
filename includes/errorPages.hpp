@@ -24,5 +24,7 @@
 				"invalid response from the upstream server it accessed in attempting" \
 				"to fulfill the request."
 
+#define E501 "The server is unable to process your request"
+
 #define E503 "The server is currently unable to handle the request due to a " \
 				"temporary overloading or maintenance of the server."

@@ -65,6 +65,8 @@ static std::string	getErrInformation(int status)
 			return (E413);
 		case 500:
 			return (E500);
+		case 501:
+			return (E501);
 		case 502:
 			return (E502);
 		case 503:
@@ -114,8 +116,10 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	statusMessages[404] = "Not Found";
 	statusMessages[405] = "Method Not Allowed";
 	statusMessages[408] = "Request Timeout";
+	statusMessages[409] = "Conflict";
 	statusMessages[413] = "Payload Too Large";
 	statusMessages[500] = "Internal Server Error";
+	statusMessages[501] = "Not Implemented";
 	statusMessages[502] = "Bad Gateway";
 	statusMessages[503] = "Service Unavailable";
 	return (statusMessages);
@@ -263,8 +267,8 @@ void	Response::_success() {
 			}
 			break ;
 		case 201:
-			this->addNewField("Location:", "/path/to/some?");
-			this->_body = getFileContent(this->_bodyFile);
+			this->addNewField("Content-Type", getContentType(this->_bodyFile));
+			this->_body = "File created";
 			break ;
 		case 204:
 			break ;
