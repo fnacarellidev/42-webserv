@@ -164,7 +164,7 @@ Response Request::runPost() {
 			case ENOTDIR:
 				return (getResponsePage(400, _server));
 			default:
-			break ;
+				break ;
 		}
 		std::string		content = getBodyOfRequest(this->_fullRequest);
 		std::ofstream	file(this->filePath.c_str());
