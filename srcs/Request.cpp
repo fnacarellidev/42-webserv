@@ -135,7 +135,7 @@ static std::string	getBodyOfRequest(std::string fullRequest) {
 	return (content);
 }
 
-Response	getResponsePage(int status, ServerConfig &server) {
+static Response	getResponsePage(int status, ServerConfig &server) {
 	std::string *errPagePath;
 	errPagePath = server.getFilePathFromStatusCode(status);
 	return errPagePath ? Response(status, *errPagePath) : Response(status);
