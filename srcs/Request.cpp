@@ -2,6 +2,12 @@
 #include "../includes/utils.hpp"
 #include <sstream>
 
+static Response	deleteEverythingInsideDir(const std::string& dirPath) {
+	// TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	(void)dirPath;
+	return (Response(HttpStatus::FORBIDDEN)); // yes it will always return forbidden
+}
+
 static std::vector<std::string> getRequestLineParams(std::string request) {
 	std::string firstLine;
 	std::stringstream strStream(request);
@@ -172,6 +178,28 @@ Response Request::runGet() {
 	return Response(200, filePath);
 }
 
+Response	Request::runDelete() {
+	struct stat	statbuf;
+	std::string*	errPagePath;
+
+	if (_route->acceptMethodsBitmask & DELETE_OK == 0)
+		return (Response(HttpStatus::NOTALLOWED));
+	else if (access(filePath.c_str(), F_OK))
+		return (Response(HttpStatus::NOTFOUND));
+	else if (access(filePath.c_str(), X_OK))
+		return (Response(HttpStatus::FORBIDDEN));
+	else if (stat(filePath.c_str(), &statbuf))
+		return (Response(HttpStatus::SERVERERR));
+	else if (S_ISDIR(statbuf.st_mode)) {
+		if (strEndsWith(_reqUri, '/'))
+			return (deleteEverythingInsideDir(filePath));
+		return (Response(HttpStatus::CONFLICT));
+	}
+
+	return Response(HttpStatus::NOCONTENT);
+}
+
+
 Response Request::runRequest() {
 	if (!_route)
 		return Response(404);
@@ -188,8 +216,8 @@ Response Request::runRequest() {
 		/* case POST: */
 		/* 	runPost(); */
 
-		/* case DELETE: */
-		/* 	runDelete(); */
+		case DELETE:
+			return runDelete();
 
 		default:
 			break;

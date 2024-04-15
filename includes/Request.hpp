@@ -27,7 +27,7 @@ class Request {
 		std::string _reqUri;
 		bool _dirListEnabled;
 		/* Response runPost(); */
-		/* Response runDelete(); */
+		Response runDelete();
 	public:
 		Methods method;
 		std::string file;
