@@ -16,13 +16,14 @@ static std::string	generateDirectoryListing(const std::string &path) {
 	std::string	dirListing;
 	DIR	*dir = opendir(path.c_str());
 
-	readdir(dir);
-	readdir(dir);
-	dirListing += "<html>\n<head>\n<title>Directory listing for " + path + "</title>\n</head>\n<body>\n";
-	dirListing += "<h1>Directory listing for " + path + "</h1>\n";
-	dirListing += "<hr><pre>\n";
+	dirListing += "<html><head><title>Directory listing for " + path + "</title></head><body>";
+	dirListing += "<h1>Directory listing for " + path + "</h1>";
+	dirListing += "<hr><pre>";
 	dirListing += "<a href=\"..\">../</a>\n";
 	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
+		if (std::strcmp(item->d_name, ".") == 0 || std::strcmp(item->d_name, "..") == 0)
+			continue ;
+
 		std::string modTime, bytesSize, file = item->d_name;
 
 		getDateAndBytes(path + item->d_name, modTime, bytesSize);
@@ -30,20 +31,20 @@ static std::string	generateDirectoryListing(const std::string &path) {
 		if (item->d_type == DT_DIR) {
 			dirListing += "/";
 			dirListing += "</a>";
-			dirListing.append(64 - file.size() - 1, ' ');
+			dirListing.append(255 - file.size() - 1, ' ');
 			dirListing += modTime;
 			dirListing.append(19, ' ');
 			dirListing += "-\n";
 		} else {
 			dirListing += "</a>";
-			dirListing.append(64 - file.size(), ' ');
+			dirListing.append(255 - file.size(), ' ');
 			dirListing += modTime;
 			dirListing.append(20 - bytesSize.size(), ' ');
 			dirListing += bytesSize + "\n";
 		}
 	}
 	closedir(dir);
-	dirListing += "</pre>\n<hr>\n</body>\n</html>\n";
+	dirListing += "</pre><hr></body></html>";
 	return (dirListing);
 }
 
@@ -60,6 +61,8 @@ static std::string	getErrInformation(int status)
 			return (E404);
 		case 405:
 			return (E405);
+		case 413:
+			return (E413);
 		case 500:
 			return (E500);
 		case 502:
@@ -111,6 +114,7 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	statusMessages[404] = "Not Found";
 	statusMessages[405] = "Method Not Allowed";
 	statusMessages[408] = "Request Timeout";
+	statusMessages[413] = "Payload Too Large";
 	statusMessages[500] = "Internal Server Error";
 	statusMessages[502] = "Bad Gateway";
 	statusMessages[503] = "Service Unavailable";
@@ -123,20 +127,15 @@ Response::Response(int status) {
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
+	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
 	switch (status / 100) {
-		// case 1: // 1xx
-		//	this->_informatiol
-		// 	break ;
-		case 2: // 2xx
+		case 2:
 			this->_success();
 			break ;
-		case 3: // 3xx
-			this->_redirection();
-			break ;
-		case 4: // 4xx
+		case 4:
 			this->_error();
 			break ;
-		case 5: // 5xx
+		case 5:
 			this->_serverError();
 			break ;
 	}
@@ -149,25 +148,31 @@ Response::Response(int status, std::string bodyFile) {
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
+	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
 	switch (status / 100) {
-		// case 1: // 1xx
-		//	this->_informatiol
-		// 	break ;
-		case 2: // 2xx
+		case 2:
 			this->_success();
 			break ;
-		case 3: // 3xx
-			this->_redirection();
-			break ;
-		case 4: // 4xx
+		case 4:
 			this->_error();
 			break ;
-		case 5: // 5xx
+		case 5:
 			this->_serverError();
 			break ;
 	}
 	this->generateFullResponse();
 }
+
+Response::Response(int status, std::string bodyFile, std::string locationHeader) {
+	this->_status = status;
+	this->_bodyFile = (status == 301 ? bodyFile.append("/") : bodyFile);
+	this->_mimeTypes = defaultMimeTypes();
+	this->_statusMessages = defaultStatusMessages();
+	this->defineStatusLine(status);
+	this->_redirection(locationHeader);
+	this->generateFullResponse();
+}
+
 
 Response	&Response::operator=(const Response &other) {
 	if (this != &other) {
@@ -239,13 +244,15 @@ void	Response::addNewField(std::string key, std::string value) {
 }
 
 void	Response::_success() {
+	struct stat fileInfo;
+	stat(this->_bodyFile.c_str(), &fileInfo);
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	if (this->_bodyFile.empty())
 		return ;
 	switch (this->_status) {
 		case 200:
-			if (*(this->_bodyFile.end() - 1) != '/') {
+			if (!S_ISDIR(fileInfo.st_mode)){
 				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
 				this->addNewField("Content-Length", getFileSize(this->_bodyFile));
 				this->addNewField("Content-Type", getContentType(this->_bodyFile));
@@ -264,21 +271,12 @@ void	Response::_success() {
 	}
 }
 
-void	Response::_redirection() {
+void	Response::_redirection(std::string locationHeader) {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	if (this->_bodyFile.empty())
 		return ;
-	switch (this->_status) {
-		case 301:
-			this->addNewField("Location:", "/path/to/some?");
-			break ;
-		case 302:
-			this->addNewField("Location:", "/path/to/some?");
-			break ;
-		case 304:
-			break ;
-	}
+	addNewField("Location", locationHeader);
 }
 
 void	Response::_error() {

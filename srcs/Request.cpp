@@ -32,29 +32,74 @@ int    fileGood(const char *filePath) {
 	return 0;
 }
 
-static std::string getFilePath(std::vector<ServerConfig> serverConfigs, std::string requestUri) {
-	std::vector<RouteConfig> routeConfigs = serverConfigs.front().getRoutes();
-	std::string root = routeConfigs.front().getRoot();
-	std::vector<std::string> indexes = routeConfigs.front().getIndex();
+static std::string getFilePath(RouteConfig *route, std::string requestUri) {
+	std::string root = route->root;
+	std::vector<std::string> indexes = route->index;
+	std::string file = requestUri.substr(route->path.size() - 1, std::string::npos);
 
-	if (requestUri == "/") {
+	if (strEndsWith(requestUri, '/')) {
+		file.erase(file.end() - 1);
+		return root + file;
+	}
+	if (file.empty()) {
 		for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
 			bool fileExists = access((root + *it).c_str(), F_OK) == 0;
 			if (fileExists)
 				return root + *it;
 		}
 	}
-	if (root[root.size() - 1] == '/')
-		root.erase(root.size() - 1);
+	if (*file.begin() == '/')
+		file.erase(file.begin());
 
-	return root + requestUri;
+	return root + file;
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _serverConfigs(serverConfigs) {
-	std::vector<std::string> requestLineParams = getRequestLineParams(request);
+std::string getHostHeader(std::string request) {
+	std::string line;
+	std::string host;
+	std::stringstream sstream(request);
 
+	while (getline(sstream, line)) {
+		if (line.substr(0, 6) == "Host: ") {
+			host = line.substr(6);
+			trim(host, "\r");
+			return host;
+		}
+	}
+	return "";
+}
+
+ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host) {
+	for (std::vector<ServerConfig>::iterator it = serverConfigs.begin(); it != serverConfigs.end(); ++it) {
+		std::vector<std::string> names = it->serverNames;
+		for (std::vector<std::string>::iterator namesIt = names.begin(); namesIt != names.end(); ++namesIt) {
+			if (host == *namesIt)
+				return *it;
+		}
+	}
+	return serverConfigs.front();
+}
+
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _shouldRedirect(false) {
+	std::string host = getHostHeader(request);
+	std::vector<std::string> requestLineParams = getRequestLineParams(request);
+	std::string requestUri = requestLineParams[REQUESTURI];
+
+	_reqUri = requestUri;
+	_server = getServer(serverConfigs, host);
 	method = getMethod(requestLineParams[METHOD]);
-	filePath = getFilePath(_serverConfigs, requestLineParams[REQUESTURI]);
+	_route = _server.getRouteByPath(requestUri);
+	_dirListEnabled = false;
+	_shouldRedirect = false;
+
+	if (_route && _route->path.size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
+		_dirListEnabled = _route->dirList;
+		if (!_route->redirect.first.empty())
+			_shouldRedirect = requestUri.substr(_route->path.size()) == _route->redirect.first;
+	}
+	if (_route)
+		_dirListEnabled = _route->dirList;
+	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
 }
 
 unsigned short getBitmaskFromMethod(Methods method) {
@@ -65,7 +110,7 @@ unsigned short getBitmaskFromMethod(Methods method) {
 			return POST_OK;
 		case DELETE:
 			return DELETE_OK;
-		case UNKNOWNMETHOD:
+		default:
 			return NONE_OK;
 	};
 }
@@ -82,6 +127,15 @@ Response Request::runGet() {
 	int status = HttpStatus::OK;
 
 	stat(filePath.c_str(), &statbuf);
+	if (_shouldRedirect) {
+		std::string redirectFile = _route->redirect.second;
+		std::string sysFilePath = _route->root + _route->redirect.second;
+		std::string requestUrl = "http://localhost:" + toString(_server.port) + _route->path + redirectFile;
+
+		if (stat(sysFilePath.c_str(), &statbuf) == -1)
+			return Response(HttpStatus::NOTFOUND);
+		return Response(HttpStatus::MOVED_PERMANENTLY, sysFilePath, requestUrl);
+	}
 	switch (fileGood(this->filePath.c_str())) {
 		case ENOENT:
 			status = HttpStatus::NOTFOUND;
@@ -95,23 +149,36 @@ Response Request::runGet() {
 			break;
 	}
 	if (status != HttpStatus::OK) {
-		errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		errPagePath = _server.getFilePathFromStatusCode(status);
 		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
-		return Response((*(filePath.end() - 1) != '/' ? 301 :
-		(_serverConfigs.front().getRoutes().front().getDirList() ? 200 : 403)), filePath);
+		if (_route->dirList)
+			return Response(status, filePath);
+		else
+			status = HttpStatus::FORBIDDEN;
+		errPagePath = _server.getFilePathFromStatusCode(status);
+		return errPagePath ? Response(status, *errPagePath) : Response(status);
+	}
+	if (strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
+		errPagePath = _server.getFilePathFromStatusCode(status);
+		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
+			status = HttpStatus::FORBIDDEN;
+		else
+			status = HttpStatus::NOTFOUND;
+		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 	return Response(200, filePath);
 }
 
 Response Request::runRequest() {
-	unsigned short allowedMethodsBitmask = _serverConfigs.front().getRoutes().front().getAcceptMethodsBitmask();
+	if (!_route)
+		return Response(404);
 
-	if (methodIsAllowed(method, allowedMethodsBitmask)) {
+	if (methodIsAllowed(method, _route->acceptMethodsBitmask)) {
 		int status = HttpStatus::NOTALLOWED;
-		std::string* errPagePath = _serverConfigs.front().getFilePathFromStatusCode(status);
+		std::string* errPagePath = _server.getFilePathFromStatusCode(status);
 		return errPagePath ? Response(status, *errPagePath) : Response(status);
 	}
 	switch (method) {
