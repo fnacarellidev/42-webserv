@@ -126,9 +126,7 @@ static std::string	getBodyOfRequest(std::string fullRequest) {
 	std::string			content;
 	std::stringstream	ss(fullRequest);
 
-	while (std::getline(ss, line) && line != "\r") {
-		continue ;
-	}
+	while (std::getline(ss, line) && line != "\r") ;
 	while (std::getline(ss, line)) {
 		content += line;
 	}
