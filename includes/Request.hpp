@@ -24,12 +24,17 @@ enum RequestLine {
 class Request {
 	private:
 		std::string	_fullRequest;
-		std::vector<ServerConfig> _serverConfigs;
+		ServerConfig _server;
 		Response runGet();
 		Response runPost();
+		bool _shouldRedirect;
+		RouteConfig* _route;
+		std::string _reqUri;
+		bool _dirListEnabled;
 		/* Response runDelete(); */
 	public:
 		Methods method;
+		std::string file;
 		std::string filePath;
 		Response runRequest();
 		Request(std::string request, std::vector<ServerConfig> serverConfigs);

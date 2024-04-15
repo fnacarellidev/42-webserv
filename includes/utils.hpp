@@ -20,6 +20,7 @@ struct stat	pathInfo(const std::string &path);
 bool pathExists(const std::string &dir);
 std::string	getPrevPath(const std::string &fullPath);
 int	checkPath(std::string &path);
+bool strEndsWith(std::string str, char c);
 
 template<typename T>
 std::string	toString(const T& value) {

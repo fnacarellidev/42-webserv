@@ -14,6 +14,9 @@
 #define E405 "The method specified in the request is not allowed for the " \
 				"resource identified by the request URI."
 
+#define E413 "The request was larger than the server is willing or able to " \
+				"process."
+
 #define E500 "The server encountered an internal error or misconfiguration " \
 				"and was unable to complete your request."
 
