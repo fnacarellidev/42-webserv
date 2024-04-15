@@ -8,10 +8,7 @@ struct stat	pathInfo(const std::string &path) {
 
 bool pathExists(const std::string &dir) {
 	struct stat statbuff;
-
-	if (stat(dir.c_str(), &statbuff) == 0)
-		return (true);
-	return (false);
+	return (stat(dir.c_str(), &statbuff) == 0);
 }
 
 std::string	getPrevPath(const std::string &fullPath) {
