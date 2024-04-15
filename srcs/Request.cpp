@@ -90,10 +90,12 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 	method = getMethod(requestLineParams[METHOD]);
 	_route = _server.getRouteByPath(requestUri);
 	_dirListEnabled = false;
+	_shouldRedirect = false;
 
 	if (_route && _route->path.size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
 		_dirListEnabled = _route->dirList;
-		_shouldRedirect = requestUri.substr(_route->path.size()) == _route->redirect.first;
+		if (!_route->redirect.first.empty())
+			_shouldRedirect = requestUri.substr(_route->path.size()) == _route->redirect.first;
 	}
 	if (_route)
 		_dirListEnabled = _route->dirList;
