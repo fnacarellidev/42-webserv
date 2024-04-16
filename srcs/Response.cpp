@@ -125,9 +125,20 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	return (statusMessages);
 }
 
+Response::Response(int status, Request &request) {
+	this->_status = status;
+	this->_filePath = request.filePath;
+	this->_reqUri = request._reqUri;
+	this->_mimeTypes = defaultMimeTypes();
+	this->_statusMessages = defaultStatusMessages();
+	this->defineStatusLine(status);
+
+	this->generateFullResponse();
+}
+
 Response::Response(int status) {
 	this->_status = status;
-	this->_bodyFile = "";
+	this->_filePath = "";
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
@@ -148,7 +159,7 @@ Response::Response(int status) {
 
 Response::Response(int status, std::string bodyFile) {
 	this->_status = status;
-	this->_bodyFile = (status == 301 ? bodyFile.append("/") : bodyFile);
+	this->_filePath = (status == 301 ? bodyFile.append("/") : bodyFile);
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
@@ -169,7 +180,7 @@ Response::Response(int status, std::string bodyFile) {
 
 Response::Response(int status, std::string bodyFile, std::string locationHeader) {
 	this->_status = status;
-	this->_bodyFile = (status == 301 ? bodyFile.append("/") : bodyFile);
+	this->_filePath = (status == 301 ? bodyFile.append("/") : bodyFile);
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
@@ -182,7 +193,7 @@ Response	&Response::operator=(const Response &other) {
 	if (this != &other) {
 		this->_body = other._body;
 		this->_status = other._status;
-		this->_bodyFile = other._bodyFile;
+		this->_filePath = other._filePath;
 		this->_mimeTypes = other._mimeTypes;
 		this->_statusLine = other._statusLine;
 		this->_headerFields = other._headerFields;
@@ -248,26 +259,24 @@ void	Response::addNewField(std::string key, std::string value) {
 }
 
 void	Response::_success() {
-	struct stat fileInfo;
-	stat(this->_bodyFile.c_str(), &fileInfo);
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (this->_bodyFile.empty())
+	if (this->_filePath.empty())
 		return ;
 	switch (this->_status) {
 		case 200:
-			if (!S_ISDIR(fileInfo.st_mode)){
-				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
-				this->addNewField("Content-Length", getFileSize(this->_bodyFile));
-				this->addNewField("Content-Type", getContentType(this->_bodyFile));
-				this->_body = getFileContent(this->_bodyFile);
+			if (!S_ISDIR(pathInfo(this->_filePath).st_mode)){
+				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_filePath));
+				this->addNewField("Content-Length", getFileSize(this->_filePath));
+				this->addNewField("Content-Type", getContentType(this->_filePath));
+				this->_body = getFileContent(this->_filePath);
 			} else {
 				this->addNewField("Content-Type", "text/html");
-				this->_body = generateDirectoryListing(this->_bodyFile);
+				this->_body = generateDirectoryListing(this->_filePath, this->_requestUri);
 			}
 			break ;
 		case 201:
-			this->addNewField("Content-Type", getContentType(this->_bodyFile));
+			this->addNewField("Content-Type", getContentType(this->_filePath));
 			this->_body = "File created";
 			break ;
 		case 204:
@@ -278,18 +287,16 @@ void	Response::_success() {
 void	Response::_redirection(std::string locationHeader) {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (this->_bodyFile.empty())
-		return ;
 	addNewField("Location", locationHeader);
 }
 
 void	Response::_error() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!this->_bodyFile.empty()) {
-		this->_body = getFileContent(this->_bodyFile);
-		this->addNewField("Content-Length", getFileSize(this->_bodyFile));
-		this->addNewField("Content-Type", getContentType(this->_bodyFile));
+	if (!this->_filePath.empty()) {
+		this->_body = getFileContent(this->_filePath);
+		this->addNewField("Content-Length", getFileSize(this->_filePath));
+		this->addNewField("Content-Type", getContentType(this->_filePath));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
@@ -301,10 +308,10 @@ void	Response::_error() {
 void	Response::_serverError() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!this->_bodyFile.empty()) {
-		this->_body = getFileContent(this->_bodyFile);
-		this->addNewField("Content-Length", getFileSize(this->_bodyFile));
-		this->addNewField("Content-Type", getContentType(this->_bodyFile));
+	if (!this->_filePath.empty()) {
+		this->_body = getFileContent(this->_filePath);
+		this->addNewField("Content-Length", getFileSize(this->_filePath));
+		this->addNewField("Content-Type", getContentType(this->_filePath));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
