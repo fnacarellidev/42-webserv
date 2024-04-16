@@ -2,6 +2,17 @@
 #include "../../includes/WebServer.hpp"
 #include "../../includes/utils.hpp"
 
+static bool	validateCGIConfig(std::string& cgi) {
+	std::vector<std::string> types = split(cgi, ',');
+
+	if (types.size() > 3)
+		return true;
+	for (std::vector<std::string>::iterator it = types.begin(); it != types.end(); it++)
+		if (*it != ".php" && *it != ".py")
+			return true;
+	return false;
+}
+
 static bool	validateRedirectConfig(std::string& redirect) {
 	std::vector<std::string> values = split(redirect, '=');
 
@@ -137,6 +148,9 @@ throw(std::runtime_error) {
 							break;
 						case Route::PATH:
 							error = (*splited[1].begin() != '/');
+							break;
+						case Route::CGI:
+							error = validateCGIConfig(splited[1]);
 							break;
 						default: ;
 					}
