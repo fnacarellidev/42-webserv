@@ -1,9 +1,5 @@
 #pragma once
-#include <iostream>
-#include <list>
-#include <sstream>
-#include <cstdlib>
-#include <unistd.h>
+#include "includeAll.hpp"
 #include "Response.hpp"
 #include "ServerConfig.hpp"
 #include "utils.hpp"

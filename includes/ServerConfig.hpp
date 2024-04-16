@@ -1,10 +1,6 @@
 #pragma once
 
-#include <iostream>
-#include <sstream>
-#include <utility>
-#include <map>
-
+#include "includeAll.hpp"
 #include "HttpStatus.hpp"
 #include "RouteConfig.hpp"
 
