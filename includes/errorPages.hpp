@@ -14,6 +14,9 @@
 #define E405 "The method specified in the request is not allowed for the " \
 				"resource identified by the request URI."
 
+#define E409 "The request conflict, indicating that the request could not be " \
+				"completed due to a conflict with the current state of the resource."
+
 #define E413 "The request was larger than the server is willing or able to " \
 				"process."
 

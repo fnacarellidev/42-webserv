@@ -13,8 +13,10 @@ static bool daddyIssues(std::string filePath, const std::string& root) {
 
 	while (fileSlashes-- > rootSlashes) {
 		filePath = getPrevPath(filePath);
-		if (access(filePath.c_str(), R_OK | W_OK | X_OK) == -1)
+		if (access(filePath.c_str(), R_OK | W_OK | X_OK) == -1) {
+			perror("access");
 			return true;
+		}
 	}
 	return false;
 }
@@ -279,19 +281,14 @@ Response Request::runGet() {
 Response	Request::runDelete() {
 	struct stat	statbuf;
 
-	if (daddyIssues(filePath, _route->root)) {
-		std::cerr << "vai se tratar garota" << std::endl;
+	if (daddyIssues(filePath, _route->root))
 		return getResponsePage(HttpStatus::FORBIDDEN, this->_server);
-	}
-	if (access(filePath.c_str(), F_OK)) {
-		std::cerr << "isso non ecziste" << std::endl;
+	if (access(filePath.c_str(), F_OK))
 		return getResponsePage(HttpStatus::NOTFOUND, this->_server);
-	}
 	if (stat(filePath.c_str(), &statbuf)) {
 		perror("stat");
 		return getResponsePage(HttpStatus::SERVERERR, this->_server);
 	}
-	std::cerr << this->filePath << std::endl;
 	if (S_ISDIR(statbuf.st_mode)) {
 		if (strEndsWith(_reqUri, '/'))
 			return deleteEverythingInsideDir(filePath, this->_server, this->_route->root);
