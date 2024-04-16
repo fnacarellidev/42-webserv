@@ -38,6 +38,8 @@ static std::string getFilePath(RouteConfig *route, std::string requestUri) {
 
 	if (strEndsWith(requestUri, '/')) {
 		file.erase(file.end() - 1);
+		if (*file.begin() == '/')
+			file.erase(file.begin());
 		return root + file;
 	}
 	if (file.empty()) {
