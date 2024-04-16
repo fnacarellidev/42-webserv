@@ -18,6 +18,7 @@ class RouteConfig {
 		std::string	path;
 		std::pair<std::string, std::string>	redirect;
 		std::vector<std::string>	index;
+		std::vector<std::string>	cgi;
 		std::string	root;
 		unsigned short	acceptMethodsBitmask;
 		bool	dirList;

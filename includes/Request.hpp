@@ -30,7 +30,6 @@ class Request {
 		Response runDelete();
 	public:
 		Methods method;
-		std::string file;
 		std::string filePath;
 		Response runRequest();
 		Request(std::string request, std::vector<ServerConfig> serverConfigs);

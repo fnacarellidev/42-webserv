@@ -86,7 +86,9 @@ void	addRoutes(std::ifstream& file, std::string& line, ServerConfig& server) {
 			case Route::PATH:
 				server.routes.back()->path = removeExtraSlashes(splited[1]);
 				break;
-			default: ;
+			case Route::CGI:
+				server.routes.back()->cgi = split(splited[1], ',');
+				break;
 		}
 		std::getline(file, line);
 		trim(line, "\t \n");
