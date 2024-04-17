@@ -17,20 +17,24 @@ enum RequestLine {
 	PROTOCOLVER
 };
 
+class Response;
+
 class Request {
 	private:
 		std::string	_fullRequest;
-		ServerConfig _server;
-		Response runGet();
-		Response runPost();
-		bool _shouldRedirect;
 		RouteConfig* _route;
-		std::string _reqUri;
 		bool _dirListEnabled;
-		Response runDelete();
+		HttpStatus::Code runGet();
+		HttpStatus::Code runPost();
+		HttpStatus::Code runDelete();
 	public:
 		Methods method;
+		bool _shouldRedirect;
+		std::string	_reqUri;
+		std::string _locationHeader;
 		std::string filePath;
+		std::string	root;
+		ServerConfig _server;
 		Response runRequest();
 		Request(std::string request, std::vector<ServerConfig> serverConfigs);
 };

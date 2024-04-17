@@ -12,12 +12,16 @@ static void	getDateAndBytes(const std::string &path, std::string &modTime, std::
 	bytesSize = toString(fileStat.st_size);
 }
 
-static std::string	generateDirectoryListing(const std::string &path) {
+static std::string	generateDirectoryListing(std::string &path, std::string &requestUri) {
 	std::string	dirListing;
 	DIR	*dir = opendir(path.c_str());
 
-	dirListing += "<html><head><title>Directory listing for " + path + "</title></head><body>";
-	dirListing += "<h1>Directory listing for " + path + "</h1>";
+	if (!strEndsWith(requestUri, '/'))
+		requestUri += "/";
+	if (!strEndsWith(path, '/'))
+		path += "/";
+	dirListing += "<html><head><title>Directory listing for " + requestUri + "</title></head><body>";
+	dirListing += "<h1>Directory listing for " + requestUri + "</h1>";
 	dirListing += "<hr><pre>";
 	dirListing += "<a href=\"..\">../</a>\n";
 	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
@@ -25,9 +29,18 @@ static std::string	generateDirectoryListing(const std::string &path) {
 			continue ;
 
 		std::string modTime, bytesSize, file = item->d_name;
+		std::string realPath;
+		std::string	uriPath;
 
-		getDateAndBytes(path + item->d_name, modTime, bytesSize);
-		dirListing += "<a href=\"" + file + "\">" + file;
+		realPath = path + item->d_name;
+		uriPath = requestUri + item->d_name;
+
+		if (S_ISDIR(pathInfo(realPath).st_mode)) {
+			uriPath += "/";
+		}
+
+		getDateAndBytes(realPath, modTime, bytesSize);
+		dirListing += "<a href=\"" + uriPath + "\">" + file;
 		if (item->d_type == DT_DIR) {
 			dirListing += "/";
 			dirListing += "</a>";
@@ -127,17 +140,55 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	return (statusMessages);
 }
 
+static std::string	getErrorPage(int status, ServerConfig &server) {
+	std::string *errPagePath;
+	errPagePath = server.getFilePathFromStatusCode(status);
+	if (!errPagePath)
+		return ("");
+	switch (checkPath(*errPagePath)) {
+		case ENOTDIR:
+			return (*errPagePath);
+		default:
+			return ("");
+	}
+}
+
+Response::Response(int status, Request &request) {
+	this->_status = status;
+	this->_filePath = request.filePath;
+	this->_errPage = getErrorPage(status, request._server);
+	this->_requestUri = request._reqUri;
+	this->_mimeTypes = defaultMimeTypes();
+	this->_statusMessages = defaultStatusMessages();
+	this->_locationHeader = "";
+	if (request._shouldRedirect)
+		this->_locationHeader = request._locationHeader;
+	this->defineStatusLine(status);
+	switch (status / 100) {
+		case 2:
+			this->_success();
+			break ;
+		case 3:
+			this->_redirection();
+			break ;
+		case 4:
+			this->_error();
+			break ;
+		case 5:
+			this->_serverError();
+			break ;
+	}
+	this->generateFullResponse();
+}
+
 Response::Response(int status) {
 	this->_status = status;
-	this->_bodyFile = "";
+	this->_filePath = "";
+	this->_errPage = "";
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
-	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
 	switch (status / 100) {
-		case 2:
-			this->_success();
-			break ;
 		case 4:
 			this->_error();
 			break ;
@@ -147,49 +198,20 @@ Response::Response(int status) {
 	}
 	this->generateFullResponse();
 }
-
-Response::Response(int status, std::string bodyFile) {
-	this->_status = status;
-	this->_bodyFile = (status == 301 ? bodyFile.append("/") : bodyFile);
-	this->_mimeTypes = defaultMimeTypes();
-	this->_statusMessages = defaultStatusMessages();
-	this->defineStatusLine(status);
-	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
-	switch (status / 100) {
-		case 2:
-			this->_success();
-			break ;
-		case 4:
-			this->_error();
-			break ;
-		case 5:
-			this->_serverError();
-			break ;
-	}
-	this->generateFullResponse();
-}
-
-Response::Response(int status, std::string bodyFile, std::string locationHeader) {
-	this->_status = status;
-	this->_bodyFile = (status == 301 ? bodyFile.append("/") : bodyFile);
-	this->_mimeTypes = defaultMimeTypes();
-	this->_statusMessages = defaultStatusMessages();
-	this->defineStatusLine(status);
-	this->_redirection(locationHeader);
-	this->generateFullResponse();
-}
-
 
 Response	&Response::operator=(const Response &other) {
 	if (this != &other) {
 		this->_body = other._body;
 		this->_status = other._status;
-		this->_bodyFile = other._bodyFile;
+		this->_filePath = other._filePath;
 		this->_mimeTypes = other._mimeTypes;
 		this->_statusLine = other._statusLine;
 		this->_headerFields = other._headerFields;
 		this->_fullResponse = other._fullResponse;
 		this->_statusMessages = other._statusMessages;
+		this->_requestUri = other._requestUri;
+		this->_locationHeader = other._locationHeader;
+		this->_errPage = other._errPage;
 	}
 	return (*this);
 }
@@ -250,26 +272,24 @@ void	Response::addNewField(std::string key, std::string value) {
 }
 
 void	Response::_success() {
-	struct stat fileInfo;
-	stat(this->_bodyFile.c_str(), &fileInfo);
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (this->_bodyFile.empty())
+	if (this->_filePath.empty())
 		return ;
 	switch (this->_status) {
 		case 200:
-			if (!S_ISDIR(fileInfo.st_mode)){
-				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_bodyFile));
-				this->addNewField("Content-Length", getFileSize(this->_bodyFile));
-				this->addNewField("Content-Type", getContentType(this->_bodyFile));
-				this->_body = getFileContent(this->_bodyFile);
+			if (!S_ISDIR(pathInfo(this->_filePath).st_mode)){
+				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_filePath));
+				this->addNewField("Content-Length", getFileSize(this->_filePath));
+				this->addNewField("Content-Type", getContentType(this->_filePath));
+				this->_body = getFileContent(this->_filePath);
 			} else {
 				this->addNewField("Content-Type", "text/html");
-				this->_body = generateDirectoryListing(this->_bodyFile);
+				this->_body = generateDirectoryListing(this->_filePath, this->_requestUri);
 			}
 			break ;
 		case 201:
-			this->addNewField("Content-Type", getContentType(this->_bodyFile));
+			this->addNewField("Content-Type", getContentType(this->_filePath));
 			this->_body = "File created";
 			break ;
 		case 204:
@@ -277,21 +297,19 @@ void	Response::_success() {
 	}
 }
 
-void	Response::_redirection(std::string locationHeader) {
+void	Response::_redirection() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (this->_bodyFile.empty())
-		return ;
-	addNewField("Location", locationHeader);
+	addNewField("Location", this->_locationHeader);
 }
 
 void	Response::_error() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!this->_bodyFile.empty()) {
-		this->_body = getFileContent(this->_bodyFile);
-		this->addNewField("Content-Length", getFileSize(this->_bodyFile));
-		this->addNewField("Content-Type", getContentType(this->_bodyFile));
+	if (!this->_errPage.empty()) {
+		this->_body = getFileContent(this->_errPage);
+		this->addNewField("Content-Length", getFileSize(this->_errPage));
+		this->addNewField("Content-Type", getContentType(this->_errPage));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
@@ -303,10 +321,10 @@ void	Response::_error() {
 void	Response::_serverError() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!this->_bodyFile.empty()) {
-		this->_body = getFileContent(this->_bodyFile);
-		this->addNewField("Content-Length", getFileSize(this->_bodyFile));
-		this->addNewField("Content-Type", getContentType(this->_bodyFile));
+	if (!this->_errPage.empty()) {
+		this->_body = getFileContent(this->_errPage);
+		this->addNewField("Content-Length", getFileSize(this->_errPage));
+		this->addNewField("Content-Type", getContentType(this->_errPage));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
