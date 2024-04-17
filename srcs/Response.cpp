@@ -12,10 +12,14 @@ static void	getDateAndBytes(const std::string &path, std::string &modTime, std::
 	bytesSize = toString(fileStat.st_size);
 }
 
-static std::string	generateDirectoryListing(const std::string &path, const std::string &requestUri) {
+static std::string	generateDirectoryListing(std::string &path, std::string &requestUri) {
 	std::string	dirListing;
 	DIR	*dir = opendir(path.c_str());
 
+	if (!strEndsWith(requestUri, '/'))
+		requestUri += "/";
+	if (!strEndsWith(path, '/'))
+		path += "/";
 	dirListing += "<html><head><title>Directory listing for " + requestUri + "</title></head><body>";
 	dirListing += "<h1>Directory listing for " + requestUri + "</h1>";
 	dirListing += "<hr><pre>";
@@ -25,9 +29,18 @@ static std::string	generateDirectoryListing(const std::string &path, const std::
 			continue ;
 
 		std::string modTime, bytesSize, file = item->d_name;
+		std::string realPath;
+		std::string	uriPath;
 
-		getDateAndBytes(path + item->d_name, modTime, bytesSize);
-		dirListing += "<a href=\"" + file + "\">" + file;
+		realPath = path + item->d_name;
+		uriPath = requestUri + item->d_name;
+
+		if (S_ISDIR(pathInfo(realPath).st_mode)) {
+			uriPath += "/";
+		}
+
+		getDateAndBytes(realPath, modTime, bytesSize);
+		dirListing += "<a href=\"" + uriPath + "\">" + file;
 		if (item->d_type == DT_DIR) {
 			dirListing += "/";
 			dirListing += "</a>";
