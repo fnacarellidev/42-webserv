@@ -1,12 +1,6 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
-static Response	getResponsePage(int status, ServerConfig &server) {
-	std::string *errPagePath;
-	errPagePath = server.getFilePathFromStatusCode(status);
-	return errPagePath ? Response(status, *errPagePath) : Response(status);
-}
-
 static bool	bodyOverflow(std::string request, size_t const limit) {
 	size_t	pos = 0;
 
@@ -31,21 +25,21 @@ static bool checkParentFolderPermission(std::string filePath, const std::string&
 	return false;
 }
 
-static Response	tryToDelete(const std::string& filePath, ServerConfig& server) {
+static HttpStatus::Code	tryToDelete(const std::string& filePath) {
 	if (std::remove(filePath.c_str())) {
 		perror("std::remove");
-		return getResponsePage(HttpStatus::SERVERERR, server);
+		return (HttpStatus::SERVER_ERR);
 	}
-	return getResponsePage(HttpStatus::NOCONTENT, server);
+	return (HttpStatus::NO_CONTENT);
 }
 
-static Response	deleteEverythingInsideDir(std::string dirPath, ServerConfig& server, std::string& root) {
-	int	status = HttpStatus::NOCONTENT;
+static HttpStatus::Code	deleteEverythingInsideDir(std::string dirPath, std::string& root) {
+	HttpStatus::Code	status = HttpStatus::NO_CONTENT;
 	DIR	*dir = opendir(dirPath.c_str());
 
 	if (dir == NULL) {
 		perror("opendir");
-		return getResponsePage(HttpStatus::SERVERERR, server);
+		return (HttpStatus::SERVER_ERR);
 	}
 	dirPath += '/';
 	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
@@ -56,19 +50,19 @@ static Response	deleteEverythingInsideDir(std::string dirPath, ServerConfig& ser
 		filePath = dirPath + item->d_name;
 		if (std::remove(filePath.c_str())) {
 			perror("std::remove");
-			status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVERERR);
+			status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVER_ERR);
 		}
 	}
 	closedir(dir);
 	dirPath.erase(0, root.size());
 	if (dirPath == "/")
-		return getResponsePage(HttpStatus::FORBIDDEN, server);
+		return (HttpStatus::FORBIDDEN);
 	dirPath = root + dirPath;
 	if (std::remove(dirPath.c_str())) {
 		perror("std::remove");
-		status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVERERR);
+		status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVER_ERR);
 	}
-	return getResponsePage(status, server);
+	return (status);
 }
 
 static std::vector<std::string> getRequestLineParams(std::string request) {
@@ -108,6 +102,8 @@ static std::string getFilePath(RouteConfig *route, std::string requestUri) {
 
 	if (strEndsWith(requestUri, '/')) {
 		file.erase(file.end() - 1);
+		if (*file.begin() == '/')
+			file.erase(file.begin());
 		return root + file;
 	}
 	if (file.empty()) {
@@ -164,8 +160,10 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 
 	if (_route && _route->path.size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
 		_dirListEnabled = _route->dirList;
-		if (!_route->redirect.first.empty())
+		if (!_route->redirect.first.empty()) {
 			_shouldRedirect = requestUri.substr(_route->path.size()) == _route->redirect.first;
+			_locationHeader = "http://localhost:" + toString(_server.port) + _route->path + _route->redirect.second;
+		}
 	}
 	if (_route)
 		_dirListEnabled = _route->dirList;
@@ -203,28 +201,26 @@ static std::string	getBodyOfRequest(std::string fullRequest) {
 	return (content);
 }
 
-Response Request::runPost() {
-	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos)
-		return (Response(501));
+HttpStatus::Code Request::runPost() {
 	if (this->_fullRequest.find("text/plain") != std::string::npos) {
 		switch (checkPath(this->filePath)) {
 			case ENOENT:
 				break ;
 			case EACCES:
-				return (getResponsePage(HttpStatus::FORBIDDEN, _server));
+				return (HttpStatus::FORBIDDEN);
 			case ENOTDIR:
-				return (Response(200));
+				return (HttpStatus::OK);
 			default:
-				return (getResponsePage(409, _server));
+				return (HttpStatus::CONFLICT);
 		}
 		std::string prevPath = getPrevPath(filePath);
 		switch (checkPath(prevPath)) {
 			case ENOENT:
-				return (getResponsePage(HttpStatus::NOTFOUND, _server));
+				return (HttpStatus::NOT_FOUND);
 			case EACCES:
-				return (getResponsePage(HttpStatus::FORBIDDEN, _server));
+				return (HttpStatus::FORBIDDEN);
 			case ENOTDIR:
-				return (getResponsePage(400, _server));
+				return (HttpStatus::BAD_REQUEST);
 			default:
 				break ;
 		}
@@ -232,29 +228,26 @@ Response Request::runPost() {
 		std::ofstream	file(this->filePath.c_str());
 		file.write(content.c_str(), content.length());
 		file.close();
-		return Response(201);
+		return (HttpStatus::CREATED);
 	}
-	return (Response(501));
+	return (HttpStatus::NOT_IMPLEMENTED);
 }
 
-Response Request::runGet() {
+HttpStatus::Code Request::runGet() {
 	struct stat statbuf;
-	std::string* errPagePath;
-	int status = HttpStatus::OK;
+	HttpStatus::Code status = HttpStatus::OK;
 
 	stat(filePath.c_str(), &statbuf);
 	if (_shouldRedirect) {
-		std::string redirectFile = _route->redirect.second;
 		std::string sysFilePath = _route->root + _route->redirect.second;
-		std::string requestUrl = "http://localhost:" + toString(_server.port) + _route->path + redirectFile;
 
 		if (stat(sysFilePath.c_str(), &statbuf) == -1)
-			return Response(HttpStatus::NOTFOUND);
-		return Response(HttpStatus::MOVED_PERMANENTLY, sysFilePath, requestUrl);
+			return (HttpStatus::NOT_FOUND);
+		return (HttpStatus::MOVED_PERMANENTLY);
 	}
 	switch (fileGood(this->filePath.c_str())) {
 		case ENOENT:
-			status = HttpStatus::NOTFOUND;
+			status = HttpStatus::NOT_FOUND;
 			break;
 
 		case EACCES:
@@ -265,68 +258,60 @@ Response Request::runGet() {
 			break;
 	}
 	if (status != HttpStatus::OK) {
-		errPagePath = _server.getFilePathFromStatusCode(status);
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+		return (status);
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
 		if (_route->dirList)
-			return Response(status, filePath);
+			return (status);
 		else
 			status = HttpStatus::FORBIDDEN;
-		errPagePath = _server.getFilePathFromStatusCode(status);
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+		return (status);
 	}
 	if (strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
-		errPagePath = _server.getFilePathFromStatusCode(status);
 		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
 			status = HttpStatus::FORBIDDEN;
 		else
-			status = HttpStatus::NOTFOUND;
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+			status = HttpStatus::NOT_FOUND;
+		return (status);
 	}
-	return Response(200, filePath);
+	return (HttpStatus::OK);
 }
 
-Response	Request::runDelete() {
+HttpStatus::Code	Request::runDelete() {
 	struct stat	statbuf;
 
 	if (checkParentFolderPermission(filePath, _route->root))
-		return getResponsePage(HttpStatus::FORBIDDEN, this->_server);
+		return (HttpStatus::FORBIDDEN);
 	if (access(filePath.c_str(), F_OK))
-		return getResponsePage(HttpStatus::NOTFOUND, this->_server);
+		return (HttpStatus::NOT_FOUND);
 	if (stat(filePath.c_str(), &statbuf)) {
 		perror("stat");
-		return getResponsePage(HttpStatus::SERVERERR, this->_server);
+		return (HttpStatus::SERVER_ERR);
 	}
 	if (S_ISDIR(statbuf.st_mode)) {
 		if (strEndsWith(_reqUri, '/'))
-			return deleteEverythingInsideDir(filePath, this->_server, this->_route->root);
-		return getResponsePage(HttpStatus::CONFLICT, this->_server);
+			return deleteEverythingInsideDir(filePath, this->_route->root);
+		return (HttpStatus::CONFLICT);
 	}
-	return tryToDelete(filePath, this->_server);
+	return tryToDelete(filePath);
 }
 
 Response Request::runRequest() {
 	if (!_route)
-		return Response(404);
+		return Response(HttpStatus::NOT_FOUND, *this);
 
 	if (bodyOverflow(this->_fullRequest, this->_server.bodyLimit))
-		return Response(413);
-	if (methodIsAllowed(method, _route->acceptMethodsBitmask))
-		return (getResponsePage(HttpStatus::NOTALLOWED, _server));
+		return Response(HttpStatus::PAYLOAD_TOO_LARGE, *this);
+	if (methodIsAllowed(method, _route->acceptMethodsBitmask)) {
+		return (Response(HttpStatus::NOT_ALLOWED, *this));
+	}
 	switch (method) {
 		case GET:
-			return runGet();
-
+			return Response(runGet(), *this);
 		case POST:
-			return runPost();
-
-		case DELETE:
-			return runDelete();
-
-		default:
-			break;
+			return Response(runPost(), *this);
+		default :
+			return Response(runDelete(), *this);
 	}
-	return Response(200);
 }
