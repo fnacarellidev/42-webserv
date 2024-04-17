@@ -306,7 +306,8 @@ Response Request::runRequest() {
 			break ;
 
 		case DELETE:
-			return runDelete();
+			status = runDelete();
+			break ;
 
 		default:
 			break;
