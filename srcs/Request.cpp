@@ -292,23 +292,14 @@ Response Request::runRequest() {
 		return Response(404, *this);
 
 	if (methodIsAllowed(method, _route->acceptMethodsBitmask)) {
-		return (Response(HttpStatus::NOTALLOWED, *this));
+		return (Response(HttpStatus::NOT_ALLOWED, *this));
 	}
-	int status = HttpStatus::OK;
 	switch (method) {
 		case GET:
-			status = runGet();
-			break ;
+			return Response(runGet(), *this);
 		case POST:
-			status = runPost();
-			break ;
-
-		case DELETE:
-			status = runDelete();
-			break ;
-
-		default:
-			break;
+			return Response(runPost(), *this);
+		default :
+			return Response(runDelete(), *this);
 	}
-	return Response(status, *this);
 }
