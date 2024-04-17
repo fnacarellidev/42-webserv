@@ -1,6 +1,60 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
+static bool daddyIssues(std::string filePath, const std::string& root) {
+	size_t fileSlashes = std::count(filePath.begin(), filePath.end(), '/');
+	size_t rootSlashes = std::count(root.begin(), root.end(), '/');
+
+	while (fileSlashes-- > rootSlashes) {
+		filePath = getPrevPath(filePath);
+		if (access(filePath.c_str(), R_OK | W_OK | X_OK) == -1) {
+			perror("access");
+			return true;
+		}
+	}
+	return false;
+}
+
+static int	tryToDelete(const std::string& filePath) {
+	if (std::remove(filePath.c_str())) {
+		perror("std::remove");
+		return (HttpStatus::SERVERERR);
+	}
+	return (HttpStatus::NOCONTENT);
+}
+
+static int	deleteEverythingInsideDir(std::string dirPath, std::string& root) {
+	int	status = HttpStatus::NOCONTENT;
+	DIR	*dir = opendir(dirPath.c_str());
+
+	if (dir == NULL) {
+		perror("opendir");
+		return (HttpStatus::SERVERERR);
+	}
+	dirPath += '/';
+	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
+		std::string filePath;
+
+		if (std::strcmp(item->d_name, ".") == 0 || std::strcmp(item->d_name, "..") == 0)
+			continue;
+		filePath = dirPath + item->d_name;
+		if (std::remove(filePath.c_str())) {
+			perror("std::remove");
+			status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVERERR);
+		}
+	}
+	closedir(dir);
+	dirPath.erase(0, root.size());
+	if (dirPath == "/")
+		return (HttpStatus::FORBIDDEN);
+	dirPath = root + dirPath;
+	if (std::remove(dirPath.c_str())) {
+		perror("std::remove");
+		status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVERERR);
+	}
+	return (status);
+}
+
 static std::vector<std::string> getRequestLineParams(std::string request) {
 	std::string firstLine;
 	std::stringstream strStream(request);
@@ -216,6 +270,25 @@ int Request::runGet() {
 	return (200);
 }
 
+int	Request::runDelete() {
+	struct stat	statbuf;
+
+	if (daddyIssues(filePath, _route->root))
+		return (HttpStatus::FORBIDDEN);
+	if (access(filePath.c_str(), F_OK))
+		return (HttpStatus::NOTFOUND);
+	if (stat(filePath.c_str(), &statbuf)) {
+		perror("stat");
+		return (HttpStatus::SERVERERR);
+	}
+	if (S_ISDIR(statbuf.st_mode)) {
+		if (strEndsWith(_reqUri, '/'))
+			return deleteEverythingInsideDir(filePath, this->_route->root);
+		return (HttpStatus::CONFLICT);
+	}
+	return tryToDelete(filePath);
+}
+
 Response Request::runRequest() {
 	if (!_route)
 		return Response(404, *this);
@@ -232,8 +305,8 @@ Response Request::runRequest() {
 			status = runPost();
 			break ;
 
-		/* case DELETE: */
-		/* 	runDelete(); */
+		case DELETE:
+			return runDelete();
 
 		default:
 			break;

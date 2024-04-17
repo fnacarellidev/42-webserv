@@ -74,6 +74,8 @@ static std::string	getErrInformation(int status)
 			return (E404);
 		case 405:
 			return (E405);
+		case 409:
+			return (E409);
 		case 413:
 			return (E413);
 		case 500:

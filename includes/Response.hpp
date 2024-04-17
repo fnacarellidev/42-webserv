@@ -1,13 +1,6 @@
 #pragma once
 
-#include <iostream>
-#include <cstring>
-#include <vector>
-#include <ctime>
-#include <map>
-#include <dirent.h>
-#include <sys/types.h>
-#include <iomanip>
+#include "includeAll.hpp"
 #include "utils.hpp"
 #include "Request.hpp"
 #include "errorPages.hpp"

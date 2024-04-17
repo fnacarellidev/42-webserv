@@ -1,9 +1,5 @@
 #pragma once
-#include <iostream>
-#include <list>
-#include <sstream>
-#include <cstdlib>
-#include <unistd.h>
+#include "includeAll.hpp"
 #include "Response.hpp"
 #include "ServerConfig.hpp"
 #include "utils.hpp"
@@ -30,7 +26,7 @@ class Request {
 		bool _dirListEnabled;
 		int runGet();
 		int runPost();
-		/* Response runDelete(); */
+		int runDelete();
 	public:
 		Methods method;
 		bool _shouldRedirect;
