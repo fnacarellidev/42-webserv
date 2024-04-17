@@ -1,9 +1,5 @@
 #pragma once
-#include <iostream>
-#include <list>
-#include <sstream>
-#include <cstdlib>
-#include <unistd.h>
+#include "includeAll.hpp"
 #include "Response.hpp"
 #include "ServerConfig.hpp"
 #include "utils.hpp"
@@ -31,7 +27,7 @@ class Request {
 		RouteConfig* _route;
 		std::string _reqUri;
 		bool _dirListEnabled;
-		/* Response runDelete(); */
+		Response runDelete();
 	public:
 		Methods method;
 		std::string filePath;

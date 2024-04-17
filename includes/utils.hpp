@@ -1,12 +1,6 @@
 #pragma once
 
-#include <iostream>
-#include <ctime>
-#include <sys/stat.h>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <unistd.h>
+#include "includeAll.hpp"
 
 std::string	getFileContent(const std::string &filename);
 std::string	getLastModifiedOfFile(const std::string &filename);

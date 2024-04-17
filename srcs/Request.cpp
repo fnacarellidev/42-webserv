@@ -1,6 +1,66 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
+static Response	getResponsePage(int status, ServerConfig &server) {
+	std::string *errPagePath;
+	errPagePath = server.getFilePathFromStatusCode(status);
+	return errPagePath ? Response(status, *errPagePath) : Response(status);
+}
+
+static bool daddyIssues(std::string filePath, const std::string& root) {
+	size_t fileSlashes = std::count(filePath.begin(), filePath.end(), '/');
+	size_t rootSlashes = std::count(root.begin(), root.end(), '/');
+
+	while (fileSlashes-- > rootSlashes) {
+		filePath = getPrevPath(filePath);
+		if (access(filePath.c_str(), R_OK | W_OK | X_OK) == -1) {
+			perror("access");
+			return true;
+		}
+	}
+	return false;
+}
+
+static Response	tryToDelete(const std::string& filePath, ServerConfig& server) {
+	if (std::remove(filePath.c_str())) {
+		perror("std::remove");
+		return getResponsePage(HttpStatus::SERVERERR, server);
+	}
+	return getResponsePage(HttpStatus::NOCONTENT, server);
+}
+
+static Response	deleteEverythingInsideDir(std::string dirPath, ServerConfig& server, std::string& root) {
+	int	status = HttpStatus::NOCONTENT;
+	DIR	*dir = opendir(dirPath.c_str());
+
+	if (dir == NULL) {
+		perror("opendir");
+		return getResponsePage(HttpStatus::SERVERERR, server);
+	}
+	dirPath += '/';
+	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
+		std::string filePath;
+
+		if (std::strcmp(item->d_name, ".") == 0 || std::strcmp(item->d_name, "..") == 0)
+			continue;
+		filePath = dirPath + item->d_name;
+		if (std::remove(filePath.c_str())) {
+			perror("std::remove");
+			status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVERERR);
+		}
+	}
+	closedir(dir);
+	dirPath.erase(0, root.size());
+	if (dirPath == "/")
+		return getResponsePage(HttpStatus::FORBIDDEN, server);
+	dirPath = root + dirPath;
+	if (std::remove(dirPath.c_str())) {
+		perror("std::remove");
+		status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVERERR);
+	}
+	return getResponsePage(status, server);
+}
+
 static std::vector<std::string> getRequestLineParams(std::string request) {
 	std::string firstLine;
 	std::stringstream strStream(request);
@@ -133,12 +193,6 @@ static std::string	getBodyOfRequest(std::string fullRequest) {
 	return (content);
 }
 
-static Response	getResponsePage(int status, ServerConfig &server) {
-	std::string *errPagePath;
-	errPagePath = server.getFilePathFromStatusCode(status);
-	return errPagePath ? Response(status, *errPagePath) : Response(status);
-}
-
 Response Request::runPost() {
 	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos)
 		return (Response(501));
@@ -224,6 +278,25 @@ Response Request::runGet() {
 	return Response(200, filePath);
 }
 
+Response	Request::runDelete() {
+	struct stat	statbuf;
+
+	if (daddyIssues(filePath, _route->root))
+		return getResponsePage(HttpStatus::FORBIDDEN, this->_server);
+	if (access(filePath.c_str(), F_OK))
+		return getResponsePage(HttpStatus::NOTFOUND, this->_server);
+	if (stat(filePath.c_str(), &statbuf)) {
+		perror("stat");
+		return getResponsePage(HttpStatus::SERVERERR, this->_server);
+	}
+	if (S_ISDIR(statbuf.st_mode)) {
+		if (strEndsWith(_reqUri, '/'))
+			return deleteEverythingInsideDir(filePath, this->_server, this->_route->root);
+		return getResponsePage(HttpStatus::CONFLICT, this->_server);
+	}
+	return tryToDelete(filePath, this->_server);
+}
+
 Response Request::runRequest() {
 	if (!_route)
 		return Response(404);
@@ -238,8 +311,8 @@ Response Request::runRequest() {
 		case POST:
 			return runPost();
 
-		/* case DELETE: */
-		/* 	runDelete(); */
+		case DELETE:
+			return runDelete();
 
 		default:
 			break;

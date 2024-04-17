@@ -1,8 +1,6 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
-#include <utility>
+#include "includeAll.hpp"
 
 #define NONE_OK 0b0000
 #define GET_OK 0b0001

@@ -1,14 +1,6 @@
 #pragma once
 
-#include <exception>
-#include <vector>
-#include <map>
-#include <cctype>
-#include <limits>
-#include <algorithm>
-#include <cerrno>
-#include <fstream>
-#include <cstdlib>
+#include "includeAll.hpp"
 #include "RouteConfig.hpp"
 #include "ServerConfig.hpp"
 
