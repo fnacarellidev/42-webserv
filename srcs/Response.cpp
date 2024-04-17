@@ -199,37 +199,6 @@ Response::Response(int status) {
 	this->generateFullResponse();
 }
 
-// Response::Response(int status, std::string bodyFile) {
-// 	this->_status = status;
-// 	this->_filePath = (status == 301 ? bodyFile.append("/") : bodyFile);
-// 	this->_mimeTypes = defaultMimeTypes();
-// 	this->_statusMessages = defaultStatusMessages();
-// 	this->defineStatusLine(status);
-// 	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
-// 	switch (status / 100) {
-// 		case 2:
-// 			this->_success();
-// 			break ;
-// 		case 4:
-// 			this->_error();
-// 			break ;
-// 		case 5:
-// 			this->_serverError();
-// 			break ;
-// 	}
-// 	this->generateFullResponse();
-// }
-
-// Response::Response(int status, std::string bodyFile, std::string locationHeader) {
-// 	this->_status = status;
-// 	this->_filePath = (status == 301 ? bodyFile.append("/") : bodyFile);
-// 	this->_mimeTypes = defaultMimeTypes();
-// 	this->_statusMessages = defaultStatusMessages();
-// 	this->defineStatusLine(status);
-// 	this->_redirection(locationHeader);
-// 	this->generateFullResponse();
-// }
-
 Response	&Response::operator=(const Response &other) {
 	if (this != &other) {
 		this->_body = other._body;
