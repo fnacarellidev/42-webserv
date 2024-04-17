@@ -19,3 +19,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstdlib>
+#include <cstdio>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <poll.h>
