@@ -24,9 +24,9 @@ class Request {
 		std::string	_fullRequest;
 		RouteConfig* _route;
 		bool _dirListEnabled;
-		int runGet();
-		int runPost();
-		int runDelete();
+		HttpStatus::Code runGet();
+		HttpStatus::Code runPost();
+		HttpStatus::Code runDelete();
 	public:
 		Methods method;
 		bool _shouldRedirect;

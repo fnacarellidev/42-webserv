@@ -15,21 +15,21 @@ static bool daddyIssues(std::string filePath, const std::string& root) {
 	return false;
 }
 
-static int	tryToDelete(const std::string& filePath) {
+static HttpStatus::Code	tryToDelete(const std::string& filePath) {
 	if (std::remove(filePath.c_str())) {
 		perror("std::remove");
-		return (HttpStatus::SERVERERR);
+		return (HttpStatus::SERVER_ERR);
 	}
-	return (HttpStatus::NOCONTENT);
+	return (HttpStatus::NO_CONTENT);
 }
 
-static int	deleteEverythingInsideDir(std::string dirPath, std::string& root) {
-	int	status = HttpStatus::NOCONTENT;
+static HttpStatus::Code	deleteEverythingInsideDir(std::string dirPath, std::string& root) {
+	HttpStatus::Code	status = HttpStatus::NO_CONTENT;
 	DIR	*dir = opendir(dirPath.c_str());
 
 	if (dir == NULL) {
 		perror("opendir");
-		return (HttpStatus::SERVERERR);
+		return (HttpStatus::SERVER_ERR);
 	}
 	dirPath += '/';
 	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
@@ -40,7 +40,7 @@ static int	deleteEverythingInsideDir(std::string dirPath, std::string& root) {
 		filePath = dirPath + item->d_name;
 		if (std::remove(filePath.c_str())) {
 			perror("std::remove");
-			status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVERERR);
+			status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVER_ERR);
 		}
 	}
 	closedir(dir);
@@ -50,7 +50,7 @@ static int	deleteEverythingInsideDir(std::string dirPath, std::string& root) {
 	dirPath = root + dirPath;
 	if (std::remove(dirPath.c_str())) {
 		perror("std::remove");
-		status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVERERR);
+		status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVER_ERR);
 	}
 	return (status);
 }
@@ -191,9 +191,7 @@ static std::string	getBodyOfRequest(std::string fullRequest) {
 	return (content);
 }
 
-int Request::runPost() {
-	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos)
-		return (501);
+HttpStatus::Code Request::runPost() {
 	if (this->_fullRequest.find("text/plain") != std::string::npos) {
 		switch (checkPath(this->filePath)) {
 			case ENOENT:
@@ -201,18 +199,18 @@ int Request::runPost() {
 			case EACCES:
 				return (HttpStatus::FORBIDDEN);
 			case ENOTDIR:
-				return (200);
+				return (HttpStatus::OK);
 			default:
-				return (409);
+				return (HttpStatus::CONFLICT);
 		}
 		std::string prevPath = getPrevPath(filePath);
 		switch (checkPath(prevPath)) {
 			case ENOENT:
-				return (HttpStatus::NOTFOUND);
+				return (HttpStatus::NOT_FOUND);
 			case EACCES:
 				return (HttpStatus::FORBIDDEN);
 			case ENOTDIR:
-				return (400);
+				return (HttpStatus::BAD_REQUEST);
 			default:
 				break ;
 		}
@@ -220,26 +218,26 @@ int Request::runPost() {
 		std::ofstream	file(this->filePath.c_str());
 		file.write(content.c_str(), content.length());
 		file.close();
-		return (201);
+		return (HttpStatus::CREATED);
 	}
-	return (501);
+	return (HttpStatus::NOT_IMPLEMENTED);
 }
 
-int Request::runGet() {
+HttpStatus::Code Request::runGet() {
 	struct stat statbuf;
-	int status = HttpStatus::OK;
+	HttpStatus::Code status = HttpStatus::OK;
 
 	stat(filePath.c_str(), &statbuf);
 	if (_shouldRedirect) {
 		std::string sysFilePath = _route->root + _route->redirect.second;
 
 		if (stat(sysFilePath.c_str(), &statbuf) == -1)
-			return (HttpStatus::NOTFOUND);
+			return (HttpStatus::NOT_FOUND);
 		return (HttpStatus::MOVED_PERMANENTLY);
 	}
 	switch (fileGood(this->filePath.c_str())) {
 		case ENOENT:
-			status = HttpStatus::NOTFOUND;
+			status = HttpStatus::NOT_FOUND;
 			break;
 
 		case EACCES:
@@ -264,22 +262,22 @@ int Request::runGet() {
 		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
 			status = HttpStatus::FORBIDDEN;
 		else
-			status = HttpStatus::NOTFOUND;
+			status = HttpStatus::NOT_FOUND;
 		return (status);
 	}
-	return (200);
+	return (HttpStatus::OK);
 }
 
-int	Request::runDelete() {
+HttpStatus::Code	Request::runDelete() {
 	struct stat	statbuf;
 
 	if (daddyIssues(filePath, _route->root))
 		return (HttpStatus::FORBIDDEN);
 	if (access(filePath.c_str(), F_OK))
-		return (HttpStatus::NOTFOUND);
+		return (HttpStatus::NOT_FOUND);
 	if (stat(filePath.c_str(), &statbuf)) {
 		perror("stat");
-		return (HttpStatus::SERVERERR);
+		return (HttpStatus::SERVER_ERR);
 	}
 	if (S_ISDIR(statbuf.st_mode)) {
 		if (strEndsWith(_reqUri, '/'))
