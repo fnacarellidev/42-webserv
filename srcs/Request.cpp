@@ -1,7 +1,17 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
-static bool daddyIssues(std::string filePath, const std::string& root) {
+static bool	bodyOverflow(std::string request, size_t const limit) {
+	size_t	pos = 0;
+
+	pos = request.find("Content-Length:");
+	if (pos == std::string::npos)
+		return false;
+	request = request.substr(pos, request.find("\r\n", pos) - pos).substr(sizeof("Content-Length:"));
+	return (std::strtoull(request.c_str(), NULL, 10) > limit ? true : false);
+}
+
+static bool checkParentFolderPermission(std::string filePath, const std::string& root) {
 	size_t fileSlashes = std::count(filePath.begin(), filePath.end(), '/');
 	size_t rootSlashes = std::count(root.begin(), root.end(), '/');
 
@@ -271,7 +281,7 @@ HttpStatus::Code Request::runGet() {
 HttpStatus::Code	Request::runDelete() {
 	struct stat	statbuf;
 
-	if (daddyIssues(filePath, _route->root))
+	if (checkParentFolderPermission(filePath, _route->root))
 		return (HttpStatus::FORBIDDEN);
 	if (access(filePath.c_str(), F_OK))
 		return (HttpStatus::NOT_FOUND);
@@ -289,11 +299,12 @@ HttpStatus::Code	Request::runDelete() {
 
 Response Request::runRequest() {
 	if (!_route)
-		return Response(404, *this);
+		return Response(HttpStatus::NOT_FOUND, *this);
 
-	if (methodIsAllowed(method, _route->acceptMethodsBitmask)) {
+	if (bodyOverflow(this->_fullRequest, this->_server.bodyLimit))
+		return Response(HttpStatus::PAYLOAD_TOO_LARGE, *this);
+	if (methodIsAllowed(method, _route->acceptMethodsBitmask))
 		return (Response(HttpStatus::NOT_ALLOWED, *this));
-	}
 	switch (method) {
 		case GET:
 			return Response(runGet(), *this);

@@ -1,23 +1,11 @@
-#include <algorithm>
-#include <limits>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <poll.h>
+#include "../includes/includeAll.hpp"
 #include "../includes/Request.hpp"
 #include "../includes/WebServer.hpp"
 
 #define OPT 1
 #define CONNECTIONS 1000
 #ifndef BUFFER_SIZE
-# define BUFFER_SIZE 4096
+# define BUFFER_SIZE 1048576
 #endif
 
 static void movePollFd(struct pollfd* pollFds, int i, int serverCount) {
@@ -76,11 +64,7 @@ int main(int argc, char **argv) {
 	}
 	serverCount = config.servers.size();
 	while (true) {
-		#ifdef DEBUG
-			int pollRet = poll(pollFds, serverCount, -1);
-		#else
 			int pollRet = poll(pollFds, serverCount, 5 * 1000);
-		#endif
 
 		if (pollRet < 0) {
 			perror("poll");
