@@ -303,9 +303,8 @@ Response Request::runRequest() {
 
 	if (bodyOverflow(this->_fullRequest, this->_server.bodyLimit))
 		return Response(HttpStatus::PAYLOAD_TOO_LARGE, *this);
-	if (methodIsAllowed(method, _route->acceptMethodsBitmask)) {
+	if (methodIsAllowed(method, _route->acceptMethodsBitmask))
 		return (Response(HttpStatus::NOT_ALLOWED, *this));
-	}
 	switch (method) {
 		case GET:
 			return Response(runGet(), *this);
