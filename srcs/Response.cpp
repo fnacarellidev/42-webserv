@@ -12,12 +12,12 @@ static void	getDateAndBytes(const std::string &path, std::string &modTime, std::
 	bytesSize = toString(fileStat.st_size);
 }
 
-static std::string	generateDirectoryListing(const std::string &path) {
+static std::string	generateDirectoryListing(const std::string &path, const std::string &requestUri) {
 	std::string	dirListing;
 	DIR	*dir = opendir(path.c_str());
 
-	dirListing += "<html><head><title>Directory listing for " + path + "</title></head><body>";
-	dirListing += "<h1>Directory listing for " + path + "</h1>";
+	dirListing += "<html><head><title>Directory listing for " + requestUri + "</title></head><body>";
+	dirListing += "<h1>Directory listing for " + requestUri + "</h1>";
 	dirListing += "<hr><pre>";
 	dirListing += "<a href=\"..\">../</a>\n";
 	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
@@ -125,28 +125,55 @@ static std::map<int, std::string>	defaultStatusMessages() {
 	return (statusMessages);
 }
 
+static std::string	getErrorPage(int status, ServerConfig &server) {
+	std::string *errPagePath;
+	errPagePath = server.getFilePathFromStatusCode(status);
+	if (!errPagePath)
+		return ("");
+	switch (checkPath(*errPagePath)) {
+		case ENOTDIR:
+			return (*errPagePath);
+		default:
+			return ("");
+	}
+}
+
 Response::Response(int status, Request &request) {
 	this->_status = status;
 	this->_filePath = request.filePath;
-	this->_reqUri = request._reqUri;
+	this->_errPage = getErrorPage(status, request._server);
+	this->_requestUri = request._reqUri;
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
+	this->_locationHeader = "";
+	if (request._shouldRedirect)
+		this->_locationHeader = request._locationHeader;
 	this->defineStatusLine(status);
-
+	switch (status / 100) {
+		case 2:
+			this->_success();
+			break ;
+		case 3:
+			this->_redirection();
+			break ;
+		case 4:
+			this->_error();
+			break ;
+		case 5:
+			this->_serverError();
+			break ;
+	}
 	this->generateFullResponse();
 }
 
 Response::Response(int status) {
 	this->_status = status;
 	this->_filePath = "";
+	this->_errPage = "";
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
-	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
 	switch (status / 100) {
-		case 2:
-			this->_success();
-			break ;
 		case 4:
 			this->_error();
 			break ;
@@ -157,37 +184,36 @@ Response::Response(int status) {
 	this->generateFullResponse();
 }
 
-Response::Response(int status, std::string bodyFile) {
-	this->_status = status;
-	this->_filePath = (status == 301 ? bodyFile.append("/") : bodyFile);
-	this->_mimeTypes = defaultMimeTypes();
-	this->_statusMessages = defaultStatusMessages();
-	this->defineStatusLine(status);
-	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
-	switch (status / 100) {
-		case 2:
-			this->_success();
-			break ;
-		case 4:
-			this->_error();
-			break ;
-		case 5:
-			this->_serverError();
-			break ;
-	}
-	this->generateFullResponse();
-}
+// Response::Response(int status, std::string bodyFile) {
+// 	this->_status = status;
+// 	this->_filePath = (status == 301 ? bodyFile.append("/") : bodyFile);
+// 	this->_mimeTypes = defaultMimeTypes();
+// 	this->_statusMessages = defaultStatusMessages();
+// 	this->defineStatusLine(status);
+// 	// Shouldn't ever fall on case 3 since it will never be called with a 300 status.
+// 	switch (status / 100) {
+// 		case 2:
+// 			this->_success();
+// 			break ;
+// 		case 4:
+// 			this->_error();
+// 			break ;
+// 		case 5:
+// 			this->_serverError();
+// 			break ;
+// 	}
+// 	this->generateFullResponse();
+// }
 
-Response::Response(int status, std::string bodyFile, std::string locationHeader) {
-	this->_status = status;
-	this->_filePath = (status == 301 ? bodyFile.append("/") : bodyFile);
-	this->_mimeTypes = defaultMimeTypes();
-	this->_statusMessages = defaultStatusMessages();
-	this->defineStatusLine(status);
-	this->_redirection(locationHeader);
-	this->generateFullResponse();
-}
-
+// Response::Response(int status, std::string bodyFile, std::string locationHeader) {
+// 	this->_status = status;
+// 	this->_filePath = (status == 301 ? bodyFile.append("/") : bodyFile);
+// 	this->_mimeTypes = defaultMimeTypes();
+// 	this->_statusMessages = defaultStatusMessages();
+// 	this->defineStatusLine(status);
+// 	this->_redirection(locationHeader);
+// 	this->generateFullResponse();
+// }
 
 Response	&Response::operator=(const Response &other) {
 	if (this != &other) {
@@ -199,6 +225,9 @@ Response	&Response::operator=(const Response &other) {
 		this->_headerFields = other._headerFields;
 		this->_fullResponse = other._fullResponse;
 		this->_statusMessages = other._statusMessages;
+		this->_requestUri = other._requestUri;
+		this->_locationHeader = other._locationHeader;
+		this->_errPage = other._errPage;
 	}
 	return (*this);
 }
@@ -284,19 +313,19 @@ void	Response::_success() {
 	}
 }
 
-void	Response::_redirection(std::string locationHeader) {
+void	Response::_redirection() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	addNewField("Location", locationHeader);
+	addNewField("Location", this->_locationHeader);
 }
 
 void	Response::_error() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!this->_filePath.empty()) {
-		this->_body = getFileContent(this->_filePath);
-		this->addNewField("Content-Length", getFileSize(this->_filePath));
-		this->addNewField("Content-Type", getContentType(this->_filePath));
+	if (!this->_errPage.empty()) {
+		this->_body = getFileContent(this->_errPage);
+		this->addNewField("Content-Length", getFileSize(this->_errPage));
+		this->addNewField("Content-Type", getContentType(this->_errPage));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
@@ -308,10 +337,10 @@ void	Response::_error() {
 void	Response::_serverError() {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
-	if (!this->_filePath.empty()) {
-		this->_body = getFileContent(this->_filePath);
-		this->addNewField("Content-Length", getFileSize(this->_filePath));
-		this->addNewField("Content-Type", getContentType(this->_filePath));
+	if (!this->_errPage.empty()) {
+		this->_body = getFileContent(this->_errPage);
+		this->addNewField("Content-Length", getFileSize(this->_errPage));
+		this->addNewField("Content-Type", getContentType(this->_errPage));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);

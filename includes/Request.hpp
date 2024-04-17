@@ -26,18 +26,19 @@ class Response;
 class Request {
 	private:
 		std::string	_fullRequest;
-		ServerConfig _server;
 		RouteConfig* _route;
-		bool _shouldRedirect;
 		bool _dirListEnabled;
-		Response runGet();
-		Response runPost();
+		int runGet();
+		int runPost();
 		/* Response runDelete(); */
 	public:
 		Methods method;
+		bool _shouldRedirect;
 		std::string	_reqUri;
+		std::string _locationHeader;
 		std::string filePath;
 		std::string	root;
+		ServerConfig _server;
 		Response runRequest();
 		Request(std::string request, std::vector<ServerConfig> serverConfigs);
 };

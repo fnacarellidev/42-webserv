@@ -96,8 +96,10 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 
 	if (_route && _route->path.size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
 		_dirListEnabled = _route->dirList;
-		if (!_route->redirect.first.empty())
+		if (!_route->redirect.first.empty()) {
 			_shouldRedirect = requestUri.substr(_route->path.size()) == _route->redirect.first;
+			_locationHeader = "http://localhost:" + toString(_server.port) + _route->path + _route->redirect.second;
+		}
 	}
 	if (_route)
 		_dirListEnabled = _route->dirList;
@@ -135,34 +137,28 @@ static std::string	getBodyOfRequest(std::string fullRequest) {
 	return (content);
 }
 
-static Response	getResponsePage(int status, ServerConfig &server) {
-	std::string *errPagePath;
-	errPagePath = server.getFilePathFromStatusCode(status);
-	return errPagePath ? Response(status, *errPagePath) : Response(status);
-}
-
-Response Request::runPost() {
+int Request::runPost() {
 	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos)
-		return (Response(501));
+		return (501);
 	if (this->_fullRequest.find("text/plain") != std::string::npos) {
 		switch (checkPath(this->filePath)) {
 			case ENOENT:
 				break ;
 			case EACCES:
-				return (getResponsePage(HttpStatus::FORBIDDEN, _server));
+				return (HttpStatus::FORBIDDEN);
 			case ENOTDIR:
-				return (Response(200));
+				return (200);
 			default:
-				return (getResponsePage(409, _server));
+				return (409);
 		}
 		std::string prevPath = getPrevPath(filePath);
 		switch (checkPath(prevPath)) {
 			case ENOENT:
-				return (getResponsePage(HttpStatus::NOTFOUND, _server));
+				return (HttpStatus::NOTFOUND);
 			case EACCES:
-				return (getResponsePage(HttpStatus::FORBIDDEN, _server));
+				return (HttpStatus::FORBIDDEN);
 			case ENOTDIR:
-				return (getResponsePage(400, _server));
+				return (400);
 			default:
 				break ;
 		}
@@ -170,25 +166,22 @@ Response Request::runPost() {
 		std::ofstream	file(this->filePath.c_str());
 		file.write(content.c_str(), content.length());
 		file.close();
-		return Response(201);
+		return (201);
 	}
-	return (Response(501));
+	return (501);
 }
 
-Response Request::runGet() {
+int Request::runGet() {
 	struct stat statbuf;
-	std::string* errPagePath;
 	int status = HttpStatus::OK;
 
 	stat(filePath.c_str(), &statbuf);
 	if (_shouldRedirect) {
-		std::string redirectFile = _route->redirect.second;
 		std::string sysFilePath = _route->root + _route->redirect.second;
-		std::string requestUrl = "http://localhost:" + toString(_server.port) + _route->path + redirectFile;
 
 		if (stat(sysFilePath.c_str(), &statbuf) == -1)
-			return Response(HttpStatus::NOTFOUND);
-		return Response(HttpStatus::MOVED_PERMANENTLY, sysFilePath, requestUrl);
+			return (HttpStatus::NOTFOUND);
+		return (HttpStatus::MOVED_PERMANENTLY);
 	}
 	switch (fileGood(this->filePath.c_str())) {
 		case ENOENT:
@@ -203,42 +196,41 @@ Response Request::runGet() {
 			break;
 	}
 	if (status != HttpStatus::OK) {
-		errPagePath = _server.getFilePathFromStatusCode(status);
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+		return (status);
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
 		if (_route->dirList)
-			return Response(status, filePath);
+			return (status);
 		else
 			status = HttpStatus::FORBIDDEN;
-		errPagePath = _server.getFilePathFromStatusCode(status);
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+		return (status);
 	}
 	if (strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
-		errPagePath = _server.getFilePathFromStatusCode(status);
 		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
 			status = HttpStatus::FORBIDDEN;
 		else
 			status = HttpStatus::NOTFOUND;
-		return errPagePath ? Response(status, *errPagePath) : Response(status);
+		return (status);
 	}
-	return Response(200, filePath);
+	return (200);
 }
 
 Response Request::runRequest() {
 	if (!_route)
-		return Response(404);
+		return Response(404, *this);
 
 	if (methodIsAllowed(method, _route->acceptMethodsBitmask)) {
-		return (getResponsePage(HttpStatus::NOTALLOWED, _server));
+		return (Response(HttpStatus::NOTALLOWED, *this));
 	}
+	int status = HttpStatus::OK;
 	switch (method) {
 		case GET:
-			return runGet();
-
+			status = runGet();
+			break ;
 		case POST:
-			return runPost();
+			status = runPost();
+			break ;
 
 		/* case DELETE: */
 		/* 	runDelete(); */
@@ -246,5 +238,5 @@ Response Request::runRequest() {
 		default:
 			break;
 	}
-	return Response(200);
+	return Response(status, *this);
 }
