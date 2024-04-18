@@ -13,7 +13,7 @@
 #	define POLL_TIMEOUT 10 * 1000
 #endif
 #ifndef BUFFER_SIZE // maximum read for a request
-#	define BUFFER_SIZE 1048576
+#	define BUFFER_SIZE 4096
 #endif
 
 static void	closeAll(std::vector<struct pollfd>& pollFds) {
@@ -32,12 +32,12 @@ static bool	invalidInputs(int argc, char **argv) {
 	return false;
 }
 
-static void	waitPoll(std::vector<struct pollfd>& pollFds) {
-	if (poll(&pollFds[0], pollFds.size(), POLL_TIMEOUT) < 0) {
-		perror("poll");
-		throw std::runtime_error("");
-	}
-}
+// static void	waitPoll(std::vector<struct pollfd>& pollFds) {
+// 	if (poll(&pollFds[0], pollFds.size(), POLL_TIMEOUT) < 0) {
+// 		perror("poll");
+// 		throw std::runtime_error("");
+// 	}
+// }
 
 static void	setupSockets(WebServer& config, std::vector<int>& serverFds) throw(std::runtime_error) {
 	int opt = 1, serverFd;
@@ -54,8 +54,9 @@ static void	setupSockets(WebServer& config, std::vector<int>& serverFds) throw(s
 			goto error_happen;
 		}
 
-		struct sockaddr_in sockAddr = {.sin_family = AF_INET, .sin_port = htons(config.servers[i].port), .sin_addr.s_addr = INADDR_ANY};
+		struct sockaddr_in sockAddr = {.sin_family = AF_INET, .sin_port = htons(config.servers[i].port)};
 
+		sockAddr.sin_addr.s_addr = INADDR_ANY;
 		if (bind(serverFd, (struct sockaddr*)&sockAddr, sizeof(sockAddr)) < 0) {
 			perror("bind");
 			goto error_happen;
@@ -74,8 +75,8 @@ error_happen:
 }
 
 int main(int argc, char **argv) {
-	std::vector<int> serverFds(CONNECTIONS, 0);
-	std::vector<struct pollfd> pollFds(CONNECTIONS, (struct pollfd){});
+	std::vector<int> serverFds;
+	std::vector<struct pollfd> pollFds;
 	WebServer config;
 
 	if (invalidInputs(argc, argv))
@@ -92,73 +93,110 @@ int main(int argc, char **argv) {
 	} catch (std::runtime_error& e) {
 		return EXIT_FAILURE;
 	}
-	while (true) {
-			int pollRet = poll(pollFds, serverCount, 10 * 1000);
 
 	for (size_t i = 0; i < serverFds.size(); i++)
 		pollFds.push_back((struct pollfd){.fd = serverFds[i], .events = POLLIN | POLLOUT});
 
-	try {
-		while (true) {
-			waitPoll(pollFds);
-			processPoll(pollFds, serverFds, config);
+	while (true) {
+		if (poll(&pollFds[0], pollFds.size(), POLL_TIMEOUT) < 0) {
+			perror("poll");
+			closeAll(pollFds);
+			return EXIT_FAILURE;
 		}
-	} catch (std::runtime_error& e) {
-		std::cerr << "trying to exit gracefully" << std::endl;
-		closeAll(pollFds);
-		return EXIT_FAILURE;
-	}
-	return 0;
-}
-
-
-static void	addResponseSocket(std::vector<struct pollfd>& pollFds, int serverFd) {
-	int newSocket = accept(serverFd, NULL, NULL);
-
-	if (newSocket < 0) {
-		perror("accept");
-		return ;
-	}
-	if (pollFds.size() < CONNECTIONS) {
-		pollFds.push_back((struct pollfd){.fd = newSocket, .events = POLLIN | POLLOUT});
-		return ;
-	}
-
-	Response resFull(HttpStatus::SERVICE_UNAVAILABLE);
-
-	std::cerr << "Queue size: " << pollFds.size() << std::endl;
-	send(newSocket, resFull.response(), resFull.size(), MSG_CONFIRM);
-	close(newSocket);
-}
-
-static void	processPoll(std::vector<struct pollfd>& pollFds, std::vector<int>& serverFds, WebServer& config) {
-	for (size_t i = 0; i < pollFds.size(); i++) {
-		if (pollFds[i].revents & POLLIN) {
-			if (pollFds[i].fd == serverFds[i]) {
-				addResponseSocket(pollFds, serverFds[i]);
-			} else {
-				char* buffer = (char*)std::calloc(BUFFER_SIZE, sizeof(char));
-				int ret = recv(pollFds[i].fd, buffer, BUFFER_SIZE, 0);
-
-				if (ret < 0) {
-					Response res(HttpStatus::SERVER_ERR);
-
-					std::cerr << "recv error" << std::endl;
-					send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
-					close(pollFds[i].fd);
-					pollFds.erase(pollFds.begin() + i);
+		for (size_t i = 0; i < pollFds.size(); i++) {
+			if (pollFds[i].revents & POLLIN) {
+				if (pollFds[i].fd == serverFds[i]) {
+					int newSocket = accept(serverFds[i], NULL, NULL);
+					
+					if (newSocket < 0) {
+						perror("accept");
+						continue;
+					}
+					if (pollFds.size() < CONNECTIONS)
+						pollFds.push_back((struct pollfd){.fd = newSocket, .events = POLLIN | POLLOUT});
+					else {
+						std::cerr << "We are full" << std::endl;
+						close(newSocket);
+					}
 				} else {
-					buffer[ret] = 0;
+					char	*buffer = (char*)std::calloc(BUFFER_SIZE, sizeof(char));
+					int	ret = recv(pollFds[i].fd, buffer, BUFFER_SIZE, 0);
 
-					Request req(buffer, config.servers);
-					Response res = req.runRequest();
+					if (ret < 0) {
+						Response res(500);
 
-					send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
-					close(pollFds[i].fd);
-					pollFds.erase(pollFds.begin() + i);
+						std::cerr << "recv error" << std::endl;
+						send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
+						close(pollFds[i].fd);
+						pollFds.erase(pollFds.begin() + i);
+					} else {
+						buffer[ret] = 0;
+
+						Request req(buffer, config.servers);
+						Response res = req.runRequest();
+
+						send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
+						close(pollFds[i].fd);
+						pollFds.erase(pollFds.begin() + i);
+					}
+					std::free(buffer);
 				}
-				std::free(buffer);
 			}
 		}
 	}
+	closeAll(pollFds);
+	return 0;
 }
+
+// static void	addResponseSocket(std::vector<struct pollfd>& pollFds, int serverFd) {
+// 	int newSocket = accept(serverFd, NULL, NULL);
+
+// 	if (newSocket < 0) {
+// 		perror("accept");
+// 		return ;
+// 	}
+// 	if (pollFds.size() < CONNECTIONS) {
+// 		pollFds.push_back((struct pollfd){.fd = newSocket, .events = POLLIN | POLLOUT});
+// 		return ;
+// 	}
+
+// 	Response resFull(HttpStatus::SERVICE_UNAVAILABLE);
+
+// 	std::cerr << "Queue size: " << pollFds.size() << std::endl;
+// 	send(newSocket, resFull.response(), resFull.size(), MSG_CONFIRM);
+// 	close(newSocket);
+// }
+
+// static void	processPoll(std::vector<struct pollfd>& pollFds, std::vector<int>& serverFds, WebServer& config) {
+// 	std::string buffer;
+// 	for (size_t i = 0; i < pollFds.size(); i++) {
+// 		if (pollFds[i].revents & POLLIN) {
+// 			if (pollFds[i].fd == serverFds[i])
+// 				addResponseSocket(pollFds, serverFds[i]);
+// 			else {
+// 				char temp[BUFFER_SIZE] = {0};
+// 				int ret = recv(pollFds[i].fd, temp, BUFFER_SIZE, 0);
+
+// 				if (ret < 0) {
+// 					Response res(HttpStatus::SERVER_ERR);
+
+// 					std::cerr << "recv error" << std::endl;
+// 					send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
+// 					close(pollFds[i].fd);
+// 					pollFds.erase(pollFds.begin() + i);
+// 				} else {
+// 					buffer[ret] = 0;
+
+// 					Request req(buffer, config.servers);
+// 					Response res = req.runRequest();
+
+// 					send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
+// 					close(pollFds[i].fd);
+// 					pollFds.erase(pollFds.begin() + i);
+// 				}
+// 			}
+// 		} else if (pollFds[i].revents & POLLOUT) {
+			
+// 		}
+// 	}
+// }
