@@ -2,6 +2,8 @@
 #include "../includes/Request.hpp"
 #include "../includes/WebServer.hpp"
 
+extern char **environ;
+
 #define OPT 1
 #define CONNECTIONS 1000
 #ifndef BUFFER_SIZE
