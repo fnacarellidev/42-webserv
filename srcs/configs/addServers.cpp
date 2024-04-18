@@ -66,6 +66,7 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 				servers.back().port = std::strtoul(splited[1].c_str(), NULL, 10);
 				break;
 			case Server::NAMES:
+				servers.back().serverNames.clear();
 				servers.back().serverNames = split(splited[1], ',');
 				break;
 			case Server::LIMIT:
