@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
 					} else {
 						buffer[ret] = 0;
 
-						Request req(buffer, config.servers);
+						Request req(buffer, config.servers, pollFds[i].fd);
 						Response res = req.runRequest();
 
 						send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);

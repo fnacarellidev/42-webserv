@@ -34,7 +34,8 @@ class Request {
 		std::string _locationHeader;
 		std::string filePath;
 		std::string	root;
+		int	connectionFd;
 		ServerConfig _server;
 		Response runRequest();
-		Request(std::string request, std::vector<ServerConfig> serverConfigs);
+		Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd);
 };

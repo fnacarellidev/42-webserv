@@ -145,7 +145,7 @@ ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host
 	return serverConfigs.front();
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _shouldRedirect(false) {
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) : _shouldRedirect(false), connectionFd(connectionFd) {
 	std::string host = getHostHeader(request);
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::string requestUri = requestLineParams[REQUESTURI];
