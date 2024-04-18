@@ -1,6 +1,15 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
+static unsigned int	getRequestPort(std::string request) {
+	size_t	pos = 0;
+
+	pos = request.find(":") + 1;
+	if (pos == std::string::npos)
+		return (DEFAULT_PORT);
+	return std::atoi(request.substr(pos, request.find("\r\n", pos) - pos).c_str());
+}
+
 static bool	bodyOverflow(std::string request, size_t const limit) {
 	size_t	pos = 0;
 
@@ -135,13 +144,23 @@ std::string getHostHeader(std::string request) {
 }
 
 ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host) {
-	for (std::vector<ServerConfig>::iterator it = serverConfigs.begin(); it != serverConfigs.end(); ++it) {
-		std::vector<std::string> names = it->serverNames;
-		for (std::vector<std::string>::iterator namesIt = names.begin(); namesIt != names.end(); ++namesIt) {
-			if (host == *namesIt)
+	unsigned int	port = getRequestPort(host);
+	std::vector<std::string>::iterator namesIt;
+	std::vector<ServerConfig>::iterator it;
+
+	host = host.substr(0, host.find(':'));
+	if (host == "localhost" || host == "0.0.0.0")
+		host = DEFAULT_HOST;
+	for (it = serverConfigs.begin(); it != serverConfigs.end(); ++it) {
+		for (namesIt = names.begin(); namesIt != names.end(); ++namesIt) {
+			std::cerr << "name: " << *namesIt << std::endl;
+			if (host == *namesIt && it->port == port)
 				return *it;
 		}
 	}
+	for (it = serverConfigs.begin(); it != serverConfigs.end(); it++)
+		if (it->port == port)
+			return *it;
 	return serverConfigs.front();
 }
 

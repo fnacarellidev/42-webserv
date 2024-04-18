@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 	}
 	serverCount = config.servers.size();
 	while (true) {
-			int pollRet = poll(pollFds, serverCount, 5 * 1000);
+			int pollRet = poll(pollFds, serverCount, 10 * 1000);
 
 		if (pollRet < 0) {
 			perror("poll");
