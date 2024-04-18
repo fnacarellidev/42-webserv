@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 			if (pollFds[i].revents & POLLIN) {
 				if (pollFds[i].fd == serverFds[i]) {
 					int newSocket = accept(serverFds[i], NULL, NULL);
-					
+
 					if (newSocket < 0) {
 						perror("accept");
 						continue;
