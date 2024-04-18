@@ -22,7 +22,6 @@ class Response;
 class Request {
 	private:
 		std::string	_fullRequest;
-		RouteConfig* _route;
 		bool _dirListEnabled;
 		HttpStatus::Code runGet();
 		HttpStatus::Code runPost();
@@ -30,6 +29,7 @@ class Request {
 	public:
 		Methods method;
 		bool _shouldRedirect;
+		RouteConfig* route;
 		std::string	_reqUri;
 		std::string _locationHeader;
 		std::string filePath;

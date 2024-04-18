@@ -154,20 +154,20 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) :
 	_reqUri = requestUri;
 	_server = getServer(serverConfigs, host);
 	method = getMethod(requestLineParams[METHOD]);
-	_route = _server.getRouteByPath(requestUri);
+	route = _server.getRouteByPath(requestUri);
 	_dirListEnabled = false;
 	_shouldRedirect = false;
 
-	if (_route && _route->path.size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
-		_dirListEnabled = _route->dirList;
-		if (!_route->redirect.first.empty()) {
-			_shouldRedirect = requestUri.substr(_route->path.size()) == _route->redirect.first;
-			_locationHeader = "http://localhost:" + toString(_server.port) + _route->path + _route->redirect.second;
+	if (route && route->path.size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
+		_dirListEnabled = route->dirList;
+		if (!route->redirect.first.empty()) {
+			_shouldRedirect = requestUri.substr(route->path.size()) == route->redirect.first;
+			_locationHeader = "http://localhost:" + toString(_server.port) + route->path + route->redirect.second;
 		}
 	}
-	if (_route)
-		_dirListEnabled = _route->dirList;
-	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
+	if (route)
+		_dirListEnabled = route->dirList;
+	route ? filePath = getFilePath(route, requestUri) : filePath = "";
 }
 
 unsigned short getBitmaskFromMethod(Methods method) {
@@ -239,7 +239,7 @@ HttpStatus::Code Request::runGet() {
 
 	stat(filePath.c_str(), &statbuf);
 	if (_shouldRedirect) {
-		std::string sysFilePath = _route->root + _route->redirect.second;
+		std::string sysFilePath = route->root + route->redirect.second;
 
 		if (stat(sysFilePath.c_str(), &statbuf) == -1)
 			return (HttpStatus::NOT_FOUND);
@@ -262,7 +262,7 @@ HttpStatus::Code Request::runGet() {
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
-		if (_route->dirList)
+		if (route->dirList)
 			return (status);
 		else
 			status = HttpStatus::FORBIDDEN;
@@ -281,7 +281,7 @@ HttpStatus::Code Request::runGet() {
 HttpStatus::Code	Request::runDelete() {
 	struct stat	statbuf;
 
-	if (checkParentFolderPermission(filePath, _route->root))
+	if (checkParentFolderPermission(filePath, route->root))
 		return (HttpStatus::FORBIDDEN);
 	if (access(filePath.c_str(), F_OK))
 		return (HttpStatus::NOT_FOUND);
@@ -291,19 +291,19 @@ HttpStatus::Code	Request::runDelete() {
 	}
 	if (S_ISDIR(statbuf.st_mode)) {
 		if (strEndsWith(_reqUri, '/'))
-			return deleteEverythingInsideDir(filePath, this->_route->root);
+			return deleteEverythingInsideDir(filePath, this->route->root);
 		return (HttpStatus::CONFLICT);
 	}
 	return tryToDelete(filePath);
 }
 
 Response Request::runRequest() {
-	if (!_route)
+	if (!route)
 		return Response(HttpStatus::NOT_FOUND, *this);
 
 	if (bodyOverflow(this->_fullRequest, this->_server.bodyLimit))
 		return Response(HttpStatus::PAYLOAD_TOO_LARGE, *this);
-	if (methodIsAllowed(method, _route->acceptMethodsBitmask))
+	if (methodIsAllowed(method, route->acceptMethodsBitmask))
 		return (Response(HttpStatus::NOT_ALLOWED, *this));
 	switch (method) {
 		case GET:
