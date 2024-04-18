@@ -41,11 +41,6 @@ class WebServer {
 	public:
 		std::vector<ServerConfig>	servers;
 
-		ServerConfig&	findByHostNamePort(std::string const& host,
-			std::string const* names,
-			size_t const size,
-			unsigned int const port)
-			throw(std::runtime_error);
 		void	setupConfig(char* filename);
 		static bool	configIsValid(char* filename);
 };

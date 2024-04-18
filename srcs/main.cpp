@@ -92,6 +92,8 @@ int main(int argc, char **argv) {
 	} catch (std::runtime_error& e) {
 		return EXIT_FAILURE;
 	}
+	while (true) {
+			int pollRet = poll(pollFds, serverCount, 10 * 1000);
 
 	for (size_t i = 0; i < serverFds.size(); i++)
 		pollFds.push_back((struct pollfd){.fd = serverFds[i], .events = POLLIN | POLLOUT});
