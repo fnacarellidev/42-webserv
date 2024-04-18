@@ -152,8 +152,8 @@ ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host
 	if (host == "localhost" || host == "0.0.0.0")
 		host = DEFAULT_HOST;
 	for (it = serverConfigs.begin(); it != serverConfigs.end(); ++it) {
+		std::vector<std::string> names = it->serverNames;
 		for (namesIt = names.begin(); namesIt != names.end(); ++namesIt) {
-			std::cerr << "name: " << *namesIt << std::endl;
 			if (host == *namesIt && it->port == port)
 				return *it;
 		}
