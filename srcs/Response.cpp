@@ -1,4 +1,5 @@
 #include "../includes/Response.hpp"
+#include <cstdlib>
 
 static void	getDateAndBytes(const std::string &path, std::string &modTime, std::string &bytesSize) {
 	struct stat	fileStat;
@@ -159,8 +160,10 @@ Response::Response(int status, Request &request) {
 	this->_errPage = getErrorPage(status, request._server);
 	this->_requestUri = request._reqUri;
 	this->_mimeTypes = defaultMimeTypes();
+	this->_allowedCgis = request.route->cgi;
 	this->_statusMessages = defaultStatusMessages();
 	this->_locationHeader = "";
+	this->_connectionFd = request.connectionFd;
 	if (request._shouldRedirect)
 		this->_locationHeader = request._locationHeader;
 	this->defineStatusLine(status);
@@ -269,6 +272,15 @@ void	Response::defineStatusLine(int status) {
 
 void	Response::addNewField(std::string key, std::string value) {
 	this->_headerFields.push_back(std::make_pair(key, value));
+}
+
+char* strdup(std::string str) {
+	char* dup = (char *) std::calloc(str.size(), 1);
+
+	for (size_t i = 0; i < str.size(); ++i)
+		dup[i] = str[i];
+
+	return dup;
 }
 
 void	Response::_success() {

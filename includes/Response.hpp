@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fcntl.h>
 #include "includeAll.hpp"
 #include "utils.hpp"
 #include "Request.hpp"
@@ -23,6 +24,8 @@ class Response {
 		std::map<int, std::string>			_statusMessages;
 		std::map<std::string, std::string>	_mimeTypes;
 		std::string					_fullResponse;
+		std::vector<std::string>	_allowedCgis;
+		int	_connectionFd;
 		void	_success();
 		void	_redirection();
 		void	_error();
