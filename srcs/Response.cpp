@@ -1,5 +1,6 @@
 #include "../includes/Response.hpp"
 #include <cstdlib>
+#include <sys/wait.h>
 
 static void	getDateAndBytes(const std::string &path, std::string &modTime, std::string &bytesSize) {
 	struct stat	fileStat;
@@ -274,6 +275,17 @@ void	Response::addNewField(std::string key, std::string value) {
 	this->_headerFields.push_back(std::make_pair(key, value));
 }
 
+static bool runCgi(std::string filePath, std::vector<std::string> allowedCgis) {
+	std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
+
+	for (size_t i = 0; i < allowedCgis.size(); ++i) {
+		if (fileExtension == allowedCgis[i])
+			return true;
+	}
+
+	return false;
+}
+
 char* strdup(std::string str) {
 	char* dup = (char *) std::calloc(str.size(), 1);
 
@@ -281,6 +293,66 @@ char* strdup(std::string str) {
 		dup[i] = str[i];
 
 	return dup;
+}
+
+char **getExecveArgs(std::string filePath, std::string fileExtension) {
+	char **execveArgs = (char **) std::calloc(3, sizeof(char *));
+
+	if (fileExtension == ".py")
+		execveArgs[0] = ::strdup("python3");
+	else
+		execveArgs[0] = ::strdup("php");
+	execveArgs[1] = ::strdup(filePath.c_str());
+
+	return execveArgs;
+}
+
+void runCgi(std::string filePath, int tmpFileFd) {
+	std::string binPath;
+	std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
+
+	if (fileExtension == ".py")
+		binPath = "/usr/bin/python3";
+	else
+		binPath = "/usr/bin/php";
+
+	int pid = fork();
+
+	if (pid == -1) {
+		perror("fork");
+		throw std::runtime_error("fork");
+	}
+	else if (pid == 0) {
+		char **args = getExecveArgs(filePath, fileExtension);
+
+		dup2(tmpFileFd, STDOUT_FILENO);
+		dup2(tmpFileFd, STDERR_FILENO);
+		if (execve(binPath.c_str(), args, environ) == -1) {
+			perror("execve");
+			throw std::runtime_error("execve");
+		}
+	}
+	else {
+		waitpid(pid, NULL, 0);
+		close(tmpFileFd);
+	}
+}
+
+std::string getCgiOutput(std::string filePath, int connectionFd) {
+	std::string cgiOutput;
+	std::string tmpFile(".response" + toString(connectionFd));
+	int tmpFileFd = open(tmpFile.c_str(), O_CREAT | O_RDWR, 0644);
+
+	if (tmpFileFd == -1) {
+		perror("open");
+		throw std::runtime_error("open");
+	}
+
+	runCgi(filePath, tmpFileFd);
+	cgiOutput = getFileContent(tmpFile);
+	std::remove(tmpFile.c_str());
+
+	return cgiOutput;
 }
 
 void	Response::_success() {
@@ -292,9 +364,15 @@ void	Response::_success() {
 		case 200:
 			if (!S_ISDIR(pathInfo(this->_filePath).st_mode)){
 				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_filePath));
-				this->addNewField("Content-Length", getFileSize(this->_filePath));
 				this->addNewField("Content-Type", getContentType(this->_filePath));
-				this->_body = getFileContent(this->_filePath);
+				if (runCgi(this->_filePath, _allowedCgis)) {
+					this->_body = getCgiOutput(this->_filePath, this->_connectionFd);
+					this->addNewField("Content-Length", toString(this->_body.size()));
+				}
+				else {
+					this->_body = getFileContent(this->_filePath);
+					this->addNewField("Content-Length", getFileSize(this->_filePath));
+				}
 			} else {
 				this->addNewField("Content-Type", "text/html");
 				this->_body = generateDirectoryListing(this->_filePath, this->_requestUri);
