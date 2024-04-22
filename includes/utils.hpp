@@ -9,6 +9,7 @@ time_t		convertTimeToGMT(time_t t);
 std::string	formatTimeString(time_t	time);
 std::string	getCurrentTimeInGMT();
 std::vector<std::string> split(std::string str, char c);
+std::vector<std::string> split(std::string str, std::string c);
 void	trim(std::string &str, const char* toFind);
 struct stat	pathInfo(const std::string &path);
 bool pathExists(const std::string &dir);

@@ -11,3 +11,16 @@ std::vector<std::string> split(std::string str, char c) {
 
 	return splitted;
 }
+
+std::vector<std::string> split(std::string str, std::string c) {
+	std::vector<std::string>	splited;
+	std::stringstream ss(str);
+
+	size_t	pos = 0;
+	size_t	prev = 0;
+	while ((pos = str.find(c, prev)) != std::string::npos) {
+		splited.push_back(str.substr(prev, pos - prev));
+		prev = pos + c.size();
+	}
+	return (splited);
+}
