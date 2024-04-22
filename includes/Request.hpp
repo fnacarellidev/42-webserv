@@ -21,6 +21,10 @@ class Response;
 
 class Request {
 	private:
+		std::string _host;
+		std::string	_contentType;
+		size_t		_contentLength;
+		std::string _body;
 		std::string	_fullRequest;
 		RouteConfig* _route;
 		bool _dirListEnabled;
@@ -36,5 +40,6 @@ class Request {
 		std::string	root;
 		ServerConfig _server;
 		Response runRequest();
+		void initRequest(std::string &request);
 		Request(std::string request, std::vector<ServerConfig> serverConfigs);
 };

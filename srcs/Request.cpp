@@ -74,15 +74,6 @@ static HttpStatus::Code	deleteEverythingInsideDir(std::string dirPath, std::stri
 	return (status);
 }
 
-static std::vector<std::string> getRequestLineParams(std::string request) {
-	std::string firstLine;
-	std::stringstream strStream(request);
-
-	getline(strStream, firstLine);
-
-	return split(firstLine, ' ');
-}
-
 static Methods getMethod(std::string method) {
 	if (method == "GET")
 		return GET;
@@ -164,29 +155,71 @@ ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host
 	return serverConfigs.front();
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) : _shouldRedirect(false) {
-	std::string host = getHostHeader(request);
-	std::vector<std::string> requestLineParams = getRequestLineParams(request);
-	std::string requestUri = requestLineParams[REQUESTURI];
+static int hexStrToInt(std::string hexStr) {
+	return (std::strtol(hexStr.c_str(), NULL, 16));
+}
 
-	_fullRequest = request;
-	_reqUri = requestUri;
-	_server = getServer(serverConfigs, host);
-	method = getMethod(requestLineParams[METHOD]);
-	_route = _server.getRouteByPath(requestUri);
+void Request::initRequest(std::string &request) {
+	this->_fullRequest = request;
+	this->_host = "";
+	this->_contentType = "";
+	this->_contentLength = 0;
+	this->_body = "";
+	bool transferEncodingChunked = false;
+	std::vector<std::string>	requestLineParams = split(request, "\r\n");
+	std::vector<std::string>::iterator	it = requestLineParams.begin();
+
+	std::vector<std::string>	firstLine = split(*it, ' ');
+	this->method = getMethod(firstLine[METHOD]);
+	this->_reqUri = firstLine[REQUESTURI];
+	it++;
+	while (it != requestLineParams.end() && *it != "") {
+		if ((*it).find("Host:") != std::string::npos)
+			this->_host = (*it).substr(6);
+		else if ((*it).find("Content-Length:") != std::string::npos)
+			this->_contentLength = std::atoi((*it).substr(16).c_str());
+		else if ((*it).find("Content-Type:") != std::string::npos)
+			this->_contentType = (*it).substr(14);
+		else if ((*it).find("Transfer-Encoding: chunked") != std::string::npos)
+			transferEncodingChunked = true;
+		it++;
+	}
+	it++;
+	if (transferEncodingChunked) {
+		std::vector<std::string>::iterator	itNext = it + 1;
+		while (it != requestLineParams.end() && itNext != requestLineParams.end()) {
+			if (*it == "0")
+				break ;
+			this->_contentLength += hexStrToInt(*it);
+			this->_body += *itNext;
+			it = itNext + 1;
+			itNext = it + 1;
+		}
+	} else {
+		while (it != requestLineParams.end()) {
+			this->_body += *it;
+			it++;
+		}
+	}
+}
+
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) {
+	initRequest(request);
+	_server = getServer(serverConfigs, this->_host);
+	_route = _server.getRouteByPath(this->_reqUri);
 	_dirListEnabled = false;
 	_shouldRedirect = false;
 
-	if (_route && _route->path.size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
+	if (_route && _route->path.size() <= this->_reqUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
 		_dirListEnabled = _route->dirList;
 		if (!_route->redirect.first.empty()) {
-			_shouldRedirect = requestUri.substr(_route->path.size()) == _route->redirect.first;
+			_shouldRedirect = this->_reqUri.substr(_route->path.size()) == _route->redirect.first;
 			_locationHeader = "http://localhost:" + toString(_server.port) + _route->path + _route->redirect.second;
 		}
 	}
 	if (_route)
 		_dirListEnabled = _route->dirList;
-	_route ? filePath = getFilePath(_route, requestUri) : filePath = "";
+	_route ? filePath = getFilePath(_route, this->_reqUri) : filePath = "";
 }
 
 unsigned short getBitmaskFromMethod(Methods method) {
@@ -208,20 +241,8 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 	return !(methodBitmask & allowedMethodsBitmask);
 }
 
-static std::string	getBodyOfRequest(std::string fullRequest) {
-	std::string			line;
-	std::string			content;
-	std::stringstream	ss(fullRequest);
-
-	while (std::getline(ss, line) && line != "\r") ;
-	while (std::getline(ss, line)) {
-		content += line;
-	}
-	return (content);
-}
-
 HttpStatus::Code Request::runPost() {
-	if (this->_fullRequest.find("text/plain") != std::string::npos) {
+	if (this->_contentType == "text/plain") {
 		switch (checkPath(this->filePath)) {
 			case ENOENT:
 				break ;
@@ -243,9 +264,8 @@ HttpStatus::Code Request::runPost() {
 			default:
 				break ;
 		}
-		std::string		content = getBodyOfRequest(this->_fullRequest);
 		std::ofstream	file(this->filePath.c_str());
-		file.write(content.c_str(), content.length());
+		file.write(this->_body.c_str(), this->_contentLength);
 		file.close();
 		return (HttpStatus::CREATED);
 	}
