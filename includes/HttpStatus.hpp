@@ -14,5 +14,6 @@ namespace HttpStatus {
 		PAYLOAD_TOO_LARGE = 413,
 		SERVER_ERR = 500,
 		NOT_IMPLEMENTED = 501,
+		SERVICE_UNAVAILABLE = 503,
 	};
 };
