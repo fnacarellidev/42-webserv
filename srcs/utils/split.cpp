@@ -22,5 +22,7 @@ std::vector<std::string> split(std::string str, std::string c) {
 		splited.push_back(str.substr(prev, pos - prev));
 		prev = pos + c.size();
 	}
+	if (prev != str.length())
+		splited.push_back(str.substr(prev));
 	return (splited);
 }
