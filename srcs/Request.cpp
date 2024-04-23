@@ -10,7 +10,7 @@ char* strdup(std::string str) {
 	return dup;
 }
 
-static bool runCgi(std::string filePath, std::vector<std::string> allowedCgis) {
+static bool shouldRunCgi(std::string filePath, std::vector<std::string> allowedCgis) {
 	std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
 
 	for (size_t i = 0; i < allowedCgis.size(); ++i) {
@@ -21,8 +21,14 @@ static bool runCgi(std::string filePath, std::vector<std::string> allowedCgis) {
 	return false;
 }
 
-char **getExecveArgs(std::string filePath, std::string fileExtension) {
-	char **execveArgs = (char **) std::calloc(3, sizeof(char *));
+char **getExecveArgs(std::string filePath, std::string fileExtension, std::string cgiParameter) {
+	char **execveArgs;
+	if (!cgiParameter.empty()) {
+		execveArgs = (char **) std::calloc(4, sizeof(char *));
+		execveArgs[2] = ::strdup(cgiParameter.c_str());
+	}
+	else
+		execveArgs = (char **) std::calloc(3, sizeof(char *));
 
 	if (fileExtension == ".py")
 		execveArgs[0] = ::strdup("python3");
@@ -33,7 +39,7 @@ char **getExecveArgs(std::string filePath, std::string fileExtension) {
 	return execveArgs;
 }
 
-void runCgi(std::string filePath, int tmpFileFd) {
+void runCgi(std::string filePath, int tmpFileFd, std::string cgiParameter) {
 	std::string binPath;
 	std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
 
@@ -49,7 +55,7 @@ void runCgi(std::string filePath, int tmpFileFd) {
 		throw std::runtime_error("fork");
 	}
 	else if (pid == 0) {
-		char **args = getExecveArgs(filePath, fileExtension);
+		char **args = getExecveArgs(filePath, fileExtension, cgiParameter);
 
 		dup2(tmpFileFd, STDOUT_FILENO);
 		dup2(tmpFileFd, STDERR_FILENO);
@@ -64,7 +70,7 @@ void runCgi(std::string filePath, int tmpFileFd) {
 	}
 }
 
-std::string getCgiOutput(std::string filePath, int connectionFd) {
+std::string getCgiOutput(std::string filePath, int connectionFd, std::string cgiParameter) {
 	std::string cgiOutput;
 	std::string tmpFile(".response" + toString(connectionFd));
 	int tmpFileFd = open(tmpFile.c_str(), O_CREAT | O_RDWR, 0644);
@@ -74,7 +80,7 @@ std::string getCgiOutput(std::string filePath, int connectionFd) {
 		throw std::runtime_error("open");
 	}
 
-	runCgi(filePath, tmpFileFd);
+	runCgi(filePath, tmpFileFd, cgiParameter);
 	cgiOutput = getFileContent(tmpFile);
 	std::remove(tmpFile.c_str());
 
@@ -226,13 +232,12 @@ ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host
 	return serverConfigs.front();
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) : _connectionFd(connectionFd), _shouldRedirect(false) {
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) : _connectionFd(connectionFd), _shouldRedirect(false), execCgi(false) {
 	std::string host = getHeader(request, "Host: ");
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::string requestUri = requestLineParams[REQUESTURI];
 
-	this->contentType = getHeader(request, "Content-Type: ");
-	std::cout << "CONTENT TYPE: " << this->contentType << std::endl;
+	this->_contentType = getHeader(request, "Content-Type: ");
 	_fullRequest = request;
 	_reqUri = requestUri;
 	_server = getServer(serverConfigs, host);
@@ -251,6 +256,7 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, i
 	if (route)
 		_dirListEnabled = route->dirList;
 	route ? filePath = getFilePath(route, requestUri) : filePath = "";
+	execCgi = shouldRunCgi(this->filePath, this->route->cgi);
 }
 
 unsigned short getBitmaskFromMethod(Methods method) {
@@ -313,8 +319,14 @@ HttpStatus::Code Request::runPost() {
 		file.close();
 		return (HttpStatus::CREATED);
 	}
-	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos)
+	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos) {
+		if (!this->execCgi)
+			return HttpStatus::FORBIDDEN;
+		this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, getBodyOfRequest(this->_fullRequest));
+		this->resContentType = "text/html";
+
 		return HttpStatus::OK;
+	}
 	return (HttpStatus::NOT_IMPLEMENTED);
 }
 
@@ -359,6 +371,10 @@ HttpStatus::Code Request::runGet() {
 		else
 			status = HttpStatus::NOT_FOUND;
 		return (status);
+	}
+	if (this->execCgi) {
+		this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, "");
+		this->resContentType = "text/plain";
 	}
 	return (HttpStatus::OK);
 }

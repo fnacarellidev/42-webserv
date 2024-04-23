@@ -166,7 +166,7 @@ Response::Response(int status, Request &request) {
 	this->defineStatusLine(status);
 	switch (status / 100) {
 		case 2:
-			this->_success();
+			this->_success(request);
 			break ;
 		case 3:
 			this->_redirection();
@@ -271,18 +271,25 @@ void	Response::addNewField(std::string key, std::string value) {
 	this->_headerFields.push_back(std::make_pair(key, value));
 }
 
-void	Response::_success() {
+void	Response::_success(Request &req) {
 	this->addNewField("Date", getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	if (this->_filePath.empty())
 		return ;
 	switch (this->_status) {
 		case 200:
-			if (!S_ISDIR(pathInfo(this->_filePath).st_mode)){
-				this->addNewField("Last-Modified", getLastModifiedOfFile(this->_filePath));
-				this->addNewField("Content-Length", getFileSize(this->_filePath));
-				this->addNewField("Content-Type", getContentType(this->_filePath));
-				this->_body = getFileContent(this->_filePath);
+			if (!S_ISDIR(pathInfo(this->_filePath).st_mode)) {
+				if (req.execCgi) {
+					this->_body = req.cgiOutput;
+					this->addNewField("Content-Length", toString(this->_body.size()));
+					this->addNewField("Content-Type", req.resContentType);
+				}
+				else {
+					this->addNewField("Last-Modified", getLastModifiedOfFile(this->_filePath));
+					this->addNewField("Content-Length", getFileSize(this->_filePath));
+					this->addNewField("Content-Type", getContentType(this->_filePath));
+					this->_body = getFileContent(this->_filePath);
+				}
 			} else {
 				this->addNewField("Content-Type", "text/html");
 				this->_body = generateDirectoryListing(this->_filePath, this->_requestUri);

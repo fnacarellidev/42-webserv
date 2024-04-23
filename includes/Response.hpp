@@ -24,7 +24,7 @@ class Response {
 		std::map<int, std::string>			_statusMessages;
 		std::map<std::string, std::string>	_mimeTypes;
 		std::string					_fullResponse;
-		void	_success();
+		void	_success(Request &req);
 		void	_redirection();
 		void	_error();
 		void	_serverError();

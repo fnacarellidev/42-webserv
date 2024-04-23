@@ -24,6 +24,7 @@ class Request {
 		std::string	_fullRequest;
 		bool _dirListEnabled;
 		int	_connectionFd;
+		std::string	_contentType;
 		HttpStatus::Code runGet();
 		HttpStatus::Code runPost();
 		HttpStatus::Code runDelete();
@@ -35,7 +36,9 @@ class Request {
 		std::string _locationHeader;
 		std::string filePath;
 		std::string	root;
-		std::string	contentType;
+		bool		execCgi;
+		std::string	cgiOutput;
+		std::string resContentType;
 		ServerConfig _server;
 		Response runRequest();
 		Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd);
