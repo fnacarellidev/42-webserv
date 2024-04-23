@@ -161,7 +161,6 @@ Response::Response(int status, Request &request) {
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->_locationHeader = "";
-	this->_requestContentType = request.contentType;
 	if (request._shouldRedirect)
 		this->_locationHeader = request._locationHeader;
 	this->defineStatusLine(status);

@@ -23,6 +23,7 @@ class Request {
 	private:
 		std::string	_fullRequest;
 		bool _dirListEnabled;
+		int	_connectionFd;
 		HttpStatus::Code runGet();
 		HttpStatus::Code runPost();
 		HttpStatus::Code runDelete();
