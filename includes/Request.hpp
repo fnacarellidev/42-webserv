@@ -21,10 +21,13 @@ class Response;
 
 class Request {
 	private:
+		std::string _host;
+		std::string	_contentType;
+		size_t		_contentLength;
+		std::string _body;
 		std::string	_fullRequest;
 		bool _dirListEnabled;
 		int	_connectionFd;
-		std::string	_contentType;
 		HttpStatus::Code runGet();
 		HttpStatus::Code runPost();
 		HttpStatus::Code runDelete();
@@ -42,4 +45,5 @@ class Request {
 		ServerConfig _server;
 		Response runRequest();
 		Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd);
+		void initRequest(std::string &request);
 };

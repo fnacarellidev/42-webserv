@@ -15,7 +15,7 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	c++ $(FLAGS) $(OBJS) -o $(NAME)
 
-$(PATH_OBJS)%.o: $(PATH_SRCS)%.cpp | $(PATH_OBJS)
+$(PATH_OBJS)%.o: $(PATH_SRCS)%.cpp $(wildcard $(PATH_INCS)*.hpp) | $(PATH_OBJS)
 	@mkdir -p $(@D)
 	c++ $(FLAGS) -c $< -o $@
 

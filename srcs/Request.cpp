@@ -87,6 +87,15 @@ std::string getCgiOutput(std::string filePath, int connectionFd, std::string cgi
 	return cgiOutput;
 }
 
+static unsigned int	getRequestPort(std::string request) {
+	size_t	pos = 0;
+
+	pos = request.find(":") + 1;
+	if (pos == std::string::npos)
+		return (DEFAULT_PORT);
+	return std::atoi(request.substr(pos, request.find("\r\n", pos) - pos).c_str());
+}
+
 static bool	bodyOverflow(std::string request, size_t const limit) {
 	size_t	pos = 0;
 
@@ -151,15 +160,6 @@ static HttpStatus::Code	deleteEverythingInsideDir(std::string dirPath, std::stri
 	return (status);
 }
 
-static std::vector<std::string> getRequestLineParams(std::string request) {
-	std::string firstLine;
-	std::stringstream strStream(request);
-
-	getline(strStream, firstLine);
-
-	return split(firstLine, ' ');
-}
-
 static Methods getMethod(std::string method) {
 	if (method == "GET")
 		return GET;
@@ -222,40 +222,91 @@ std::string getHeader(std::string request, std::string header) {
 }
 
 ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host) {
-	for (std::vector<ServerConfig>::iterator it = serverConfigs.begin(); it != serverConfigs.end(); ++it) {
+	unsigned int	port = getRequestPort(host);
+	std::vector<std::string>::iterator namesIt;
+	std::vector<ServerConfig>::iterator it;
+
+	host = host.substr(0, host.find(':'));
+	if (host == "localhost" || host == "0.0.0.0")
+		host = DEFAULT_HOST;
+	for (it = serverConfigs.begin(); it != serverConfigs.end(); ++it) {
 		std::vector<std::string> names = it->serverNames;
-		for (std::vector<std::string>::iterator namesIt = names.begin(); namesIt != names.end(); ++namesIt) {
-			if (host == *namesIt)
+		for (namesIt = names.begin(); namesIt != names.end(); ++namesIt) {
+			if (host == *namesIt && it->port == port)
 				return *it;
 		}
 	}
+	for (it = serverConfigs.begin(); it != serverConfigs.end(); it++)
+		if (it->port == port)
+			return *it;
 	return serverConfigs.front();
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) : _connectionFd(connectionFd), _shouldRedirect(false), execCgi(false) {
-	std::string host = getHeader(request, "Host: ");
-	std::vector<std::string> requestLineParams = getRequestLineParams(request);
-	std::string requestUri = requestLineParams[REQUESTURI];
+static int hexStrToInt(std::string hexStr) {
+	return (std::strtol(hexStr.c_str(), NULL, 16));
+}
 
-	this->_contentType = getHeader(request, "Content-Type: ");
-	_fullRequest = request;
-	_reqUri = requestUri;
-	_server = getServer(serverConfigs, host);
-	method = getMethod(requestLineParams[METHOD]);
-	route = _server.getRouteByPath(requestUri);
+void Request::initRequest(std::string &request) {
+	this->_fullRequest = request;
+	this->_host = "";
+	this->_contentType = "";
+	this->_contentLength = 0;
+	this->_body = "";
+	bool transferEncodingChunked = false;
+	std::vector<std::string>	requestLineParams = split(request, "\r\n");
+	std::vector<std::string>::iterator	it = requestLineParams.begin();
+
+	std::vector<std::string>	firstLine = split(*it, ' ');
+	this->method = getMethod(firstLine[METHOD]);
+	this->_reqUri = firstLine[REQUESTURI];
+	it++;
+	while (it != requestLineParams.end() && *it != "") {
+		if ((*it).find("Host:") != std::string::npos)
+			this->_host = (*it).substr(6);
+		else if ((*it).find("Content-Length:") != std::string::npos)
+			this->_contentLength = std::atoi((*it).substr(16).c_str());
+		else if ((*it).find("Content-Type:") != std::string::npos)
+			this->_contentType = (*it).substr(14);
+		else if ((*it).find("Transfer-Encoding: chunked") != std::string::npos)
+			transferEncodingChunked = true;
+		it++;
+	}
+	it++;
+	if (transferEncodingChunked) {
+		std::vector<std::string>::iterator	itNext = it + 1;
+		while (it != requestLineParams.end() && itNext != requestLineParams.end()) {
+			if (*it == "0")
+				break ;
+			this->_contentLength += hexStrToInt(*it);
+			this->_body += *itNext;
+			it = itNext + 1;
+			itNext = it + 1;
+		}
+	} else {
+		while (it != requestLineParams.end()) {
+			this->_body += *it;
+			it++;
+		}
+	}
+}
+
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) : _connectionFd(connectionFd), _shouldRedirect(false), execCgi(false) {
+	initRequest(request);
+	_server = getServer(serverConfigs, this->_host);
+	route = _server.getRouteByPath(this->_reqUri);
 	_dirListEnabled = false;
 	_shouldRedirect = false;
 
-	if (route && route->path.size() <= requestUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
+	if (route && route->path.size() <= this->_reqUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
 		_dirListEnabled = route->dirList;
 		if (!route->redirect.first.empty()) {
-			_shouldRedirect = requestUri.substr(route->path.size()) == route->redirect.first;
+			_shouldRedirect = this->_reqUri.substr(route->path.size()) == route->redirect.first;
 			_locationHeader = "http://localhost:" + toString(_server.port) + route->path + route->redirect.second;
 		}
 	}
 	if (route)
 		_dirListEnabled = route->dirList;
-	route ? filePath = getFilePath(route, requestUri) : filePath = "";
+	route ? filePath = getFilePath(route, this->_reqUri) : filePath = "";
 	execCgi = shouldRunCgi(this->filePath, this->route->cgi);
 }
 
@@ -278,20 +329,8 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 	return !(methodBitmask & allowedMethodsBitmask);
 }
 
-static std::string	getBodyOfRequest(std::string fullRequest) {
-	std::string			line;
-	std::string			content;
-	std::stringstream	ss(fullRequest);
-
-	while (std::getline(ss, line) && line != "\r") ;
-	while (std::getline(ss, line)) {
-		content += line;
-	}
-	return (content);
-}
-
 HttpStatus::Code Request::runPost() {
-	if (this->_fullRequest.find("text/plain") != std::string::npos) {
+	if (this->_contentType == "text/plain") {
 		switch (checkPath(this->filePath)) {
 			case ENOENT:
 				break ;
@@ -313,16 +352,15 @@ HttpStatus::Code Request::runPost() {
 			default:
 				break ;
 		}
-		std::string		content = getBodyOfRequest(this->_fullRequest);
 		std::ofstream	file(this->filePath.c_str());
-		file.write(content.c_str(), content.length());
+		file.write(this->_body.c_str(), this->_contentLength);
 		file.close();
 		return (HttpStatus::CREATED);
 	}
 	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos) {
 		if (!this->execCgi)
 			return HttpStatus::FORBIDDEN;
-		this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, getBodyOfRequest(this->_fullRequest));
+		this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, this->_body);
 		this->resContentType = "text/html";
 
 		return HttpStatus::OK;
