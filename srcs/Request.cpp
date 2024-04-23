@@ -1,6 +1,86 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
+char* strdup(std::string str) {
+	char* dup = (char *) std::calloc(str.size(), 1);
+
+	for (size_t i = 0; i < str.size(); ++i)
+		dup[i] = str[i];
+
+	return dup;
+}
+
+static bool runCgi(std::string filePath, std::vector<std::string> allowedCgis) {
+	std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
+
+	for (size_t i = 0; i < allowedCgis.size(); ++i) {
+		if (fileExtension == allowedCgis[i])
+			return true;
+	}
+
+	return false;
+}
+
+char **getExecveArgs(std::string filePath, std::string fileExtension) {
+	char **execveArgs = (char **) std::calloc(3, sizeof(char *));
+
+	if (fileExtension == ".py")
+		execveArgs[0] = ::strdup("python3");
+	else
+		execveArgs[0] = ::strdup("php");
+	execveArgs[1] = ::strdup(filePath.c_str());
+
+	return execveArgs;
+}
+
+void runCgi(std::string filePath, int tmpFileFd) {
+	std::string binPath;
+	std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
+
+	if (fileExtension == ".py")
+		binPath = "/usr/bin/python3";
+	else
+		binPath = "/usr/bin/php";
+
+	int pid = fork();
+
+	if (pid == -1) {
+		perror("fork");
+		throw std::runtime_error("fork");
+	}
+	else if (pid == 0) {
+		char **args = getExecveArgs(filePath, fileExtension);
+
+		dup2(tmpFileFd, STDOUT_FILENO);
+		dup2(tmpFileFd, STDERR_FILENO);
+		if (execve(binPath.c_str(), args, environ) == -1) {
+			perror("execve");
+			throw std::runtime_error("execve");
+		}
+	}
+	else {
+		waitpid(pid, NULL, 0);
+		close(tmpFileFd);
+	}
+}
+
+std::string getCgiOutput(std::string filePath, int connectionFd) {
+	std::string cgiOutput;
+	std::string tmpFile(".response" + toString(connectionFd));
+	int tmpFileFd = open(tmpFile.c_str(), O_CREAT | O_RDWR, 0644);
+
+	if (tmpFileFd == -1) {
+		perror("open");
+		throw std::runtime_error("open");
+	}
+
+	runCgi(filePath, tmpFileFd);
+	cgiOutput = getFileContent(tmpFile);
+	std::remove(tmpFile.c_str());
+
+	return cgiOutput;
+}
+
 static bool	bodyOverflow(std::string request, size_t const limit) {
 	size_t	pos = 0;
 
@@ -119,16 +199,17 @@ static std::string getFilePath(RouteConfig *route, std::string requestUri) {
 	return root + file;
 }
 
-std::string getHostHeader(std::string request) {
+std::string getHeader(std::string request, std::string header) {
 	std::string line;
-	std::string host;
+	std::string value;
+	size_t		headerLen = header.size();
 	std::stringstream sstream(request);
 
 	while (getline(sstream, line)) {
-		if (line.substr(0, 6) == "Host: ") {
-			host = line.substr(6);
-			trim(host, "\r");
-			return host;
+		if (line.substr(0, headerLen) == header) {
+			value = line.substr(headerLen);
+			trim(value, "\r");
+			return value;
 		}
 	}
 	return "";
@@ -146,10 +227,12 @@ ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host
 }
 
 Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) : _shouldRedirect(false), connectionFd(connectionFd) {
-	std::string host = getHostHeader(request);
+	std::string host = getHeader(request, "Host: ");
 	std::vector<std::string> requestLineParams = getRequestLineParams(request);
 	std::string requestUri = requestLineParams[REQUESTURI];
 
+	this->contentType = getHeader(request, "Content-Type: ");
+	std::cout << "CONTENT TYPE: " << this->contentType << std::endl;
 	_fullRequest = request;
 	_reqUri = requestUri;
 	_server = getServer(serverConfigs, host);
@@ -230,6 +313,8 @@ HttpStatus::Code Request::runPost() {
 		file.close();
 		return (HttpStatus::CREATED);
 	}
+	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos)
+		return HttpStatus::OK;
 	return (HttpStatus::NOT_IMPLEMENTED);
 }
 
