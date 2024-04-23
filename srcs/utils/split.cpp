@@ -15,7 +15,6 @@ std::vector<std::string> split(std::string str, char c) {
 std::vector<std::string> split(std::string str, std::string c) {
 	std::vector<std::string>	splited;
 	std::stringstream ss(str);
-
 	size_t	pos = 0;
 	size_t	prev = 0;
 	while ((pos = str.find(c, prev)) != std::string::npos) {
