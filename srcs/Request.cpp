@@ -296,15 +296,17 @@ void Request::initRequest(std::string &request) {
 	}
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) : _connectionFd(connectionFd), _shouldRedirect(false), execCgi(false) {
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) :
+	_dirListEnabled(false),
+	_connectionFd(connectionFd),
+	_shouldRedirect(false),
+	execCgi(false)
+{
 	initRequest(request);
 	_server = getServer(serverConfigs, this->_host);
 	route = _server.getRouteByPath(this->_reqUri);
-	_dirListEnabled = false;
-	_shouldRedirect = false;
 
 	if (route && route->path.size() <= this->_reqUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
-		_dirListEnabled = route->dirList;
 		if (!route->redirect.first.empty()) {
 			_shouldRedirect = this->_reqUri.substr(route->path.size()) == route->redirect.first;
 			_locationHeader = "http://localhost:" + toString(_server.port) + route->path + route->redirect.second;
