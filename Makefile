@@ -9,6 +9,7 @@ FILES = main Response $(CONFIGURATION_FILES) utils/fileInfo utils/time utils/spl
 SRCS = ${FILES:%=$(PATH_OBJS)%.cpp}
 OBJS = ${FILES:%=$(PATH_OBJS)%.o}
 FLAGS = -Wall -Wextra -Werror -std=c++98 -g3
+VAL_FLAGS= --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes --log-file=val 
 
 all: $(NAME)
 
@@ -32,9 +33,6 @@ re: fclean all
 
 .PHONY: all clean fclean re debug re_debug
 
-debug:
-	c++ $(FLAGS) $(wildcard srcs/configs/*.cpp) $(wildcard srcs/utils/*.cpp) srcs/Request.cpp srcs/main_test.cpp -o debug_server
-
-re_debug:
-	rm -rf debug_server
-	make debug
+val: $(NAME)
+	valgrind $(VAL_FLAGS) ./$(NAME) ./arquivo.conf
+.PHONY: val
