@@ -11,7 +11,13 @@ char* strdup(std::string str) {
 }
 
 static bool shouldRunCgi(std::string filePath, std::vector<std::string> allowedCgis) {
-	std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
+	size_t	pos = 0;
+
+	pos = filePath.find_last_of('.');
+	if (pos == std::string::npos)
+		return (false);
+
+	std::string fileExtension = filePath.substr(pos);
 
 	for (size_t i = 0; i < allowedCgis.size(); ++i) {
 		if (fileExtension == allowedCgis[i])
