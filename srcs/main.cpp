@@ -85,8 +85,11 @@ static void	setupPolls(std::vector<int>& serverFds, std::vector<struct pollfd>& 
 	}
 }
 
-void	handle_ctrl_c(int sig) {
-	std::cerr << std::endl << "signal " << sig << " received!"<< std::endl;
+void	handleCtrlC(int sig) {
+	if (sig == SIGINT)
+		std::cerr << std::endl << "signal " << sig << " received!"<< std::endl;
+	else
+		std::cerr << "OHMAWGOD" << std::endl;
 	closeAll(gPollFds);
 	for (std::vector<ServerConfig>::iterator it = gConfig.servers.begin(); it != gConfig.servers.end(); ++it) {
 		for (std::vector<RouteConfig*>::iterator it2 = it->routes.begin(); it2 != it->routes.end(); ++it2)
@@ -110,7 +113,7 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 	setupPolls(gServerFds, gPollFds);
-	signal(SIGINT, handle_ctrl_c);
+	signal(SIGINT, handleCtrlC);
 	while (true) {
 		if (poll(&gPollFds[0], gPollFds.size(), POLL_TIMEOUT_SEC) < 0) {
 			perror("poll");
