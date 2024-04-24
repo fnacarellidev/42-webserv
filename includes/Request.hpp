@@ -26,20 +26,24 @@ class Request {
 		size_t		_contentLength;
 		std::string _body;
 		std::string	_fullRequest;
-		RouteConfig* _route;
 		bool _dirListEnabled;
+		int	_connectionFd;
 		HttpStatus::Code runGet();
 		HttpStatus::Code runPost();
 		HttpStatus::Code runDelete();
 	public:
 		Methods method;
 		bool _shouldRedirect;
+		RouteConfig* route;
 		std::string	_reqUri;
 		std::string _locationHeader;
 		std::string filePath;
 		std::string	root;
+		bool		execCgi;
+		std::string	cgiOutput;
+		std::string resContentType;
 		ServerConfig _server;
 		Response runRequest();
+		Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd);
 		void initRequest(std::string &request);
-		Request(std::string request, std::vector<ServerConfig> serverConfigs);
 };

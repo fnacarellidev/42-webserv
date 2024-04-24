@@ -2,15 +2,25 @@
 #include "../includes/Request.hpp"
 #include "../includes/WebServer.hpp"
 
+extern char **environ;
+std::vector<int> gServerFds;
+std::vector<struct pollfd> gPollFds;
+WebServer gConfig;
+
+#define OPT 1
+
 #ifndef CONNECTIONS // maximum number of newSockets in the poll
 #	define CONNECTIONS 1000
 #endif
+
 #ifndef QUEUE_MAX // maximum conections to one socket
-#	define QUEUE_MAX std::numeric_limits<short>::max()
+#	define QUEUE_MAX std::numeric_limits<unsigned short>::max()
 #endif
-#ifndef POLL_TIMEOUT // time poll will keep in hang until an event is triggered
-#	define POLL_TIMEOUT 10 * 1000
+
+#ifndef POLL_TIMEOUT_SEC // time poll will keep in hang until an event is triggered
+#	define POLL_TIMEOUT_SEC 10 * 1000
 #endif
+
 #ifndef BUFFER_SIZE // maximum read for a request
 #	define BUFFER_SIZE 1048576
 #endif
@@ -33,7 +43,10 @@ static bool	invalidInputs(int argc, char **argv) {
 
 static void	setupSockets(WebServer& config, std::vector<int>& serverFds) throw(std::runtime_error) {
 	int	opt = 1, serverFd;
+	struct sockaddr_in sockAddr;
 
+	sockAddr.sin_family = AF_INET;
+	sockAddr.sin_addr.s_addr = INADDR_ANY;
 	for (size_t i = 0; i < config.servers.size(); i++) {
 		serverFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (serverFd < 0) {
@@ -44,10 +57,7 @@ static void	setupSockets(WebServer& config, std::vector<int>& serverFds) throw(s
 			perror("setsockopt");
 			goto error_happen;
 		}
-
-		struct sockaddr_in sockAddr = {.sin_family = AF_INET, .sin_port = htons(config.servers[i].port)};
-
-		sockAddr.sin_addr.s_addr = INADDR_ANY;
+		sockAddr.sin_port = htons(config.servers[i].port);
 		if (bind(serverFd, (struct sockaddr*)&sockAddr, sizeof(sockAddr)) < 0) {
 			perror("bind");
 			goto error_happen;
@@ -65,45 +75,62 @@ error_happen:
 	std::runtime_error("");
 }
 
-int main(int argc, char **argv) {
-	std::vector<int> serverFds;
-	std::vector<struct pollfd> pollFds;
-	WebServer config;
+static void	setupPolls(std::vector<int>& serverFds, std::vector<struct pollfd>& pollFds) {
+	struct pollfd pfd;
 
+	pfd.events = POLLIN | POLLOUT;
+	for (size_t i = 0; i < serverFds.size(); i++) {
+		pfd.fd = serverFds[i];
+		pollFds.push_back(pfd);
+	}
+}
+
+void	handleCtrlC(int sig) {
+	if (sig == SIGINT)
+		std::cerr << std::endl << "signal " << sig << " received!"<< std::endl;
+	else
+		std::cerr << "OHMAWGOD" << std::endl;
+	closeAll(gPollFds);
+	for (std::vector<ServerConfig>::iterator it = gConfig.servers.begin(); it != gConfig.servers.end(); ++it) {
+		for (std::vector<RouteConfig*>::iterator it2 = it->routes.begin(); it2 != it->routes.end(); ++it2)
+			delete *it2;
+	}
+	exit(EXIT_SUCCESS);
+}
+
+int main(int argc, char **argv) {
 	if (invalidInputs(argc, argv))
 		return EXIT_FAILURE;
 	if (argc == 2)
-		config.setupConfig(argv[1]);
+		gConfig.setupConfig(argv[1]);
 	else {
-		config.servers.push_back(ServerConfig());
-		config.servers.back().routes.push_back(new RouteConfig());
+		gConfig.servers.push_back(ServerConfig());
+		gConfig.servers.back().routes.push_back(new RouteConfig());
 	}
 	try {
-		setupSockets(config, serverFds);
+		setupSockets(gConfig, gServerFds);
 	} catch (std::runtime_error& e) {
 		return EXIT_FAILURE;
 	}
-
-	for (size_t i = 0; i < serverFds.size(); i++)
-		pollFds.push_back((struct pollfd){.fd = serverFds[i], .events = POLLIN | POLLOUT});
-
+	setupPolls(gServerFds, gPollFds);
+	signal(SIGINT, handleCtrlC);
 	while (true) {
-		if (poll(&pollFds[0], pollFds.size(), POLL_TIMEOUT) < 0) {
+		if (poll(&gPollFds[0], gPollFds.size(), POLL_TIMEOUT_SEC) < 0) {
 			perror("poll");
-			closeAll(pollFds);
+			closeAll(gPollFds);
 			return EXIT_FAILURE;
 		}
-		for (size_t i = 0; i < pollFds.size(); i++) {
-			if (pollFds[i].revents & POLLIN) {
-				if (pollFds[i].fd == serverFds[i]) {
-					int newSocket = accept(serverFds[i], NULL, NULL);
+		for (size_t i = 0; i < gPollFds.size(); i++) {
+			if (gPollFds[i].revents & POLLIN) {
+				if (i < gServerFds.size() && gPollFds[i].fd == gServerFds[i]) {
+					int newSocket = accept(gServerFds[i], NULL, NULL);
 
 					if (newSocket < 0) {
 						perror("accept");
 						continue;
 					}
-					if (pollFds.size() < CONNECTIONS)
-						pollFds.push_back((struct pollfd){.fd = newSocket, .events = POLLIN | POLLOUT});
+					if (gPollFds.size() < CONNECTIONS)
+						gPollFds.push_back((struct pollfd){.fd = newSocket, .events = POLLIN | POLLOUT});
 					else {
 						Response resFull(HttpStatus::SERVICE_UNAVAILABLE);
 
@@ -114,31 +141,31 @@ int main(int argc, char **argv) {
 				}
 				else {
 					char	*buffer = (char*)std::calloc(BUFFER_SIZE, sizeof(char));
-					int	ret = recv(pollFds[i].fd, buffer, BUFFER_SIZE, 0);
+					int	ret = recv(gPollFds[i].fd, buffer, BUFFER_SIZE, 0);
 
 					if (ret < 0) {
 						Response resErr(HttpStatus::SERVER_ERR);
 
 						std::cerr << "recv error" << std::endl;
-						send(pollFds[i].fd, resErr.response(), resErr.size(), MSG_CONFIRM);
-						close(pollFds[i].fd);
-						pollFds.erase(pollFds.begin() + i);
+						send(gPollFds[i].fd, resErr.response(), resErr.size(), MSG_CONFIRM);
+						close(gPollFds[i].fd);
+						gPollFds.erase(gPollFds.begin() + i);
 					}
 					else {
 						buffer[ret] = 0;
 
-						Request req(buffer, config.servers);
+						Request req(buffer, gConfig.servers, gPollFds[i].fd);
 						Response res = req.runRequest();
 
-						send(pollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
-						close(pollFds[i].fd);
-						pollFds.erase(pollFds.begin() + i);
+						send(gPollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
+						close(gPollFds[i].fd);
+						gPollFds.erase(gPollFds.begin() + i);
 					}
 					std::free(buffer);
 				}
 			}
 		}
 	}
-	closeAll(pollFds);
+	closeAll(gPollFds);
 	return 0;
 }

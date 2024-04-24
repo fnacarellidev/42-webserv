@@ -1,6 +1,98 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
+char* strdup(std::string str) {
+	char* dup = (char *) std::calloc(str.size(), 1);
+
+	for (size_t i = 0; i < str.size(); ++i)
+		dup[i] = str[i];
+
+	return dup;
+}
+
+static bool shouldRunCgi(std::string filePath, std::vector<std::string> &allowedCgis) {
+	size_t	pos = 0;
+
+	pos = filePath.find_last_of('.');
+	if (pos == std::string::npos)
+		return (false);
+
+	std::string fileExtension = filePath.substr(pos);
+
+	for (size_t i = 0; i < allowedCgis.size(); ++i) {
+		if (fileExtension == allowedCgis[i])
+			return true;
+	}
+
+	return false;
+}
+
+char **getExecveArgs(std::string filePath, std::string fileExtension, std::string cgiParameter) {
+	char **execveArgs;
+	if (!cgiParameter.empty()) {
+		execveArgs = (char **) std::calloc(4, sizeof(char *));
+		execveArgs[2] = ::strdup(cgiParameter.c_str());
+	}
+	else
+		execveArgs = (char **) std::calloc(3, sizeof(char *));
+
+	if (fileExtension == ".py")
+		execveArgs[0] = ::strdup("python3");
+	else
+		execveArgs[0] = ::strdup("php");
+	execveArgs[1] = ::strdup(filePath.c_str());
+
+	return execveArgs;
+}
+
+void runCgi(std::string filePath, int tmpFileFd, std::string cgiParameter) {
+	std::string binPath;
+	std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
+
+	if (fileExtension == ".py")
+		binPath = "/usr/bin/python3";
+	else
+		binPath = "/usr/bin/php";
+
+	int pid = fork();
+
+	if (pid == -1) {
+		perror("fork");
+		throw std::runtime_error("fork");
+	}
+	else if (pid == 0) {
+		char **args = getExecveArgs(filePath, fileExtension, cgiParameter);
+
+		dup2(tmpFileFd, STDOUT_FILENO);
+		dup2(tmpFileFd, STDERR_FILENO);
+		if (execve(binPath.c_str(), args, environ) == -1) {
+			perror("execve");
+			throw std::runtime_error("execve");
+		}
+	}
+	else {
+		waitpid(pid, NULL, 0);
+		close(tmpFileFd);
+	}
+}
+
+std::string getCgiOutput(std::string filePath, int connectionFd, std::string cgiParameter) {
+	std::string cgiOutput;
+	std::string tmpFile(".response" + toString(connectionFd));
+	int tmpFileFd = open(tmpFile.c_str(), O_CREAT | O_RDWR, 0644);
+
+	if (tmpFileFd == -1) {
+		perror("open");
+		throw std::runtime_error("open");
+	}
+
+	runCgi(filePath, tmpFileFd, cgiParameter);
+	cgiOutput = getFileContent(tmpFile);
+	std::remove(tmpFile.c_str());
+
+	return cgiOutput;
+}
+
 static unsigned int	getRequestPort(std::string request) {
 	size_t	pos = 0;
 
@@ -119,16 +211,17 @@ static std::string getFilePath(RouteConfig *route, std::string requestUri) {
 	return root + file;
 }
 
-std::string getHostHeader(std::string request) {
+std::string getHeader(std::string request, std::string header) {
 	std::string line;
-	std::string host;
+	std::string value;
+	size_t		headerLen = header.size();
 	std::stringstream sstream(request);
 
 	while (getline(sstream, line)) {
-		if (line.substr(0, 6) == "Host: ") {
-			host = line.substr(6);
-			trim(host, "\r");
-			return host;
+		if (line.substr(0, headerLen) == header) {
+			value = line.substr(headerLen);
+			trim(value, "\r");
+			return value;
 		}
 	}
 	return "";
@@ -203,23 +296,26 @@ void Request::initRequest(std::string &request) {
 	}
 }
 
-Request::Request(std::string request, std::vector<ServerConfig> serverConfigs) {
+Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) :
+	_dirListEnabled(false),
+	_connectionFd(connectionFd),
+	_shouldRedirect(false),
+	execCgi(false)
+{
 	initRequest(request);
 	_server = getServer(serverConfigs, this->_host);
-	_route = _server.getRouteByPath(this->_reqUri);
-	_dirListEnabled = false;
-	_shouldRedirect = false;
+	route = _server.getRouteByPath(this->_reqUri);
 
-	if (_route && _route->path.size() <= this->_reqUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
-		_dirListEnabled = _route->dirList;
-		if (!_route->redirect.first.empty()) {
-			_shouldRedirect = this->_reqUri.substr(_route->path.size()) == _route->redirect.first;
-			_locationHeader = "http://localhost:" + toString(_server.port) + _route->path + _route->redirect.second;
+	if (route && route->path.size() <= this->_reqUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
+		if (!route->redirect.first.empty()) {
+			_shouldRedirect = this->_reqUri.substr(route->path.size()) == route->redirect.first;
+			_locationHeader = "http://localhost:" + toString(_server.port) + route->path + route->redirect.second;
 		}
 	}
-	if (_route)
-		_dirListEnabled = _route->dirList;
-	_route ? filePath = getFilePath(_route, this->_reqUri) : filePath = "";
+	if (route)
+		_dirListEnabled = route->dirList;
+	route ? filePath = getFilePath(route, this->_reqUri) : filePath = "";
+	execCgi = shouldRunCgi(this->filePath, this->route->cgi);
 }
 
 unsigned short getBitmaskFromMethod(Methods method) {
@@ -269,6 +365,14 @@ HttpStatus::Code Request::runPost() {
 		file.close();
 		return (HttpStatus::CREATED);
 	}
+	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos) {
+		if (!this->execCgi)
+			return HttpStatus::FORBIDDEN;
+		this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, this->_body);
+		this->resContentType = "text/html";
+
+		return HttpStatus::OK;
+	}
 	return (HttpStatus::NOT_IMPLEMENTED);
 }
 
@@ -278,7 +382,7 @@ HttpStatus::Code Request::runGet() {
 
 	stat(filePath.c_str(), &statbuf);
 	if (_shouldRedirect) {
-		std::string sysFilePath = _route->root + _route->redirect.second;
+		std::string sysFilePath = route->root + route->redirect.second;
 
 		if (stat(sysFilePath.c_str(), &statbuf) == -1)
 			return (HttpStatus::NOT_FOUND);
@@ -301,7 +405,7 @@ HttpStatus::Code Request::runGet() {
 	}
 
 	if (S_ISDIR(statbuf.st_mode)) {
-		if (_route->dirList)
+		if (route->dirList)
 			return (status);
 		else
 			status = HttpStatus::FORBIDDEN;
@@ -314,13 +418,17 @@ HttpStatus::Code Request::runGet() {
 			status = HttpStatus::NOT_FOUND;
 		return (status);
 	}
+	if (this->execCgi) {
+		this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, "");
+		this->resContentType = "text/plain";
+	}
 	return (HttpStatus::OK);
 }
 
 HttpStatus::Code	Request::runDelete() {
 	struct stat	statbuf;
 
-	if (checkParentFolderPermission(filePath, _route->root))
+	if (checkParentFolderPermission(filePath, route->root))
 		return (HttpStatus::FORBIDDEN);
 	if (access(filePath.c_str(), F_OK))
 		return (HttpStatus::NOT_FOUND);
@@ -330,19 +438,19 @@ HttpStatus::Code	Request::runDelete() {
 	}
 	if (S_ISDIR(statbuf.st_mode)) {
 		if (strEndsWith(_reqUri, '/'))
-			return deleteEverythingInsideDir(filePath, this->_route->root);
+			return deleteEverythingInsideDir(filePath, this->route->root);
 		return (HttpStatus::CONFLICT);
 	}
 	return tryToDelete(filePath);
 }
 
 Response Request::runRequest() {
-	if (!_route)
+	if (!route)
 		return Response(HttpStatus::NOT_FOUND, *this);
 
 	if (bodyOverflow(this->_fullRequest, this->_server.bodyLimit))
 		return Response(HttpStatus::PAYLOAD_TOO_LARGE, *this);
-	if (methodIsAllowed(method, _route->acceptMethodsBitmask))
+	if (methodIsAllowed(method, route->acceptMethodsBitmask))
 		return (Response(HttpStatus::NOT_ALLOWED, *this));
 	switch (method) {
 		case GET:
