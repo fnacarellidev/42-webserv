@@ -1,3 +1,3 @@
 <?php
-	echo "Hello, world!";
+echo "Hello\n" . getenv("HOME") . "\n" . getenv("USER") . "\n";
 ?>
