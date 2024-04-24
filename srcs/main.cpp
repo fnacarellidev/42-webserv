@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 		}
 		for (size_t i = 0; i < pollFds.size(); i++) {
 			if (pollFds[i].revents & POLLIN) {
-				if (pollFds[i].fd == serverFds[i]) {
+				if (i < serverFds.size() && pollFds[i].fd == serverFds[i]) {
 					int newSocket = accept(serverFds[i], NULL, NULL);
 
 					if (newSocket < 0) {
