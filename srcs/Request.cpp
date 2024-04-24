@@ -10,7 +10,7 @@ char* strdup(std::string str) {
 	return dup;
 }
 
-static bool shouldRunCgi(std::string filePath, std::vector<std::string> allowedCgis) {
+static bool shouldRunCgi(std::string filePath, std::vector<std::string> &allowedCgis) {
 	size_t	pos = 0;
 
 	pos = filePath.find_last_of('.');
