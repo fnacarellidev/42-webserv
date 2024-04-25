@@ -2,7 +2,7 @@
 #include "../../includes/utils.hpp"
 
 static void	addMethods(std::string const& methods, RouteConfig* route) {
-	std::vector<std::string>	splited = split(methods, ',');
+	std::vector<std::string>	splited = utils::split(methods, ',');
 	unsigned short	method = NONE_OK;
 
 	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
@@ -21,7 +21,7 @@ static void	addMethods(std::string const& methods, RouteConfig* route) {
 }
 
 static void	addRedirect(std::string const& redirect, RouteConfig* route) {
-	std::vector<std::string>	splited = split(redirect, '=');
+	std::vector<std::string>	splited = utils::split(redirect, '=');
 
 	if (*splited[0].begin() == '/')
 		splited[0].erase(splited[0].begin());
@@ -32,7 +32,7 @@ static void	addRedirect(std::string const& redirect, RouteConfig* route) {
 
 static std::string	removeExtraSlashes(std::string str) {
 	std::string	finalStr = "/";
-	std::vector<std::string>	splited = split(str, '/');
+	std::vector<std::string>	splited = utils::split(str, '/');
 	std::vector<std::string>::iterator	it;
 
 	for (it = splited.begin(); it != splited.end(); it++)
@@ -48,20 +48,20 @@ void	addRoutes(std::ifstream& file, std::string& line, ServerConfig& server) {
 	while (line != "}") {
 		if (line.empty()) {
 			std::getline(file, line);
-			trim(line, "\t \n");
+			utils::trim(line, "\t \n");
 			continue ;
 		}
 		if (line.find_first_of(";") != std::string::npos)
 			line.erase(line.end() - 1);
 
-		std::vector<std::string> splited = split(line, ' ');
+		std::vector<std::string> splited = utils::split(line, ' ');
 
 		switch (routeMap.find(splited[0])->second) {
 			case Route::ROUTE:
 				server.routes.push_back(new RouteConfig());
 				break;
 			case Route::INDEX:
-				indexes = split(splited[1], ',');
+				indexes = utils::split(splited[1], ',');
 
 				for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
 					if (*it->begin() == '/')
@@ -87,10 +87,10 @@ void	addRoutes(std::ifstream& file, std::string& line, ServerConfig& server) {
 				server.routes.back()->path = removeExtraSlashes(splited[1]);
 				break;
 			case Route::CGI:
-				server.routes.back()->cgi = split(splited[1], ',');
+				server.routes.back()->cgi = utils::split(splited[1], ',');
 				break;
 		}
 		std::getline(file, line);
-		trim(line, "\t \n");
+		utils::trim(line, "\t \n");
 	}
 }

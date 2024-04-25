@@ -9,16 +9,16 @@ static void	getDateAndBytes(const std::string &path, std::string &modTime, std::
 	timeInfo = gmtime(&fileStat.st_mtime);
 	strftime(buffer, 20, "%d-%b-%Y %H:%M", timeInfo);
 	modTime = buffer;
-	bytesSize = toString(fileStat.st_size);
+	bytesSize = utils::toString(fileStat.st_size);
 }
 
 static std::string	generateDirectoryListing(std::string &path, std::string &requestUri) {
 	std::string	dirListing;
 	DIR	*dir = opendir(path.c_str());
 
-	if (!strEndsWith(requestUri, '/'))
+	if (!utils::strEndsWith(requestUri, '/'))
 		requestUri += "/";
-	if (!strEndsWith(path, '/'))
+	if (!utils::strEndsWith(path, '/'))
 		path += "/";
 	dirListing += "<html><head><title>Directory listing for " + requestUri + "</title></head><body>";
 	dirListing += "<h1>Directory listing for " + requestUri + "</h1>";
@@ -35,7 +35,7 @@ static std::string	generateDirectoryListing(std::string &path, std::string &requ
 		realPath = path + item->d_name;
 		uriPath = requestUri + item->d_name;
 
-		if (S_ISDIR(pathInfo(realPath).st_mode)) {
+		if (S_ISDIR(utils::pathInfo(realPath).st_mode)) {
 			uriPath += "/";
 		}
 
@@ -145,7 +145,7 @@ static std::string	getErrorPage(int status, ServerConfig &server) {
 	errPagePath = server.getFilePathFromStatusCode(status);
 	if (!errPagePath)
 		return ("");
-	switch (checkPath(*errPagePath)) {
+	switch (utils::checkPath(*errPagePath)) {
 		case ENOTDIR:
 			return (*errPagePath);
 		default:
@@ -248,9 +248,9 @@ std::string	Response::getStatusMessage(int status) const {
 	std::string	statusMessage;
 	it = this->_statusMessages.find(status);
 	if (it != this->_statusMessages.end())
-		statusMessage = toString(status) + " " + it->second;
+		statusMessage = utils::toString(status) + " " + it->second;
 	else
-		statusMessage = toString(status) + " Unknown Status";
+		statusMessage = utils::toString(status) + " Unknown Status";
 	return (statusMessage);
 }
 
@@ -272,23 +272,23 @@ void	Response::addNewField(std::string key, std::string value) {
 }
 
 void	Response::_success(Request &req) {
-	this->addNewField("Date", getCurrentTimeInGMT());
+	this->addNewField("Date", utils::getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	if (this->_filePath.empty())
 		return ;
 	switch (this->_status) {
 		case 200:
-			if (!S_ISDIR(pathInfo(this->_filePath).st_mode)) {
+			if (!S_ISDIR(utils::pathInfo(this->_filePath).st_mode)) {
 				if (req.execCgi) {
 					this->_body = req.cgiOutput;
-					this->addNewField("Content-Length", toString(this->_body.size()));
+					this->addNewField("Content-Length", utils::toString(this->_body.size()));
 					this->addNewField("Content-Type", req.resContentType);
 				}
 				else {
-					this->addNewField("Last-Modified", getLastModifiedOfFile(this->_filePath));
-					this->addNewField("Content-Length", getFileSize(this->_filePath));
+					this->addNewField("Last-Modified", utils::getLastModifiedOfFile(this->_filePath));
+					this->addNewField("Content-Length", utils::getFileSize(this->_filePath));
 					this->addNewField("Content-Type", getContentType(this->_filePath));
-					this->_body = getFileContent(this->_filePath);
+					this->_body = utils::getFileContent(this->_filePath);
 				}
 			} else {
 				this->addNewField("Content-Type", "text/html");
@@ -305,37 +305,37 @@ void	Response::_success(Request &req) {
 }
 
 void	Response::_redirection() {
-	this->addNewField("Date", getCurrentTimeInGMT());
+	this->addNewField("Date", utils::getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	addNewField("Location", this->_locationHeader);
 }
 
 void	Response::_error() {
-	this->addNewField("Date", getCurrentTimeInGMT());
+	this->addNewField("Date", utils::getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	if (!this->_errPage.empty()) {
-		this->_body = getFileContent(this->_errPage);
-		this->addNewField("Content-Length", getFileSize(this->_errPage));
+		this->_body = utils::getFileContent(this->_errPage);
+		this->addNewField("Content-Length", utils::getFileSize(this->_errPage));
 		this->addNewField("Content-Type", getContentType(this->_errPage));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
-		this->addNewField("Content-Length", toString(this->_body.size()));
+		this->addNewField("Content-Length", utils::toString(this->_body.size()));
 		this->addNewField("Content-Type", "text/html");
 	}
 }
 
 void	Response::_serverError() {
-	this->addNewField("Date", getCurrentTimeInGMT());
+	this->addNewField("Date", utils::getCurrentTimeInGMT());
 	this->addNewField("Server", SERVER_NAME);
 	if (!this->_errPage.empty()) {
-		this->_body = getFileContent(this->_errPage);
-		this->addNewField("Content-Length", getFileSize(this->_errPage));
+		this->_body = utils::getFileContent(this->_errPage);
+		this->addNewField("Content-Length", utils::getFileSize(this->_errPage));
 		this->addNewField("Content-Type", getContentType(this->_errPage));
 	} else {
 		std::string statusMsg = getStatusMessage(this->_status);
 		this->_body = generateDefaultErrorPage(this->_status, statusMsg);
-		this->addNewField("Content-Length", toString(this->_body.size()));
+		this->addNewField("Content-Length", utils::toString(this->_body.size()));
 		this->addNewField("Content-Type", "text/html");
 	}
 }

@@ -3,10 +3,10 @@
 #include "../../includes/HttpStatus.hpp"
 
 static void	addErrors(std::string const& error, ServerConfig& server) {
-	std::vector<std::string> splited = split(error, ',');
+	std::vector<std::string> splited = utils::split(error, ',');
 
 	for (std::vector<std::string>::iterator it = splited.begin(); it != splited.end(); ++it) {
-		std::vector<std::string> error = split(*it, '=');
+		std::vector<std::string> error = utils::split(*it, '=');
 		int code = std::atoi(error[0].c_str());
 
 		if (error[1][0] == '/')
@@ -42,7 +42,7 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 
 	while (!file.eof()) {
 		std::getline(file, line);
-		trim(line, "\t \n");
+		utils::trim(line, "\t \n");
 		if (line.empty())
 			continue;
 		if (line == "}") {
@@ -51,7 +51,7 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 				continue ;
 		}
 
-		std::vector<std::string> splited = split(line, ' ');
+		std::vector<std::string> splited = utils::split(line, ' ');
 
 		if (splited[1].find_first_of(";") != std::string::npos)
 			splited[1].erase(splited[1].end() - 1);
@@ -67,7 +67,7 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 				break;
 			case Server::NAMES:
 				servers.back().serverNames.clear();
-				servers.back().serverNames = split(splited[1], ',');
+				servers.back().serverNames = utils::split(splited[1], ',');
 				break;
 			case Server::LIMIT:
 				servers.back().bodyLimit = addLimit(splited[1]);

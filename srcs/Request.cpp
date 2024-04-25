@@ -1,15 +1,6 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
-char* strdup(std::string str) {
-	char* dup = (char *) std::calloc(str.size(), 1);
-
-	for (size_t i = 0; i < str.size(); ++i)
-		dup[i] = str[i];
-
-	return dup;
-}
-
 static bool shouldRunCgi(std::string filePath, std::vector<std::string> &allowedCgis) {
 	size_t	pos = 0;
 
@@ -31,16 +22,16 @@ char **getExecveArgs(std::string filePath, std::string fileExtension, std::strin
 	char **execveArgs;
 	if (!cgiParameter.empty()) {
 		execveArgs = (char **) std::calloc(4, sizeof(char *));
-		execveArgs[2] = ::strdup(cgiParameter.c_str());
+		execveArgs[2] = utils::strdup(cgiParameter.c_str());
 	}
 	else
 		execveArgs = (char **) std::calloc(3, sizeof(char *));
 
 	if (fileExtension == ".py")
-		execveArgs[0] = ::strdup("python3");
+		execveArgs[0] = utils::strdup("python3");
 	else
-		execveArgs[0] = ::strdup("php");
-	execveArgs[1] = ::strdup(filePath.c_str());
+		execveArgs[0] = utils::strdup("php");
+	execveArgs[1] = utils::strdup(filePath.c_str());
 
 	return execveArgs;
 }
@@ -78,7 +69,7 @@ void runCgi(std::string filePath, int tmpFileFd, std::string cgiParameter) {
 
 std::string getCgiOutput(std::string filePath, int connectionFd, std::string cgiParameter) {
 	std::string cgiOutput;
-	std::string tmpFile(".response" + toString(connectionFd));
+	std::string tmpFile(".response" + utils::toString(connectionFd));
 	int tmpFileFd = open(tmpFile.c_str(), O_CREAT | O_RDWR, 0644);
 
 	if (tmpFileFd == -1) {
@@ -87,7 +78,7 @@ std::string getCgiOutput(std::string filePath, int connectionFd, std::string cgi
 	}
 
 	runCgi(filePath, tmpFileFd, cgiParameter);
-	cgiOutput = getFileContent(tmpFile);
+	cgiOutput = utils::getFileContent(tmpFile);
 	std::remove(tmpFile.c_str());
 
 	return cgiOutput;
@@ -117,7 +108,7 @@ static bool checkParentFolderPermission(std::string filePath, const std::string&
 	size_t rootSlashes = std::count(root.begin(), root.end(), '/');
 
 	while (fileSlashes-- > rootSlashes) {
-		filePath = getPrevPath(filePath);
+		filePath = utils::getPrevPath(filePath);
 		if (access(filePath.c_str(), R_OK | W_OK | X_OK) == -1) {
 			perror("access");
 			return true;
@@ -192,7 +183,7 @@ static std::string getFilePath(RouteConfig *route, std::string requestUri) {
 	std::vector<std::string> indexes = route->index;
 	std::string file = requestUri.substr(route->path.size() - 1, std::string::npos);
 
-	if (strEndsWith(requestUri, '/')) {
+	if (utils::strEndsWith(requestUri, '/')) {
 		file.erase(file.end() - 1);
 		if (*file.begin() == '/')
 			file.erase(file.begin());
@@ -220,7 +211,7 @@ std::string getHeader(std::string request, std::string header) {
 	while (getline(sstream, line)) {
 		if (line.substr(0, headerLen) == header) {
 			value = line.substr(headerLen);
-			trim(value, "\r");
+			utils::trim(value, "\r");
 			return value;
 		}
 	}
@@ -259,10 +250,10 @@ void Request::initRequest(std::string &request) {
 	this->_contentLength = 0;
 	this->_body = "";
 	bool transferEncodingChunked = false;
-	std::vector<std::string>	requestLineParams = split(request, "\r\n");
+	std::vector<std::string>	requestLineParams = utils::split(request, "\r\n");
 	std::vector<std::string>::iterator	it = requestLineParams.begin();
 
-	std::vector<std::string>	firstLine = split(*it, ' ');
+	std::vector<std::string>	firstLine = utils::split(*it, ' ');
 	this->method = getMethod(firstLine[METHOD]);
 	this->_reqUri = firstLine[REQUESTURI];
 	it++;
@@ -309,7 +300,7 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, i
 	if (route && route->path.size() <= this->_reqUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
 		if (!route->redirect.first.empty()) {
 			_shouldRedirect = this->_reqUri.substr(route->path.size()) == route->redirect.first;
-			_locationHeader = "http://localhost:" + toString(_server.port) + route->path + route->redirect.second;
+			_locationHeader = "http://localhost:" + utils::toString(_server.port) + route->path + route->redirect.second;
 		}
 	}
 	if (route)
@@ -339,7 +330,7 @@ static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask
 
 HttpStatus::Code Request::runPost() {
 	if (this->_contentType == "text/plain") {
-		switch (checkPath(this->filePath)) {
+		switch (utils::checkPath(this->filePath)) {
 			case ENOENT:
 				break ;
 			case EACCES:
@@ -349,8 +340,8 @@ HttpStatus::Code Request::runPost() {
 			default:
 				return (HttpStatus::CONFLICT);
 		}
-		std::string prevPath = getPrevPath(filePath);
-		switch (checkPath(prevPath)) {
+		std::string prevPath = utils::getPrevPath(filePath);
+		switch (utils::checkPath(prevPath)) {
 			case ENOENT:
 				return (HttpStatus::NOT_FOUND);
 			case EACCES:
@@ -411,7 +402,7 @@ HttpStatus::Code Request::runGet() {
 			status = HttpStatus::FORBIDDEN;
 		return (status);
 	}
-	if (strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
+	if (utils::strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
 		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
 			status = HttpStatus::FORBIDDEN;
 		else
@@ -437,7 +428,7 @@ HttpStatus::Code	Request::runDelete() {
 		return (HttpStatus::SERVER_ERR);
 	}
 	if (S_ISDIR(statbuf.st_mode)) {
-		if (strEndsWith(_reqUri, '/'))
+		if (utils::strEndsWith(_reqUri, '/'))
 			return deleteEverythingInsideDir(filePath, this->route->root);
 		return (HttpStatus::CONFLICT);
 	}

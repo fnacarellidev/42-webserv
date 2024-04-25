@@ -1,11 +1,11 @@
 #include "../../includes/utils.hpp"
 
-time_t	convertTimeToGMT(time_t t) {
+time_t	utils::convertTimeToGMT(time_t t) {
 	struct tm	*gmtTime = gmtime(&t);
 	return (mktime(gmtTime));
 }
 
-std::string	formatTimeString(time_t	time) {
+std::string	utils::formatTimeString(time_t	time) {
 	char	buffer[80];
 	std::strftime(buffer, sizeof(buffer), "%c", localtime(&time));
 	std::string strTime(buffer);
@@ -13,7 +13,7 @@ std::string	formatTimeString(time_t	time) {
 	return (strTime);
 }
 
-std::string	getCurrentTimeInGMT() {
+std::string	utils::getCurrentTimeInGMT() {
 	time_t	now = convertTimeToGMT(time(0));
 	return (formatTimeString(now));
 }
