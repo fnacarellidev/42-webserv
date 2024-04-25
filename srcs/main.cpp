@@ -7,22 +7,20 @@ std::vector<int> gServerFds;
 std::vector<struct pollfd> gPollFds;
 WebServer gConfig;
 
-#define OPT 1
-
 #ifndef CONNECTIONS // maximum number of newSockets in the poll
-#	define CONNECTIONS 1000
+# define CONNECTIONS 1000
 #endif
 
 #ifndef QUEUE_MAX // maximum conections to one socket
-#	define QUEUE_MAX std::numeric_limits<unsigned short>::max()
+# define QUEUE_MAX std::numeric_limits<unsigned short>::max()
 #endif
 
 #ifndef POLL_TIMEOUT_SEC // time poll will keep in hang until an event is triggered
-#	define POLL_TIMEOUT_SEC 10 * 1000
+# define POLL_TIMEOUT_SEC 10 * 1000
 #endif
 
 #ifndef BUFFER_SIZE // maximum read for a request
-#	define BUFFER_SIZE 1048576
+# define BUFFER_SIZE 1048576
 #endif
 
 static void	closeAll(std::vector<struct pollfd>& pollFds) {
@@ -85,11 +83,15 @@ static void	setupPolls(std::vector<int>& serverFds, std::vector<struct pollfd>& 
 	}
 }
 
-void	handleCtrlC(int sig) {
-	if (sig == SIGINT)
-		std::cerr << std::endl << "signal " << sig << " received!"<< std::endl;
-	else
-		std::cerr << "OHMAWGOD" << std::endl;
+static void	setupSignal(void (*handleSignal)(int)) {
+	signal(SIGINT, handleSignal);
+	signal(SIGTERM, handleSignal);
+	signal(SIGQUIT, handleSignal);
+}
+
+void	handleSignal(int sig) {
+	(void)sig;
+	std::cerr << std::endl << "Goodbye" << std::endl;
 	closeAll(gPollFds);
 	for (std::vector<ServerConfig>::iterator it = gConfig.servers.begin(); it != gConfig.servers.end(); ++it) {
 		for (std::vector<RouteConfig*>::iterator it2 = it->routes.begin(); it2 != it->routes.end(); ++it2)
@@ -113,7 +115,7 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 	setupPolls(gServerFds, gPollFds);
-	signal(SIGINT, handleCtrlC);
+	setupSignal(handleSignal);
 	while (true) {
 		if (poll(&gPollFds[0], gPollFds.size(), POLL_TIMEOUT_SEC) < 0) {
 			perror("poll");
