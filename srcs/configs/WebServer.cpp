@@ -1,5 +1,54 @@
 #include "../../includes/WebServer.hpp"
+#include "../../includes/Request.hpp"
 #include "../../includes/utils.hpp"
+#include <sys/poll.h>
+#include <sys/socket.h>
+#include <vector>
+
+static void	acceptClientRequest(int servFd, std::vector<struct pollfd>& pollFds) {
+	int client = accept(servFd, NULL, NULL);
+
+	if (client < 0)
+		perror("accept");
+	else if (pollFds.size() < CONNECTIONS) {
+		struct pollfd pfd;
+
+		pfd.fd = client;
+		pfd.events = POLLIN | POLLOUT;
+		pollFds.push_back(pfd);
+	}
+	else {
+		Response resFull(HttpStatus::SERVICE_UNAVAILABLE);
+
+		std::cerr << "Server full!" << std::endl;
+		send(client, resFull.response(), resFull.size(), MSG_CONFIRM);
+		close(client);
+	}
+}
+
+static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pollFds, size_t pos) {
+	wbserv.buffers[pollFds[pos].fd] = (char*)std::calloc(BUFFER_SIZE + 1, sizeof(char));
+
+	if (recv(pollFds[pos].fd, wbserv.buffers[pollFds[pos].fd], BUFFER_SIZE, 0) < 0) {
+		Response resErr(HttpStatus::SERVER_ERR);
+
+		std::cerr << "recv error" << std::endl;
+		send(pollFds[pos].fd, resErr.response(), resErr.size(), MSG_CONFIRM);
+		close(pollFds[pos].fd);
+		pollFds.erase(pollFds.begin() + pos);
+	}
+}
+
+static void	respondClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pollFds, size_t pos) {
+	Request	req(wbserv.buffers[pollFds[pos].fd], wbserv.servers, pollFds[pos].fd);
+	Response	res = req.runRequest();
+
+	send(pollFds[pos].fd, res.response(), res.size(), MSG_CONFIRM);
+	std::free(wbserv.buffers[pollFds[pos].fd]);
+	wbserv.buffers.erase(pollFds[pos].fd);
+	close(pollFds[pos].fd);
+	pollFds.erase(pollFds.begin() + pos);
+}
 
 void	WebServer::setupConfig(char* filename) {
 	std::ifstream	file(filename);
@@ -43,6 +92,24 @@ ret_error:
 	std::cerr << "bad line: `" << line << "`" << std::endl;
 	file.close();
 	return false;
+}
+
+void	WebServer::awaitRequest(std::vector<struct pollfd>& pollFds) {
+	if (poll(&pollFds[0], pollFds.size(), POLL_TIMEOUT_SEC) == -1)
+		perror("poll");
+}
+
+void	WebServer::handleRequests(WebServer& wbserv, std::vector<int>& serverFds, std::vector<struct pollfd>& pollFds) {
+	for (size_t i = 0; i < pollFds.size(); i++) {
+		if (pollFds[i].revents & POLLIN && i < serverFds.size()) {
+			if (pollFds[i].fd == serverFds[i])
+				acceptClientRequest(serverFds[i], pollFds);
+		}
+		else if (pollFds[i].revents & POLLIN)
+			readClientRequest(wbserv, pollFds, i);
+		else if (pollFds[i].revents & POLLOUT)
+			respondClientRequest(wbserv, pollFds, i);
+	}
 }
 
 std::ostream&	operator<<(std::ostream& o, WebServer& webserv) {

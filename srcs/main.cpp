@@ -117,57 +117,8 @@ int main(int argc, char **argv) {
 	setupPolls(gServerFds, gPollFds);
 	setupSignal(handleSignal);
 	while (true) {
-		if (poll(&gPollFds[0], gPollFds.size(), POLL_TIMEOUT_SEC) < 0) {
-			perror("poll");
-			closeAll(gPollFds);
-			return EXIT_FAILURE;
-		}
-		for (size_t i = 0; i < gPollFds.size(); i++) {
-			if (gPollFds[i].revents & POLLIN) {
-				if (i < gServerFds.size() && gPollFds[i].fd == gServerFds[i]) {
-					int newSocket = accept(gServerFds[i], NULL, NULL);
-
-					if (newSocket < 0) {
-						perror("accept");
-						continue;
-					}
-					if (gPollFds.size() < CONNECTIONS)
-						gPollFds.push_back((struct pollfd){.fd = newSocket, .events = POLLIN | POLLOUT});
-					else {
-						Response resFull(HttpStatus::SERVICE_UNAVAILABLE);
-
-						std::cerr << "We are full" << std::endl;
-						send(newSocket, resFull.response(), resFull.size(), MSG_CONFIRM);
-						close(newSocket);
-					}
-				}
-				else {
-					char	*buffer = (char*)std::calloc(BUFFER_SIZE, sizeof(char));
-					int	ret = recv(gPollFds[i].fd, buffer, BUFFER_SIZE, 0);
-
-					if (ret < 0) {
-						Response resErr(HttpStatus::SERVER_ERR);
-
-						std::cerr << "recv error" << std::endl;
-						send(gPollFds[i].fd, resErr.response(), resErr.size(), MSG_CONFIRM);
-						close(gPollFds[i].fd);
-						gPollFds.erase(gPollFds.begin() + i);
-					}
-					else {
-						buffer[ret] = 0;
-
-						Request req(buffer, gConfig.servers, gPollFds[i].fd);
-						Response res = req.runRequest();
-
-						send(gPollFds[i].fd, res.response(), res.size(), MSG_CONFIRM);
-						close(gPollFds[i].fd);
-						gPollFds.erase(gPollFds.begin() + i);
-					}
-					std::free(buffer);
-				}
-			}
-		}
+		WebServer::awaitRequest(gPollFds);
+		WebServer::handleRequests(gConfig, gServerFds, gPollFds);
 	}
-	closeAll(gPollFds);
 	return 0;
 }
