@@ -1,6 +1,6 @@
 #include "../../includes/utils.hpp"
 
-std::string	getFileContent(const std::string &filename) {
+std::string	utils::getFileContent(const std::string &filename) {
 	std::ifstream	file;
 	std::string		content;
 
@@ -10,14 +10,14 @@ std::string	getFileContent(const std::string &filename) {
 	return(content);
 }
 
-std::string	getLastModifiedOfFile(const std::string &filename) {
+std::string	utils::getLastModifiedOfFile(const std::string &filename) {
 	struct stat stat_buff;
 	stat(filename.c_str(), &stat_buff);
 	time_t	gmtTime = convertTimeToGMT(stat_buff.st_mtime);
 	return (formatTimeString(gmtTime));
 }
 
-std::string	getFileSize(const std::string &filename) {
+std::string	utils::getFileSize(const std::string &filename) {
 	struct stat	stat_buff;
 	stat(filename.c_str(), &stat_buff);
 	return (toString(stat_buff.st_size));

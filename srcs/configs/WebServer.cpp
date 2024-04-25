@@ -22,7 +22,7 @@ bool	WebServer::configIsValid(char* filename) {
 		return false;
 	while (!file.eof()) {
 		std::getline(file, line);
-		trim(line, "\t \n");
+		utils::trim(line, "\t \n");
 		if (line.empty())
 			continue ;
 		word = line.substr(0, line.find(' '));

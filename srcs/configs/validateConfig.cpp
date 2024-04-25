@@ -3,7 +3,7 @@
 #include "../../includes/utils.hpp"
 
 static bool	validateCGIConfig(std::string& cgi) {
-	std::vector<std::string> types = split(cgi, ',');
+	std::vector<std::string> types = utils::split(cgi, ',');
 
 	if (types.size() > 3)
 		return true;
@@ -14,13 +14,13 @@ static bool	validateCGIConfig(std::string& cgi) {
 }
 
 static bool	validateRedirectConfig(std::string& redirect) {
-	std::vector<std::string> values = split(redirect, '=');
+	std::vector<std::string> values = utils::split(redirect, '=');
 
 	return (values.size() != 2 || values.at(1)[0] != '/' || values.at(0)[0] != '/');
 }
 
 static bool	validateMethodsConfig(std::string& methods) {
-	std::vector<std::string>	values = split(methods, ',');
+	std::vector<std::string>	values = utils::split(methods, ',');
 
 	if (values.size() > 3)
 		return true;
@@ -34,10 +34,10 @@ static bool	validateMethodsConfig(std::string& methods) {
 }
 
 static bool	validateErrorConfig(std::string& errors) {
-	std::vector<std::string> pairs = split(errors, ',');
+	std::vector<std::string> pairs = utils::split(errors, ',');
 	
 	for (std::vector<std::string>::iterator it = pairs.begin(); it != pairs.end(); it++) {
-		std::vector<std::string> values = split(*it, '=');
+		std::vector<std::string> values = utils::split(*it, '=');
 
 		if (values.size() != 2 || values[0].size() != 3)
 			return true;
@@ -54,7 +54,7 @@ static bool	validateHostConfig(std::string& ip) {
 	if (ip.find_first_not_of("0123456789.") != std::string::npos)
 		return true;
 
-	std::vector<std::string> bits = split(ip, '.');
+	std::vector<std::string> bits = utils::split(ip, '.');
 
 	if (bits.size() != 4)
 		return true;
@@ -103,15 +103,13 @@ static bool	validatePortConfig(std::string& port) {
 	return (errno == ERANGE || nbr > std::numeric_limits<unsigned short int>::max());
 }
 
-// needed to validate:
-// problably some CGI things
 void	checkInsideRoute(std::ifstream& file, std::string& line)
 throw(std::runtime_error) {
 	std::map<std::string, Route::Keywords> routeMap(buildRouteMap());
 	bool routeBrackets = false, error = false;
 
 	while (!file.eof()) {
-		std::vector<std::string> splited = split(line, ' ');
+		std::vector<std::string> splited = utils::split(line, ' ');
 
 		if (!splited.empty()) {
 			std::map<std::string, Route::Keywords>::iterator found = routeMap.find(splited[0]);
@@ -160,7 +158,7 @@ throw(std::runtime_error) {
 		}
 		line.clear();
 		std::getline(file, line);
-		trim(line, "\t \n");
+		utils::trim(line, "\t \n");
 	}
 }
 
@@ -171,7 +169,7 @@ std::map<std::string, Server::Keywords>& serverMap) {
 	bool	error = false;
 
 	while (!file.eof()) {
-		std::vector<std::string> splited = split(line, ' ');
+		std::vector<std::string> splited = utils::split(line, ' ');
 
 		if (!splited.empty()) {
 			std::map<std::string, Server::Keywords>::iterator found = serverMap.find(splited[0]);
@@ -228,7 +226,7 @@ std::map<std::string, Server::Keywords>& serverMap) {
 		}
 		line.clear();
 		std::getline(file, line);
-		trim(line, "\t \n");
+		utils::trim(line, "\t \n");
 	}
 	return false;
 }

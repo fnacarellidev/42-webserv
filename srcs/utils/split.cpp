@@ -1,7 +1,6 @@
 #include "../../includes/utils.hpp"
-#include <sstream>
 
-std::vector<std::string> split(std::string str, char c) {
+std::vector<std::string> utils::split(std::string str, char c) {
 	std::string word;
 	std::stringstream ss(str);
 	std::vector<std::string> splitted;
@@ -12,7 +11,7 @@ std::vector<std::string> split(std::string str, char c) {
 	return splitted;
 }
 
-std::vector<std::string> split(std::string str, std::string c) {
+std::vector<std::string> utils::split(std::string str, std::string c) {
 	std::vector<std::string>	splited;
 	std::stringstream ss(str);
 	size_t	pos = 0;
