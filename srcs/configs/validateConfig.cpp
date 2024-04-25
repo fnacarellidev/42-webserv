@@ -103,8 +103,6 @@ static bool	validatePortConfig(std::string& port) {
 	return (errno == ERANGE || nbr > std::numeric_limits<unsigned short int>::max());
 }
 
-// needed to validate:
-// problably some CGI things
 void	checkInsideRoute(std::ifstream& file, std::string& line)
 throw(std::runtime_error) {
 	std::map<std::string, Route::Keywords> routeMap(buildRouteMap());
