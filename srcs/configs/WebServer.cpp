@@ -1,9 +1,6 @@
 #include "../../includes/WebServer.hpp"
 #include "../../includes/Request.hpp"
 #include "../../includes/utils.hpp"
-#include <sys/poll.h>
-#include <sys/socket.h>
-#include <vector>
 
 static void	acceptClientRequest(int servFd, std::vector<struct pollfd>& pollFds) {
 	int client = accept(servFd, NULL, NULL);
@@ -15,6 +12,7 @@ static void	acceptClientRequest(int servFd, std::vector<struct pollfd>& pollFds)
 
 		pfd.fd = client;
 		pfd.events = POLLIN | POLLOUT;
+		pfd.revents = 0;
 		pollFds.push_back(pfd);
 	}
 	else {

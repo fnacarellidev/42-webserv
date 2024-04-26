@@ -7,20 +7,8 @@ std::vector<int> gServerFds;
 std::vector<struct pollfd> gPollFds;
 WebServer gConfig;
 
-#ifndef CONNECTIONS // maximum number of newSockets in the poll
-# define CONNECTIONS 1000
-#endif
-
 #ifndef QUEUE_MAX // maximum conections to one socket
 # define QUEUE_MAX std::numeric_limits<unsigned short>::max()
-#endif
-
-#ifndef POLL_TIMEOUT_SEC // time poll will keep in hang until an event is triggered
-# define POLL_TIMEOUT_SEC 10 * 1000
-#endif
-
-#ifndef BUFFER_SIZE // maximum read for a request
-# define BUFFER_SIZE 1048576
 #endif
 
 static void	closeAll(std::vector<struct pollfd>& pollFds) {
@@ -77,6 +65,7 @@ static void	setupPolls(std::vector<int>& serverFds, std::vector<struct pollfd>& 
 	struct pollfd pfd;
 
 	pfd.events = POLLIN | POLLOUT;
+	pfd.revents = 0;
 	for (size_t i = 0; i < serverFds.size(); i++) {
 		pfd.fd = serverFds[i];
 		pollFds.push_back(pfd);
