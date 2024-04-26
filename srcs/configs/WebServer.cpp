@@ -25,8 +25,7 @@ static void	acceptClientRequest(int servFd, std::vector<struct pollfd>& pollFds)
 }
 
 static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pollFds, size_t pos) {
-	wbserv.buffers[pollFds[pos].fd] = (char*)std::calloc(BUFFER_SIZE + 1, sizeof(char));
-
+	wbserv.buffers.insert(std::make_pair(pollFds[pos].fd, (char*)std::calloc(BUFFER_SIZE + 1, sizeof(char))));
 	if (recv(pollFds[pos].fd, wbserv.buffers[pollFds[pos].fd], BUFFER_SIZE, 0) < 0) {
 		Response resErr(HttpStatus::SERVER_ERR);
 
