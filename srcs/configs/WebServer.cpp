@@ -106,7 +106,7 @@ void	WebServer::handleRequests(WebServer& wbserv, std::vector<int>& serverFds, s
 		else if (pollFds[i].revents & POLLIN)
 			readClientRequest(wbserv, pollFds, i);
 		else if (pollFds[i].revents & POLLOUT)
-			respondClientRequest(wbserv, pollFds, i);
+			respondClientRequest(wbserv, pollFds, i--);
 	}
 }
 
