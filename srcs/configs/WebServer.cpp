@@ -25,8 +25,8 @@ static void	acceptClientRequest(int servFd, std::vector<struct pollfd>& pollFds)
 }
 
 static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pollFds, size_t pos) {
-	wbserv.buffers.insert(std::make_pair(pollFds[pos].fd, (char*)std::calloc(BUFFER_SIZE + 1, sizeof(char))));
-	if (recv(pollFds[pos].fd, wbserv.buffers[pollFds[pos].fd], BUFFER_SIZE, 0) < 0) {
+	wbserv.buffers.insert(std::make_pair(pollFds[pos].fd, std::vector<char>(BUFFER_SIZE, 0)));
+	if (recv(pollFds[pos].fd, &wbserv.buffers[pollFds[pos].fd][0], BUFFER_SIZE, 0) < 0) {
 		Response resErr(HttpStatus::SERVER_ERR);
 
 		std::cerr << "recv error" << std::endl;
@@ -37,12 +37,10 @@ static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pol
 }
 
 static void	respondClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pollFds, size_t pos) {
-	Request	req(wbserv.buffers[pollFds[pos].fd], wbserv.servers, pollFds[pos].fd);
+	Request	req(&wbserv.buffers[pollFds[pos].fd][0], wbserv.servers, pollFds[pos].fd);
 	Response	res = req.runRequest();
 
 	send(pollFds[pos].fd, res.response(), res.size(), MSG_CONFIRM);
-	std::free(wbserv.buffers[pollFds[pos].fd]);
-	wbserv.buffers.erase(pollFds[pos].fd);
 	close(pollFds[pos].fd);
 	pollFds.erase(pollFds.begin() + pos);
 }
@@ -105,7 +103,7 @@ void	WebServer::handleRequests(WebServer& wbserv, std::vector<int>& serverFds, s
 		else if (pollFds[i].revents & POLLIN)
 			readClientRequest(wbserv, pollFds, i);
 		else if (pollFds[i].revents & POLLOUT)
-			respondClientRequest(wbserv, pollFds, i--);
+			respondClientRequest(wbserv, pollFds, i);
 	}
 }
 
