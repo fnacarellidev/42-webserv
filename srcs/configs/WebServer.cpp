@@ -100,10 +100,10 @@ void	WebServer::handleRequests(WebServer& wbserv, std::vector<int>& serverFds, s
 			if (pollFds[i].fd == serverFds[i])
 				acceptClientRequest(serverFds[i], pollFds);
 		}
-		else if (pollFds[i].revents & POLLIN)
+		else if (pollFds[i].revents & POLLIN) {
 			readClientRequest(wbserv, pollFds, i);
-		else if (pollFds[i].revents & POLLOUT)
 			respondClientRequest(wbserv, pollFds, i);
+		}
 	}
 }
 
