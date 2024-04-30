@@ -68,7 +68,6 @@ void runCgi(std::string filePath, int tmpFileFd, std::string cgiParameter) {
 
 		while ((float)(std::clock() - t) / CLOCKS_PER_SEC < 5.0f) {
 			ret = waitpid(pid, &status, WNOHANG);
-			printf("ret: %d\n", ret);
 			if (ret == -1 && status != -1) {
 				perror("waitpid");
 				throw std::runtime_error("waitpid");
