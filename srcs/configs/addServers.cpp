@@ -36,13 +36,19 @@ static size_t addLimit(std::string& limit) {
 	return (nbr);
 }
 
+static bool portRepeat(unsigned long int port, std::vector<ServerConfig>& servers) {
+	for (std::vector<ServerConfig>::iterator it = servers.begin(); it != servers.end(); ++it) {
+		if (it->port == port && it->portSetted == true)
+			return true;
+	}
+	return false;
+}
+
 static void addPort(std::string& port, std::vector<ServerConfig>& servers) {
 	unsigned long int	nbr = std::strtoul(port.c_str(), NULL, 10);
 
-	for (std::vector<ServerConfig>::iterator it = servers.begin(); it != servers.end(); ++it) {
-		if (it->port == nbr && it->portSetted)
-			throw std::runtime_error("Port already setted");
-	}
+	if (portRepeat(nbr, servers))
+		throw std::runtime_error("Port already setted on a server before");
 	servers.back().port = nbr;
 	servers.back().portSetted = true;
 }
@@ -57,9 +63,12 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 		if (line.empty())
 			continue;
 		if (line == "}") {
-				if (servers.back().routes.size() == 0)
-					servers.back().routes.push_back(new RouteConfig());
-				continue ;
+			if (servers.back().routes.size() == 0)
+				servers.back().routes.push_back(new RouteConfig());
+			if (servers.back().portSetted == false && portRepeat(DEFAULT_PORT, servers))
+				throw std::runtime_error("Default port already in use");
+
+			continue ;
 		}
 
 		std::vector<std::string> splited = utils::split(line, ' ');
