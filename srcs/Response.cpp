@@ -119,6 +119,7 @@ static std::map<std::string, std::string>	defaultMimeTypes() {
 
 static std::map<int, std::string>	defaultStatusMessages() {
 	std::map<int, std::string>	statusMessages;
+	statusMessages[100] = "Continue";
 	statusMessages[200] = "OK";
 	statusMessages[201] = "Created";
 	statusMessages[204] = "No Content";
@@ -189,6 +190,9 @@ Response::Response(int status) {
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
 	switch (status / 100) {
+		case 1:
+			this->_body = "Continue";
+			break ;
 		case 4:
 			this->_error();
 			break ;

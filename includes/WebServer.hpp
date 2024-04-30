@@ -43,7 +43,7 @@ namespace Route {
 class WebServer {
 	public:
 		std::vector<ServerConfig>	servers;
-		std::map<int, std::string >	buffers;
+		std::map<int, std::string>	buffers;
 
 		void	setupConfig(char* filename);
 		static bool	configIsValid(char* filename);
