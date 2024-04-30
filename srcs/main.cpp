@@ -92,8 +92,14 @@ void	handleSignal(int sig) {
 int main(int argc, char **argv) {
 	if (invalidInputs(argc, argv))
 		return EXIT_FAILURE;
-	if (argc == 2)
-		gConfig.setupConfig(argv[1]);
+	if (argc == 2) {
+		try {
+			gConfig.setupConfig(argv[1]);
+		} catch (std::runtime_error& e) {
+			std::cerr << e.what() << std::endl;
+			return EXIT_FAILURE;
+		}
+	}
 	else {
 		gConfig.servers.push_back(ServerConfig());
 		gConfig.servers.back().routes.push_back(new RouteConfig());

@@ -36,6 +36,17 @@ static size_t addLimit(std::string& limit) {
 	return (nbr);
 }
 
+static void addPort(std::string& port, std::vector<ServerConfig>& servers) {
+	unsigned long int	nbr = std::strtoul(port.c_str(), NULL, 10);
+
+	for (std::vector<ServerConfig>::iterator it = servers.begin(); it != servers.end(); ++it) {
+		if (it->port == nbr && it->portSetted)
+			throw std::runtime_error("Port already setted");
+	}
+	servers.back().port = nbr;
+	servers.back().portSetted = true;
+}
+
 void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 	std::string	line;
 	std::map<std::string, Server::Keywords>	serverMap(buildServerMap());
@@ -63,7 +74,7 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 				servers.back().host = splited[1];
 				break;
 			case Server::PORT:
-				servers.back().port = std::strtoul(splited[1].c_str(), NULL, 10);
+				addPort(splited[1], servers);
 				break;
 			case Server::NAMES:
 				servers.back().serverNames.clear();

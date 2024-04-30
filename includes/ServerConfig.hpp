@@ -19,6 +19,7 @@ class ServerConfig {
 		std::vector<std::string>	serverNames;
 		std::string	host;
 		size_t	bodyLimit;
+		bool	portSetted;
 
 		ServerConfig();
 		void	insertError(int code, std::string path);
