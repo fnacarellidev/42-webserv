@@ -337,6 +337,7 @@ HttpStatus::Code Request::runPost() {
 			case EACCES:
 				return (HttpStatus::FORBIDDEN);
 			case ENOTDIR:
+				this->filePath = "";
 				return (HttpStatus::OK);
 			default:
 				return (HttpStatus::CONFLICT);
