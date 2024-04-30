@@ -64,22 +64,18 @@ void runCgi(std::string filePath, int tmpFileFd, std::string cgiParameter) {
 	else {
 		clock_t t = std::clock();
 		int ret = 0;
-		int	status;
+		int	status = -1;
 
 		while ((float)(std::clock() - t) / CLOCKS_PER_SEC < 5.0f) {
 			ret = waitpid(pid, &status, WNOHANG);
-			if (ret == -1) {
+			printf("ret: %d\n", ret);
+			if (ret == -1 && status != -1) {
 				perror("waitpid");
 				throw std::runtime_error("waitpid");
 			}
-			else if (ret == pid && (WIFEXITED(status) || WIFSIGNALED(status))) {
-				if (WEXITSTATUS(status) != 0) {
-					close(tmpFileFd);
-					std::cerr << "CGI failed successeful" << std::endl;
-					throw std::runtime_error("CGI script failed");
-				}
-				else
-					close(tmpFileFd);
+			else if (WIFEXITED(status) || WIFSIGNALED(status)) {
+				close(tmpFileFd);
+				return ;
 			}
 		}
 		kill(pid, SIGKILL);
