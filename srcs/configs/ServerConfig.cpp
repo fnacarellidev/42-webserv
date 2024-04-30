@@ -1,7 +1,7 @@
 #include "../../includes/ServerConfig.hpp"
 
 ServerConfig::ServerConfig():
-root(DEFAULT_ROOT), port(DEFAULT_PORT), host(DEFAULT_HOST), bodyLimit(DEFAULT_LIMIT) {
+root(DEFAULT_ROOT), port(DEFAULT_PORT), host(DEFAULT_HOST), bodyLimit(DEFAULT_LIMIT), portSetted(false) {
 	serverNames.push_back(host);
 }
 

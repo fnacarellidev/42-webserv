@@ -15,10 +15,11 @@ class ServerConfig {
 		std::map<int, std::string>	errors;
 		std::vector<RouteConfig*>	routes;
 		std::string root;
-		unsigned int	port;
+		unsigned long int	port;
 		std::vector<std::string>	serverNames;
 		std::string	host;
 		size_t	bodyLimit;
+		bool	portSetted;
 
 		ServerConfig();
 		void	insertError(int code, std::string path);
