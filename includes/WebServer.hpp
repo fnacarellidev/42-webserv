@@ -12,7 +12,7 @@
 #define ONE_KILO 1000
 #define CONNECTIONS 10000
 #define POLL_TIMEOUT_SEC 10 * 1000
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 200000
 
 namespace Server {
 	enum Keywords {
@@ -43,7 +43,7 @@ namespace Route {
 class WebServer {
 	public:
 		std::vector<ServerConfig>	servers;
-		std::map<int, std::string>	buffers;
+		std::map<int, std::string >	buffers;
 
 		void	setupConfig(char* filename);
 		static bool	configIsValid(char* filename);
