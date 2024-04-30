@@ -62,8 +62,25 @@ void runCgi(std::string filePath, int tmpFileFd, std::string cgiParameter) {
 		}
 	}
 	else {
-		waitpid(pid, NULL, 0);
+		clock_t t = std::clock();
+		int ret = 0;
+		int	status = -1;
+
+		while ((float)(std::clock() - t) / CLOCKS_PER_SEC < 5.0f) {
+			ret = waitpid(pid, &status, WNOHANG);
+			if (ret == -1 && status != -1) {
+				perror("waitpid");
+				throw std::runtime_error("waitpid");
+			}
+			else if (WIFEXITED(status) || WIFSIGNALED(status)) {
+				close(tmpFileFd);
+				return ;
+			}
+		}
+		kill(pid, SIGKILL);
 		close(tmpFileFd);
+		std::cerr << "CGI timed out" << std::endl;
+		throw std::runtime_error("TIMEOUT");
 	}
 }
 
@@ -77,9 +94,14 @@ std::string getCgiOutput(std::string filePath, int connectionFd, std::string cgi
 		throw std::runtime_error("open");
 	}
 
-	runCgi(filePath, tmpFileFd, cgiParameter);
-	cgiOutput = utils::getFileContent(tmpFile);
-	std::remove(tmpFile.c_str());
+	try {
+		runCgi(filePath, tmpFileFd, cgiParameter);
+		cgiOutput = utils::getFileContent(tmpFile);
+		std::remove(tmpFile.c_str());
+	} catch (std::exception &e) {
+		std::remove(tmpFile.c_str());
+		throw ;
+	}
 
 	return cgiOutput;
 }
@@ -87,9 +109,11 @@ std::string getCgiOutput(std::string filePath, int connectionFd, std::string cgi
 static unsigned int	getRequestPort(std::string request) {
 	size_t	pos = 0;
 
-	pos = request.find(":") + 1;
+	pos = request.find(":");
 	if (pos == std::string::npos)
 		return (DEFAULT_PORT);
+	else
+		pos += 1;
 	return std::atoi(request.substr(pos, request.find("\r\n", pos) - pos).c_str());
 }
 
@@ -359,7 +383,11 @@ HttpStatus::Code Request::runPost() {
 	if (this->_fullRequest.find("application/x-www-form-urlencoded") != std::string::npos) {
 		if (!this->execCgi)
 			return HttpStatus::FORBIDDEN;
-		this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, this->_body);
+		try {
+			this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, this->_body);
+		} catch (std::exception &e) {
+			return HttpStatus::SERVER_ERR;
+		}
 		this->resContentType = "text/html";
 
 		return HttpStatus::OK;
@@ -410,7 +438,11 @@ HttpStatus::Code Request::runGet() {
 		return (status);
 	}
 	if (this->execCgi) {
-		this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, "");
+		try {
+			this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, "");
+		} catch (std::exception &e) {
+			return HttpStatus::SERVER_ERR;
+		}
 		this->resContentType = "text/plain";
 	}
 	return (HttpStatus::OK);
