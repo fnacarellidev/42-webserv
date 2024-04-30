@@ -43,7 +43,8 @@ static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pol
 	if (msg.find("Expect: 100-continue") != std::string::npos) {
 		std::string header(&wbserv.buffers[pollFds[pos].fd][0]);
 		sleep(2);
-		if (recv(pollFds[pos].fd, buffer, BUFFER_SIZE, 0) < 0) {
+		res = recv(pollFds[pos].fd, buffer, BUFFER_SIZE, 0);
+		if (res < 0) {
 			Response resErr(HttpStatus::SERVER_ERR);
 			std::cerr << "recv error" << std::endl;
 			send(pollFds[pos].fd, resErr.response(), resErr.size(), MSG_CONFIRM);
