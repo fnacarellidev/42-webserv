@@ -78,14 +78,18 @@ static void	setupSignal(void (*handleSignal)(int)) {
 	signal(SIGQUIT, handleSignal);
 }
 
+static void	freeRoutes(std::vector<ServerConfig>::iterator begin, std::vector<ServerConfig>::iterator end) {
+	for (std::vector<ServerConfig>::iterator it = begin; it != end; ++it) {
+		for (std::vector<RouteConfig*>::iterator it2 = it->routes.begin(); it2 != it->routes.end(); ++it2)
+			delete *it2;
+	}
+}
+
 void	handleSignal(int sig) {
 	(void)sig;
 	std::cerr << std::endl << "Goodbye" << std::endl;
 	closeAll(gPollFds);
-	for (std::vector<ServerConfig>::iterator it = gConfig.servers.begin(); it != gConfig.servers.end(); ++it) {
-		for (std::vector<RouteConfig*>::iterator it2 = it->routes.begin(); it2 != it->routes.end(); ++it2)
-			delete *it2;
-	}
+	freeRoutes(gConfig.servers.begin(), gConfig.servers.end());
 	exit(EXIT_SUCCESS);
 }
 
@@ -97,6 +101,7 @@ int main(int argc, char **argv) {
 			gConfig.setupConfig(argv[1]);
 		} catch (std::runtime_error& e) {
 			std::cerr << e.what() << std::endl;
+			freeRoutes(gConfig.servers.begin(), gConfig.servers.end());
 			return EXIT_FAILURE;
 		}
 	}
