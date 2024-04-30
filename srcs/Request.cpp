@@ -79,7 +79,6 @@ void runCgi(std::string filePath, int tmpFileFd, std::string cgiParameter) {
 		}
 		kill(pid, SIGKILL);
 		close(tmpFileFd);
-		std::remove((".response" + utils::toString(tmpFileFd - 1)).c_str());
 		std::cerr << "CGI timed out" << std::endl;
 		throw std::runtime_error("TIMEOUT");
 	}
@@ -95,9 +94,14 @@ std::string getCgiOutput(std::string filePath, int connectionFd, std::string cgi
 		throw std::runtime_error("open");
 	}
 
-	runCgi(filePath, tmpFileFd, cgiParameter);
-	cgiOutput = utils::getFileContent(tmpFile);
-	std::remove(tmpFile.c_str());
+	try {
+		runCgi(filePath, tmpFileFd, cgiParameter);
+		cgiOutput = utils::getFileContent(tmpFile);
+		std::remove(tmpFile.c_str());
+	} catch (std::exception &e) {
+		std::remove(tmpFile.c_str());
+		throw ;
+	}
 
 	return cgiOutput;
 }
