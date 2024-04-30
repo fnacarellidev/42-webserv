@@ -100,7 +100,7 @@ static bool	validatePortConfig(std::string& port) {
 
 	size_t	nbr = std::strtoull(port.c_str(), NULL, 10);
 
-	return (errno == ERANGE || nbr > std::numeric_limits<unsigned short int>::max());
+	return (errno == ERANGE || nbr < 1024 || nbr > std::numeric_limits<unsigned short int>::max());
 }
 
 void	checkInsideRoute(std::ifstream& file, std::string& line)
