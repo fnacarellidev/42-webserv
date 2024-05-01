@@ -5,7 +5,7 @@ PATH_SRCS = ./srcs/
 PATH_OBJS = ./objects/
 
 CONFIGURATION_FILES = $(addprefix configs/, WebServer validateConfig RouteConfig ServerConfig staticFunctions addRoutes addServers)
-UTILS_FILES = $(addprefix utils/, fileInfo pathInfo split strdup strEndsWith time trim)
+UTILS_FILES = $(addprefix utils/, fileInfo pathInfo split strdup strEndsWith time trim sleep)
 FILES = main Response Request $(CONFIGURATION_FILES) $(UTILS_FILES)
 SRCS = ${FILES:%=$(PATH_OBJS)%.cpp}
 OBJS = ${FILES:%=$(PATH_OBJS)%.o}
