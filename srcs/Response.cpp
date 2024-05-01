@@ -185,13 +185,13 @@ Response::Response(int status, Request &request) {
 Response::Response(int status) {
 	this->_status = status;
 	this->_filePath = "";
+	this->_body = "";
 	this->_errPage = "";
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
 	switch (status / 100) {
 		case 1:
-			this->_body = "Continue";
 			break ;
 		case 4:
 			this->_error();
