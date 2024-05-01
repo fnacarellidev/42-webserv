@@ -244,7 +244,6 @@ static int hexStrToInt(std::string hexStr) {
 }
 
 void Request::initRequest(std::string &request) {
-	std::cout << request << std::endl;
 	this->_fullRequest = request;
 	this->_host = "";
 	this->_contentType = "";
