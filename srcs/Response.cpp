@@ -153,14 +153,10 @@ static std::string	getErrorPage(int status, ServerConfig &server) {
 	}
 }
 
-Response::Response(int status, Request &request) {
-	this->_status = status;
-	this->_filePath = request.filePath;
+Response::Response(int status, Request &request) : _status(status), _filePath(request.filePath), _requestUri(request._reqUri), _locationHeader("") {
 	this->_errPage = getErrorPage(status, request._server);
-	this->_requestUri = request._reqUri;
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
-	this->_locationHeader = "";
 	if (request._shouldRedirect)
 		this->_locationHeader = request._locationHeader;
 	this->defineStatusLine(status);
@@ -181,10 +177,7 @@ Response::Response(int status, Request &request) {
 	this->generateFullResponse();
 }
 
-Response::Response(int status) {
-	this->_status = status;
-	this->_filePath = "";
-	this->_errPage = "";
+Response::Response(int status) : _status(status), _body(""), _filePath(""), _errPage("") {
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);

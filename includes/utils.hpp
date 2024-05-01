@@ -19,6 +19,7 @@ namespace utils {
 	template<typename T> std::string	toString(const T& value);
 	std::string	getCurrentTimeInGMT();
 	void	trim(std::string &str, const char* toFind);
+	void	sleep(int seconds);
 }
 
 #include "../srcs/utils/toString.tpp"
