@@ -27,34 +27,33 @@ static void	acceptClientRequest(int servFd, std::vector<struct pollfd>& pollFds)
 static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pollFds, size_t pos) {
 
 	char		buffer[BUFFER_SIZE] = {0};
-	std::string msg;
+	std::string totalRequest;
 
-	int res = recv(pollFds[pos].fd, buffer, BUFFER_SIZE, 0);
-	if (res < 0) {
+	int bytesRead = recv(pollFds[pos].fd, buffer, BUFFER_SIZE, 0);
+	if (bytesRead < 0) {
 		Response resErr(HttpStatus::SERVER_ERR);
-
 		std::cerr << "recv error" << std::endl;
 		send(pollFds[pos].fd, resErr.response(), resErr.size(), MSG_CONFIRM);
 		close(pollFds[pos].fd);
 		pollFds.erase(pollFds.begin() + pos);
 	}
-	buffer[res] = '\0';
-	msg = buffer;
-	if (msg.find("Expect: 100-continue") != std::string::npos) {
+	buffer[bytesRead] = '\0';
+	totalRequest = buffer;
+	if (totalRequest.find("Expect: 100-continue") != std::string::npos) {
 		std::string header(&wbserv.buffers[pollFds[pos].fd][0]);
 		utils::sleep(2);
-		res = recv(pollFds[pos].fd, buffer, BUFFER_SIZE, 0);
-		if (res < 0) {
+		bytesRead = recv(pollFds[pos].fd, buffer, BUFFER_SIZE, 0);
+		if (bytesRead < 0) {
 			Response resErr(HttpStatus::SERVER_ERR);
 			std::cerr << "recv error" << std::endl;
 			send(pollFds[pos].fd, resErr.response(), resErr.size(), MSG_CONFIRM);
 			close(pollFds[pos].fd);
 			pollFds.erase(pollFds.begin() + pos);
 		}
-		buffer[res] = '\0';
-		msg += buffer;
+		buffer[bytesRead] = '\0';
+		totalRequest += buffer;
 	}
-	wbserv.buffers[pollFds[pos].fd] = msg;
+	wbserv.buffers[pollFds[pos].fd] = totalRequest;
 }
 
 static void	respondClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pollFds, size_t pos) {
