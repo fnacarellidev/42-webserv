@@ -1,120 +1,33 @@
 #include "../includes/Request.hpp"
 #include "../includes/utils.hpp"
 
-static bool shouldRunCgi(std::string filePath, std::vector<std::string> &allowedCgis) {
-	size_t	pos = 0;
-
-	pos = filePath.find_last_of('.');
-	if (pos == std::string::npos)
-		return (false);
-
-	std::string fileExtension = filePath.substr(pos);
-
-	for (size_t i = 0; i < allowedCgis.size(); ++i) {
-		if (fileExtension == allowedCgis[i])
-			return true;
-	}
-
-	return false;
+static Methods getMethod(std::string method) {
+	if (method == "GET")
+		return GET;
+	else if (method == "POST")
+		return POST;
+	else if (method == "DELETE")
+		return DELETE;
+	return UNKNOWNMETHOD;
 }
 
-char **getExecveArgs(std::string filePath, std::string fileExtension, std::string cgiParameter) {
-	char **execveArgs;
-	if (!cgiParameter.empty()) {
-		execveArgs = (char **) std::calloc(4, sizeof(char *));
-		execveArgs[2] = utils::strdup(cgiParameter.c_str());
-	}
-	else
-		execveArgs = (char **) std::calloc(3, sizeof(char *));
-
-	if (fileExtension == ".py")
-		execveArgs[0] = utils::strdup("python3");
-	else
-		execveArgs[0] = utils::strdup("php");
-	execveArgs[1] = utils::strdup(filePath.c_str());
-
-	return execveArgs;
+unsigned short getBitmaskFromMethod(Methods method) {
+	switch (method) {
+		case GET:
+			return GET_OK;
+		case POST:
+			return POST_OK;
+		case DELETE:
+			return DELETE_OK;
+		default:
+			return NONE_OK;
+	};
 }
 
-void runCgi(std::string filePath, int tmpFileFd, std::string cgiParameter) {
-	std::string binPath;
-	std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
+static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask) {
+	unsigned short methodBitmask = getBitmaskFromMethod(method);
 
-	if (fileExtension == ".py")
-		binPath = "/usr/bin/python3";
-	else
-		binPath = "/usr/bin/php";
-
-	int pid = fork();
-
-	if (pid == -1) {
-		perror("fork");
-		throw std::runtime_error("fork");
-	}
-	else if (pid == 0) {
-		char **args = getExecveArgs(filePath, fileExtension, cgiParameter);
-
-		dup2(tmpFileFd, STDOUT_FILENO);
-		dup2(tmpFileFd, STDERR_FILENO);
-		if (execve(binPath.c_str(), args, environ) == -1) {
-			perror("execve");
-			throw std::runtime_error("execve");
-		}
-	}
-	else {
-		clock_t t = std::clock();
-		int ret = 0;
-		int	status = -1;
-
-		while ((float)(std::clock() - t) / CLOCKS_PER_SEC < 5.0f) {
-			ret = waitpid(pid, &status, WNOHANG);
-			if (ret == -1 && status != -1) {
-				perror("waitpid");
-				throw std::runtime_error("waitpid");
-			}
-			else if (WIFEXITED(status) || WIFSIGNALED(status)) {
-				close(tmpFileFd);
-				return ;
-			}
-		}
-		kill(pid, SIGKILL);
-		close(tmpFileFd);
-		std::cerr << "CGI timed out" << std::endl;
-		throw std::runtime_error("TIMEOUT");
-	}
-}
-
-std::string getCgiOutput(std::string filePath, int connectionFd, std::string cgiParameter) {
-	std::string cgiOutput;
-	std::string tmpFile(".response" + utils::toString(connectionFd));
-	int tmpFileFd = open(tmpFile.c_str(), O_CREAT | O_RDWR, 0644);
-
-	if (tmpFileFd == -1) {
-		perror("open");
-		throw std::runtime_error("open");
-	}
-
-	try {
-		runCgi(filePath, tmpFileFd, cgiParameter);
-		cgiOutput = utils::getFileContent(tmpFile);
-		std::remove(tmpFile.c_str());
-	} catch (std::exception &e) {
-		std::remove(tmpFile.c_str());
-		throw ;
-	}
-
-	return cgiOutput;
-}
-
-static unsigned int	getRequestPort(std::string request) {
-	size_t	pos = 0;
-
-	pos = request.find(":");
-	if (pos == std::string::npos)
-		return (DEFAULT_PORT);
-	else
-		pos += 1;
-	return std::atoi(request.substr(pos, request.find("\r\n", pos) - pos).c_str());
+	return !(methodBitmask & allowedMethodsBitmask);
 }
 
 static bool	bodyOverflow(std::string request, size_t const limit) {
@@ -127,152 +40,7 @@ static bool	bodyOverflow(std::string request, size_t const limit) {
 	return (std::strtoull(request.c_str(), NULL, 10) > limit ? true : false);
 }
 
-static bool checkParentFolderPermission(std::string filePath, const std::string& root) {
-	size_t fileSlashes = std::count(filePath.begin(), filePath.end(), '/');
-	size_t rootSlashes = std::count(root.begin(), root.end(), '/');
-
-	while (fileSlashes-- > rootSlashes) {
-		filePath = utils::getPrevPath(filePath);
-		if (access(filePath.c_str(), R_OK | W_OK | X_OK) == -1) {
-			perror("access");
-			return true;
-		}
-	}
-	return false;
-}
-
-static HttpStatus::Code	tryToDelete(const std::string& filePath) {
-	if (std::remove(filePath.c_str())) {
-		perror("std::remove");
-		return (HttpStatus::SERVER_ERR);
-	}
-	return (HttpStatus::NO_CONTENT);
-}
-
-static HttpStatus::Code	deleteEverythingInsideDir(std::string dirPath, std::string& root) {
-	HttpStatus::Code	status = HttpStatus::NO_CONTENT;
-	DIR	*dir = opendir(dirPath.c_str());
-
-	if (dir == NULL) {
-		perror("opendir");
-		return (HttpStatus::SERVER_ERR);
-	}
-	dirPath += '/';
-	for (struct dirent *item = readdir(dir); item != NULL; item = readdir(dir)) {
-		std::string filePath;
-
-		if (std::strcmp(item->d_name, ".") == 0 || std::strcmp(item->d_name, "..") == 0)
-			continue;
-		filePath = dirPath + item->d_name;
-		if (std::remove(filePath.c_str())) {
-			perror("std::remove");
-			status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVER_ERR);
-		}
-	}
-	closedir(dir);
-	dirPath.erase(0, root.size());
-	if (dirPath == "/")
-		return (HttpStatus::FORBIDDEN);
-	dirPath = root + dirPath;
-	if (std::remove(dirPath.c_str())) {
-		perror("std::remove");
-		status = (errno == EACCES ? HttpStatus::FORBIDDEN : HttpStatus::SERVER_ERR);
-	}
-	return (status);
-}
-
-static Methods getMethod(std::string method) {
-	if (method == "GET")
-		return GET;
-	else if (method == "POST")
-		return POST;
-	else if (method == "DELETE")
-		return DELETE;
-	return UNKNOWNMETHOD;
-}
-
-int    fileGood(const char *filePath) {
-	bool fileExists = !access(filePath, F_OK);
-	bool canRead = !access(filePath, R_OK);
-
-	if (!fileExists)
-		return ENOENT;
-	else if (!canRead)
-		return EACCES;
-	return 0;
-}
-
-static std::string getFilePath(RouteConfig *route, std::string requestUri) {
-	std::string root = route->root;
-	std::vector<std::string> indexes = route->index;
-	std::string file = requestUri.substr(route->path.size() - 1, std::string::npos);
-
-	if (utils::strEndsWith(requestUri, '/')) {
-		file.erase(file.end() - 1);
-		if (*file.begin() == '/')
-			file.erase(file.begin());
-		return root + file;
-	}
-	if (file.empty()) {
-		for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
-			bool fileExists = access((root + *it).c_str(), F_OK) == 0;
-			if (fileExists)
-				return root + *it;
-		}
-	}
-	if (*file.begin() == '/')
-		file.erase(file.begin());
-
-	return root + file;
-}
-
-std::string getHeader(std::string request, std::string header) {
-	std::string line;
-	std::string value;
-	size_t		headerLen = header.size();
-	std::stringstream sstream(request);
-
-	while (getline(sstream, line)) {
-		if (line.substr(0, headerLen) == header) {
-			value = line.substr(headerLen);
-			utils::trim(value, "\r");
-			return value;
-		}
-	}
-	return "";
-}
-
-ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host) {
-	unsigned int	port = getRequestPort(host);
-	std::vector<std::string>::iterator namesIt;
-	std::vector<ServerConfig>::iterator it;
-
-	host = host.substr(0, host.find(':'));
-	if (host == "localhost" || host == "0.0.0.0")
-		host = DEFAULT_HOST;
-	for (it = serverConfigs.begin(); it != serverConfigs.end(); ++it) {
-		std::vector<std::string> names = it->serverNames;
-		for (namesIt = names.begin(); namesIt != names.end(); ++namesIt) {
-			if (host == *namesIt && it->port == port)
-				return *it;
-		}
-	}
-	for (it = serverConfigs.begin(); it != serverConfigs.end(); it++)
-		if (it->port == port)
-			return *it;
-	return serverConfigs.front();
-}
-
-static int hexStrToInt(std::string hexStr) {
-	return (std::strtol(hexStr.c_str(), NULL, 16));
-}
-
 void Request::initRequest(std::string &request) {
-	this->_fullRequest = request;
-	this->_host = "";
-	this->_contentType = "";
-	this->_contentLength = 0;
-	this->_body = "";
 	bool transferEncodingChunked = false;
 	std::vector<std::string>	requestLineParams = utils::split(request, "\r\n");
 	std::vector<std::string>::iterator	it = requestLineParams.begin();
@@ -298,7 +66,7 @@ void Request::initRequest(std::string &request) {
 		while (it != requestLineParams.end() && itNext != requestLineParams.end()) {
 			if (*it == "0")
 				break ;
-			this->_contentLength += hexStrToInt(*it);
+			this->_contentLength += std::strtol((*it).c_str(), NULL, 16);
 			this->_body += *itNext;
 			it = itNext + 1;
 			itNext = it + 1;
@@ -312,13 +80,18 @@ void Request::initRequest(std::string &request) {
 }
 
 Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, int connectionFd) :
+	_host(""),
+	_contentType(""),
+	_contentLength(0),
+	_body(""),
+	_fullRequest(request),
 	_dirListEnabled(false),
 	_connectionFd(connectionFd),
 	_shouldRedirect(false),
 	execCgi(false)
 {
 	initRequest(request);
-	_server = getServer(serverConfigs, this->_host);
+	_server = utils::getServer(serverConfigs, this->_host);
 	route = _server.getRouteByPath(this->_reqUri);
 
 	if (route && route->path.size() <= this->_reqUri.size() ) { // localhost:8080/webserv would break with path /webserv/ because of substr below, figure out how to solve.
@@ -329,27 +102,61 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, i
 	}
 	if (route)
 		_dirListEnabled = route->dirList;
-	route ? filePath = getFilePath(route, this->_reqUri) : filePath = "";
+	route ? filePath = utils::getFilePath(route, this->_reqUri) : filePath = "";
 	execCgi = shouldRunCgi(this->filePath, this->route->cgi);
 }
 
-unsigned short getBitmaskFromMethod(Methods method) {
-	switch (method) {
-		case GET:
-			return GET_OK;
-		case POST:
-			return POST_OK;
-		case DELETE:
-			return DELETE_OK;
+HttpStatus::Code Request::runGet() {
+	struct stat statbuf;
+	HttpStatus::Code status = HttpStatus::OK;
+
+	stat(filePath.c_str(), &statbuf);
+	if (_shouldRedirect) {
+		std::string sysFilePath = route->root + route->redirect.second;
+
+		if (stat(sysFilePath.c_str(), &statbuf) == -1)
+			return (HttpStatus::NOT_FOUND);
+		return (HttpStatus::MOVED_PERMANENTLY);
+	}
+	switch (utils::fileGood(this->filePath.c_str())) {
+		case ENOENT:
+			status = HttpStatus::NOT_FOUND;
+			break;
+
+		case EACCES:
+			status = HttpStatus::FORBIDDEN;
+			break;
+
 		default:
-			return NONE_OK;
-	};
-}
+			break;
+	}
+	if (status != HttpStatus::OK) {
+		return (status);
+	}
 
-static bool methodIsAllowed(Methods method, unsigned short allowedMethodsBitmask) {
-	unsigned short methodBitmask = getBitmaskFromMethod(method);
-
-	return !(methodBitmask & allowedMethodsBitmask);
+	if (S_ISDIR(statbuf.st_mode)) {
+		if (route->dirList)
+			return (status);
+		else
+			status = HttpStatus::FORBIDDEN;
+		return (status);
+	}
+	if (utils::strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
+		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
+			status = HttpStatus::FORBIDDEN;
+		else
+			status = HttpStatus::NOT_FOUND;
+		return (status);
+	}
+	if (this->execCgi) {
+		try {
+			this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, "");
+		} catch (std::exception &e) {
+			return HttpStatus::SERVER_ERR;
+		}
+		this->resContentType = "text/plain";
+	}
+	return (HttpStatus::OK);
 }
 
 HttpStatus::Code Request::runPost() {
@@ -396,63 +203,11 @@ HttpStatus::Code Request::runPost() {
 	return (HttpStatus::NOT_IMPLEMENTED);
 }
 
-HttpStatus::Code Request::runGet() {
-	struct stat statbuf;
-	HttpStatus::Code status = HttpStatus::OK;
-
-	stat(filePath.c_str(), &statbuf);
-	if (_shouldRedirect) {
-		std::string sysFilePath = route->root + route->redirect.second;
-
-		if (stat(sysFilePath.c_str(), &statbuf) == -1)
-			return (HttpStatus::NOT_FOUND);
-		return (HttpStatus::MOVED_PERMANENTLY);
-	}
-	switch (fileGood(this->filePath.c_str())) {
-		case ENOENT:
-			status = HttpStatus::NOT_FOUND;
-			break;
-
-		case EACCES:
-			status = HttpStatus::FORBIDDEN;
-			break;
-
-		default:
-			break;
-	}
-	if (status != HttpStatus::OK) {
-		return (status);
-	}
-
-	if (S_ISDIR(statbuf.st_mode)) {
-		if (route->dirList)
-			return (status);
-		else
-			status = HttpStatus::FORBIDDEN;
-		return (status);
-	}
-	if (utils::strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
-		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
-			status = HttpStatus::FORBIDDEN;
-		else
-			status = HttpStatus::NOT_FOUND;
-		return (status);
-	}
-	if (this->execCgi) {
-		try {
-			this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, "");
-		} catch (std::exception &e) {
-			return HttpStatus::SERVER_ERR;
-		}
-		this->resContentType = "text/plain";
-	}
-	return (HttpStatus::OK);
-}
 
 HttpStatus::Code	Request::runDelete() {
 	struct stat	statbuf;
 
-	if (checkParentFolderPermission(filePath, route->root))
+	if (utils::checkParentFolderPermission(filePath, route->root))
 		return (HttpStatus::FORBIDDEN);
 	if (access(filePath.c_str(), F_OK))
 		return (HttpStatus::NOT_FOUND);
@@ -462,10 +217,10 @@ HttpStatus::Code	Request::runDelete() {
 	}
 	if (S_ISDIR(statbuf.st_mode)) {
 		if (utils::strEndsWith(_reqUri, '/'))
-			return deleteEverythingInsideDir(filePath, this->route->root);
+			return utils::deleteEverythingInsideDir(filePath, this->route->root);
 		return (HttpStatus::CONFLICT);
 	}
-	return tryToDelete(filePath);
+	return utils::tryToDelete(filePath);
 }
 
 Response Request::runRequest() {
@@ -481,7 +236,7 @@ Response Request::runRequest() {
 			return Response(runGet(), *this);
 		case POST:
 			return Response(runPost(), *this);
-		default :
+		default:
 			return Response(runDelete(), *this);
 	}
 }
