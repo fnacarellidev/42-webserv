@@ -4,6 +4,9 @@
 #include "ServerConfig.hpp"
 #include "utils.hpp"
 
+bool		shouldRunCgi(std::string filePath, std::vector<std::string> &allowedCgis);
+std::string	getCgiOutput(std::string filePath, int connectionFd, std::string cgiParameter);
+
 enum Methods {
 	GET,
 	POST,

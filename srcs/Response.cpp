@@ -1,17 +1,5 @@
 #include "../includes/Response.hpp"
 
-static void	getDateAndBytes(const std::string &path, std::string &modTime, std::string &bytesSize) {
-	struct stat	fileStat;
-	struct tm	*timeInfo;
-	char	buffer[20];
-
-	stat(path.c_str(), &fileStat);
-	timeInfo = gmtime(&fileStat.st_mtime);
-	strftime(buffer, 20, "%d-%b-%Y %H:%M", timeInfo);
-	modTime = buffer;
-	bytesSize = utils::toString(fileStat.st_size);
-}
-
 static std::string	generateDirectoryListing(std::string &path, std::string &requestUri) {
 	std::string	dirListing;
 	DIR	*dir = opendir(path.c_str());
@@ -39,7 +27,7 @@ static std::string	generateDirectoryListing(std::string &path, std::string &requ
 			uriPath += "/";
 		}
 
-		getDateAndBytes(realPath, modTime, bytesSize);
+		utils::getDateAndBytes(realPath, modTime, bytesSize);
 		dirListing += "<a href=\"" + uriPath + "\">" + file;
 		if (item->d_type == DT_DIR) {
 			dirListing += "/";
@@ -61,38 +49,37 @@ static std::string	generateDirectoryListing(std::string &path, std::string &requ
 	return (dirListing);
 }
 
-static std::string	getErrInformation(int status)
+static std::string	getErrInformation(HttpStatus::Code status)
 {
 	switch (status) {
-		case 400:
+		case HttpStatus::BAD_REQUEST:
 			return (E400);
-		case 401:
-			return (E401);
-		case 403:
+		case HttpStatus::FORBIDDEN:
 			return (E403);
-		case 404:
+		case HttpStatus::NOT_FOUND:
 			return (E404);
-		case 405:
+		case HttpStatus::NOT_ALLOWED:
 			return (E405);
-		case 409:
+		case HttpStatus::TIMEOUT:
+			return (E408);
+		case HttpStatus::CONFLICT:
 			return (E409);
-		case 413:
+		case HttpStatus::PAYLOAD_TOO_LARGE:
 			return (E413);
-		case 500:
+		case HttpStatus::SERVER_ERR:
 			return (E500);
-		case 501:
+		case HttpStatus::NOT_IMPLEMENTED:
 			return (E501);
-		case 502:
-			return (E502);
-		case 503:
+		case HttpStatus::SERVICE_UNAVAILABLE:
 			return (E503);
 		default:
 			return ("");
 	}
 }
 
-static std::string	generateDefaultErrorPage(int status, const std::string &statusMsg) {
+static std::string	generateDefaultErrorPage(HttpStatus::Code status, const std::string &statusMsg) {
 	std::string	errorPage = "";
+
 	errorPage += "<html>\n";
 	errorPage += "<head><title>" + statusMsg + "</title></head>\n";
 	errorPage += "<body>\n";
@@ -100,11 +87,13 @@ static std::string	generateDefaultErrorPage(int status, const std::string &statu
 	errorPage += "<p>" + getErrInformation(status) + "</p>\n";
 	errorPage += "</body>\n";
 	errorPage += "</html>\n";
+
 	return (errorPage);
 }
 
 static std::map<std::string, std::string>	defaultMimeTypes() {
 	std::map<std::string, std::string>	mimeTypes;
+
 	mimeTypes[".html"] = "text/html";
 	mimeTypes[".htm"] = "text/html";
 	mimeTypes[".css"] = "text/css";
@@ -114,34 +103,34 @@ static std::map<std::string, std::string>	defaultMimeTypes() {
 	mimeTypes[".jpg"] = "image/jpeg";
 	mimeTypes[".jpeg"] = "image/jpeg";
 	mimeTypes[".php"] = "application/x-httpd-php";
+
 	return (mimeTypes);
 }
 
 static std::map<int, std::string>	defaultStatusMessages() {
 	std::map<int, std::string>	statusMessages;
-	statusMessages[200] = "OK";
-	statusMessages[201] = "Created";
-	statusMessages[204] = "No Content";
-	statusMessages[301] = "Moved Permanently";
-	statusMessages[302] = "Found";
-	statusMessages[304] = "Not Modified";
-	statusMessages[400] = "Bad Request";
-	statusMessages[401] = "Unauthorized";
-	statusMessages[403] = "Forbidden";
-	statusMessages[404] = "Not Found";
-	statusMessages[405] = "Method Not Allowed";
-	statusMessages[408] = "Request Timeout";
-	statusMessages[409] = "Conflict";
-	statusMessages[413] = "Payload Too Large";
-	statusMessages[500] = "Internal Server Error";
-	statusMessages[501] = "Not Implemented";
-	statusMessages[502] = "Bad Gateway";
-	statusMessages[503] = "Service Unavailable";
+
+	statusMessages[HttpStatus::OK] = "OK";
+	statusMessages[HttpStatus::CREATED] = "Created";
+	statusMessages[HttpStatus::NO_CONTENT] = "No Content";
+	statusMessages[HttpStatus::MOVED_PERMANENTLY] = "Moved Permanently";
+	statusMessages[HttpStatus::BAD_REQUEST] = "Bad Request";
+	statusMessages[HttpStatus::FORBIDDEN] = "Forbidden";
+	statusMessages[HttpStatus::NOT_FOUND] = "Not Found";
+	statusMessages[HttpStatus::NOT_ALLOWED] = "Method Not Allowed";
+	statusMessages[HttpStatus::TIMEOUT] = "Request Timeout";
+	statusMessages[HttpStatus::CONFLICT] = "Conflict";
+	statusMessages[HttpStatus::PAYLOAD_TOO_LARGE] = "Payload Too Large";
+	statusMessages[HttpStatus::SERVER_ERR] = "Internal Server Error";
+	statusMessages[HttpStatus::NOT_IMPLEMENTED] = "Not Implemented";
+	statusMessages[HttpStatus::SERVICE_UNAVAILABLE] = "Service Unavailable";
+
 	return (statusMessages);
 }
 
 static std::string	getErrorPage(int status, ServerConfig &server) {
 	std::string *errPagePath;
+
 	errPagePath = server.getFilePathFromStatusCode(status);
 	if (!errPagePath)
 		return ("");
@@ -153,7 +142,7 @@ static std::string	getErrorPage(int status, ServerConfig &server) {
 	}
 }
 
-Response::Response(int status, Request &request) : _status(status), _filePath(request.filePath), _requestUri(request._reqUri), _locationHeader("") {
+Response::Response(HttpStatus::Code status, Request &request) : _status(status), _filePath(request.filePath), _requestUri(request._reqUri), _locationHeader("") {
 	this->_errPage = getErrorPage(status, request._server);
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
@@ -177,7 +166,7 @@ Response::Response(int status, Request &request) : _status(status), _filePath(re
 	this->generateFullResponse();
 }
 
-Response::Response(int status) : _status(status), _body(""), _filePath(""), _errPage("") {
+Response::Response(HttpStatus::Code status) : _status(status), _body(""), _filePath(""), _errPage("") {
 	this->_mimeTypes = defaultMimeTypes();
 	this->_statusMessages = defaultStatusMessages();
 	this->defineStatusLine(status);
@@ -224,6 +213,7 @@ size_t		Response::size() const {
 std::string	Response::getContentType(const std::string &filename) const {
 	std::map<std::string, std::string>::const_iterator	it;
 	std::string	extension;
+
 	if (filename.empty())
 		return ("text/plain");
 	if (filename.find_last_of(".") == std::string::npos)
@@ -239,6 +229,7 @@ std::string	Response::getContentType(const std::string &filename) const {
 std::string	Response::getStatusMessage(int status) const {
 	std::map<int, std::string>::const_iterator	it;
 	std::string	statusMessage;
+
 	it = this->_statusMessages.find(status);
 	if (it != this->_statusMessages.end())
 		statusMessage = utils::toString(status) + " " + it->second;
@@ -292,7 +283,7 @@ void	Response::_success(Request &req) {
 			this->addNewField("Content-Type", getContentType(this->_filePath));
 			this->_body = "File created";
 			break ;
-		case 204:
+		default:
 			break ;
 	}
 }

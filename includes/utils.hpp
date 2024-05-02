@@ -1,6 +1,11 @@
 #pragma once
 
 #include "includeAll.hpp"
+#include "HttpStatus.hpp"
+#include "WebServer.hpp"
+
+class RouteConfig;
+class ServerConfig;
 
 namespace utils {
 	std::string	getFileContent(const std::string &filename);
@@ -20,6 +25,16 @@ namespace utils {
 	std::string	getCurrentTimeInGMT();
 	void	trim(std::string &str, const char* toFind);
 	void	sleep(int seconds);
+	int		fileGood(const char *filePath);
+	bool	checkParentFolderPermission(std::string filePath, const std::string& root);
+	std::string getFilePath(RouteConfig *route, std::string requestUri);
+	std::string getHeader(std::string request, std::string header);
+	ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host);
+	HttpStatus::Code	deleteEverythingInsideDir(std::string dirPath, std::string& root);
+	HttpStatus::Code	tryToDelete(const std::string& filePath);
+	void				getDateAndBytes(const std::string &path, std::string &modTime, std::string &bytesSize);
+	void				setupPolls(std::vector<int>& serverFds, std::vector<struct pollfd>& pollFds);
+	void				setupSockets(WebServer& config, std::vector<int>& serverFds) throw(std::runtime_error);
 }
 
 #include "../srcs/utils/toString.tpp"
