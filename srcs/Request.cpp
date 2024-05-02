@@ -277,6 +277,8 @@ void Request::initRequest(std::string &request) {
 	std::vector<std::string>	requestLineParams = utils::split(request, "\r\n");
 	std::vector<std::string>::iterator	it = requestLineParams.begin();
 
+	if (it == requestLineParams.end())
+		return ;
 	std::vector<std::string>	firstLine = utils::split(*it, ' ');
 	this->method = getMethod(firstLine[METHOD]);
 	this->_reqUri = firstLine[REQUESTURI];
