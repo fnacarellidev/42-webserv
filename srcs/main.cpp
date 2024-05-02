@@ -28,7 +28,7 @@ static bool	invalidInputs(int argc, char **argv) {
 }
 
 static void	setupSockets(WebServer& config, std::vector<int>& serverFds) throw(std::runtime_error) {
-	int	opt = 1, serverFd;
+	int	opt = 1, flags = 0, serverFd;
 	struct sockaddr_in sockAddr;
 
 	sockAddr.sin_family = AF_INET;
@@ -41,6 +41,15 @@ static void	setupSockets(WebServer& config, std::vector<int>& serverFds) throw(s
 		}
 		if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, 4)) {
 			perror("setsockopt");
+			goto error_happen;
+		}
+		flags = fcntl(serverFd, F_GETFL);
+		if (flags < 0) {
+			perror("fcntl");
+			goto error_happen;
+		}
+		if (fcntl(serverFd, F_SETFL, flags | O_NONBLOCK) < 0) {
+			perror("fcntl");
 			goto error_happen;
 		}
 		sockAddr.sin_port = htons(config.servers[i].port);
@@ -76,6 +85,7 @@ static void	setupSignal(void (*handleSignal)(int)) {
 	signal(SIGINT, handleSignal);
 	signal(SIGTERM, handleSignal);
 	signal(SIGQUIT, handleSignal);
+	signal(SIGPIPE, SIG_IGN);
 }
 
 static void	freeRoutes(std::vector<ServerConfig>::iterator begin, std::vector<ServerConfig>::iterator end) {
