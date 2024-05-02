@@ -85,6 +85,7 @@ static void	setupSignal(void (*handleSignal)(int)) {
 	signal(SIGINT, handleSignal);
 	signal(SIGTERM, handleSignal);
 	signal(SIGQUIT, handleSignal);
+	signal(SIGPIPE, SIG_IGN);
 }
 
 static void	freeRoutes(std::vector<ServerConfig>::iterator begin, std::vector<ServerConfig>::iterator end) {

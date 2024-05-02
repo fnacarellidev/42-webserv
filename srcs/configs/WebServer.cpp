@@ -53,11 +53,9 @@ static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pol
 	while (bytesRead > 0) {
 		buffer[bytesRead] = '\0';
 		totalRequest.append(buffer);
-		if (expected && totalRequest.find("Expect: 100-continue") != std::string::npos) {
+		if (expected && totalRequest.find("Expect: 100-continue") != std::string::npos)
 			utils::sleep(2);
-			expected = false;
-		} else
-			expected = false;
+		expected = false;
 		bytesRead = recv(pollFds[pos].fd, buffer, BUFFER_SIZE, 0);
 	}
 	if (bytesRead == -1 && !totalRequest.empty()) {
@@ -65,20 +63,14 @@ static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pol
 			wbserv.buffers[pollFds[pos].fd] = totalRequest;
 		else
 			wbserv.buffers.insert(std::pair<int, std::string>(pollFds[pos].fd, totalRequest));
-		std::cerr << wbserv.buffers.at(pollFds[pos].fd) << std::endl;
 	} else if (bytesRead == -1) {
 		Response resErr(HttpStatus::SERVER_ERR);
 
-		std::cerr << "[recv] error" << std::endl;
 		bytesRead = send(pollFds[pos].fd, resErr.response(), resErr.size(), MSG_CONFIRM);
 		hasBeenSent(bytesRead, resErr.size(), "recv error");
-		close(pollFds[pos].fd);
-		pollFds.erase(pollFds.begin() + pos);
-	} else if (bytesRead == 0) {
-		std::cerr << "[recv] conection lost with client" << std::endl;
-		close(pollFds[pos].fd);
-		pollFds.erase(pollFds.begin() + pos);
-	}
+		std::runtime_error("[recv] error");
+	} else if (bytesRead == 0)
+		std::runtime_error("[recv] conection lost with client");
 }
 
 static void	respondClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pollFds, size_t pos) {
@@ -87,16 +79,15 @@ static void	respondClientRequest(WebServer& wbserv, std::vector<struct pollfd>& 
 	if (wbserv.buffers[pollFds[pos].fd] == "") {
 		Response err(HttpStatus::BAD_REQUEST);
 
-		std::cerr << "WHY IS THE FUCKING REQUEST EMPTY?" << std::endl;
 		ret = send(pollFds[pos].fd, err.response(), err.size(), MSG_CONFIRM);
 		hasBeenSent(ret, err.size(), "empty request");
-	} else {
-		Request	req(wbserv.buffers[pollFds[pos].fd], wbserv.servers, pollFds[pos].fd);
-		Response	res = req.runRequest();
-
-		ret = send(pollFds[pos].fd, res.response(), res.size(), MSG_CONFIRM);
-		hasBeenSent(ret, res.size(), "response");
+		std::runtime_error("THE IMPOSSIBLE HAPPEN");
 	}
+	Request	req(wbserv.buffers[pollFds[pos].fd], wbserv.servers, pollFds[pos].fd);
+	Response	res = req.runRequest();
+
+	ret = send(pollFds[pos].fd, res.response(), res.size(), MSG_CONFIRM);
+	hasBeenSent(ret, res.size(), "response");
 	close(pollFds[pos].fd);
 	pollFds.erase(pollFds.begin() + pos);
 }
@@ -156,10 +147,16 @@ void	WebServer::handleRequests(WebServer& wbserv, std::vector<int>& serverFds, s
 			if (pollFds[i].fd == serverFds[i])
 				acceptClientRequest(serverFds[i], pollFds);
 		}
-		else if (pollFds[i].revents & POLLIN)
-			readClientRequest(wbserv, pollFds, i);
-		else if (pollFds[i].revents & POLLOUT)
-			respondClientRequest(wbserv, pollFds, i);
+		else if (pollFds[i].revents & POLLIN) {
+			try {
+				readClientRequest(wbserv, pollFds, i);
+				respondClientRequest(wbserv, pollFds, i);
+			} catch (std::exception& e) {
+				std::cerr << e.what() << std::endl;
+				close(pollFds[i].fd);
+				pollFds.erase(pollFds.begin() + i);
+			}
+		}
 	}
 }
 
