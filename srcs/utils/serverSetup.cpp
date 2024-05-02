@@ -1,5 +1,9 @@
 #include "../../includes/Request.hpp"
 
+#ifndef QUEUE_MAX // maximum conections to one socket
+# define QUEUE_MAX std::numeric_limits<unsigned short>::max()
+#endif
+
 static unsigned int	getRequestPort(std::string request) {
 	size_t	pos = 0;
 
@@ -70,5 +74,60 @@ ServerConfig utils::getServer(std::vector<ServerConfig> serverConfigs, std::stri
 		if (it->port == port)
 			return *it;
 	return serverConfigs.front();
+}
+
+
+void	utils::setupSockets(WebServer& config, std::vector<int>& serverFds) throw(std::runtime_error) {
+	int	opt = 1, flags = 0, serverFd;
+	struct sockaddr_in sockAddr;
+
+	sockAddr.sin_family = AF_INET;
+	sockAddr.sin_addr.s_addr = INADDR_ANY;
+	for (size_t i = 0; i < config.servers.size(); i++) {
+		serverFd = socket(AF_INET, SOCK_STREAM, 0);
+		if (serverFd < 0) {
+			perror("socket");
+			goto error_happen;
+		}
+		if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, 4)) {
+			perror("setsockopt");
+			goto error_happen;
+		}
+		flags = fcntl(serverFd, F_GETFL);
+		if (flags < 0) {
+			perror("fcntl");
+			goto error_happen;
+		}
+		if (fcntl(serverFd, F_SETFL, flags | O_NONBLOCK) < 0) {
+			perror("fcntl");
+			goto error_happen;
+		}
+		sockAddr.sin_port = htons(config.servers[i].port);
+		if (bind(serverFd, (struct sockaddr*)&sockAddr, sizeof(sockAddr)) < 0) {
+			perror("bind");
+			goto error_happen;
+		}
+		if (listen(serverFd, QUEUE_MAX) < 0) {
+			perror("listen");
+			goto error_happen;
+		}
+		serverFds.push_back(serverFd);
+	}
+	return ;
+error_happen:
+	for (size_t i = 0; i < serverFds.size(); i++)
+		close(serverFds[i]);
+	std::runtime_error("");
+}
+
+void	utils::setupPolls(std::vector<int>& serverFds, std::vector<struct pollfd>& pollFds) {
+	struct pollfd pfd;
+
+	pfd.events = POLLIN | POLLOUT;
+	pfd.revents = 0;
+	for (size_t i = 0; i < serverFds.size(); i++) {
+		pfd.fd = serverFds[i];
+		pollFds.push_back(pfd);
+	}
 }
 
