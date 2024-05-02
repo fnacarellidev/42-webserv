@@ -154,7 +154,7 @@ HttpStatus::Code Request::runGet() {
 		try {
 			this->cgiOutput = getCgiOutput(this->filePath, this->_connectionFd, "");
 		} catch (std::exception &e) {
-			return HttpStatus::SERVER_ERR;
+			return HttpStatus::TIMEOUT;
 		}
 		this->resContentType = "text/plain";
 	}

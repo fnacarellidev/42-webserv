@@ -31,6 +31,7 @@ namespace utils {
 	ServerConfig getServer(std::vector<ServerConfig> serverConfigs, std::string host);
 	HttpStatus::Code	deleteEverythingInsideDir(std::string dirPath, std::string& root);
 	HttpStatus::Code	tryToDelete(const std::string& filePath);
+	void				getDateAndBytes(const std::string &path, std::string &modTime, std::string &bytesSize);
 }
 
 #include "../srcs/utils/toString.tpp"

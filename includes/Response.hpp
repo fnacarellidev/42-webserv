@@ -1,5 +1,4 @@
 #pragma once
-
 #include <fcntl.h>
 #include "includeAll.hpp"
 #include "utils.hpp"
@@ -13,7 +12,7 @@ class Request;
 
 class Response {
 	private:
-		short int					_status;
+		HttpStatus::Code			_status;
 		std::string					_statusLine;
 		std::vector<t_fields>		_headerFields;
 		std::string					_body;
@@ -29,8 +28,8 @@ class Response {
 		void	_error();
 		void	_serverError();
 	public:
-		Response(int status);
-		Response(int status, Request &request);
+		Response(HttpStatus::Code status);
+		Response(HttpStatus::Code status, Request &request);
 		Response	&operator=(const Response &other);
 		size_t		size() const;
 		const char	*response() const;

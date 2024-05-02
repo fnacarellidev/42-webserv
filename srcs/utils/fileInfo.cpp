@@ -63,3 +63,16 @@ HttpStatus::Code	utils::deleteEverythingInsideDir(std::string dirPath, std::stri
 	}
 	return (status);
 }
+
+
+void	utils::getDateAndBytes(const std::string &path, std::string &modTime, std::string &bytesSize) {
+	struct stat	fileStat;
+	struct tm	*timeInfo;
+	char	buffer[20];
+
+	stat(path.c_str(), &fileStat);
+	timeInfo = gmtime(&fileStat.st_mtime);
+	strftime(buffer, 20, "%d-%b-%Y %H:%M", timeInfo);
+	modTime = buffer;
+	bytesSize = utils::toString(fileStat.st_size);
+}
