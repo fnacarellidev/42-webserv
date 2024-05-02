@@ -49,10 +49,10 @@ static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pol
 	std::string totalRequest;
 	ssize_t		bytesRead;
 
-	bytesRead = recv(pollFds[pos].fd, buffer, BUFFER_SIZE, 0);
+	bytesRead = recv(pollFds[pos].fd, buffer, BUFFER_SIZE - 1, 0);
 	while (bytesRead > 0) {
 		buffer[bytesRead] = '\0';
-		totalRequest += buffer;
+		totalRequest.append(buffer);
 		if (expected && totalRequest.find("Expect: 100-continue") != std::string::npos) {
 			utils::sleep(2);
 			expected = false;
@@ -60,9 +60,13 @@ static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pol
 			expected = false;
 		bytesRead = recv(pollFds[pos].fd, buffer, BUFFER_SIZE, 0);
 	}
-	if (bytesRead == -1 && !totalRequest.empty())
-		wbserv.buffers[pollFds[pos].fd] = totalRequest;
-	else if (bytesRead == -1) {
+	if (bytesRead == -1 && !totalRequest.empty()) {
+		if (wbserv.buffers.find(pollFds[pos].fd) != wbserv.buffers.end())
+			wbserv.buffers[pollFds[pos].fd] = totalRequest;
+		else
+			wbserv.buffers.insert(std::pair<int, std::string>(pollFds[pos].fd, totalRequest));
+		std::cerr << wbserv.buffers.at(pollFds[pos].fd) << std::endl;
+	} else if (bytesRead == -1) {
 		Response resErr(HttpStatus::SERVER_ERR);
 
 		std::cerr << "[recv] error" << std::endl;
@@ -78,12 +82,21 @@ static void	readClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pol
 }
 
 static void	respondClientRequest(WebServer& wbserv, std::vector<struct pollfd>& pollFds, size_t pos) {
-	Request	req(wbserv.buffers[pollFds[pos].fd], wbserv.servers, pollFds[pos].fd);
-	Response	res = req.runRequest();
-	ssize_t	ret = 0;
+	ssize_t ret = 0;
 
-	ret = send(pollFds[pos].fd, res.response(), res.size(), MSG_CONFIRM);
-	hasBeenSent(ret, res.size(), "response");
+	if (wbserv.buffers[pollFds[pos].fd] == "") {
+		Response err(HttpStatus::BAD_REQUEST);
+
+		std::cerr << "WHY IS THE FUCKING REQUEST EMPTY?" << std::endl;
+		ret = send(pollFds[pos].fd, err.response(), err.size(), MSG_CONFIRM);
+		hasBeenSent(ret, err.size(), "empty request");
+	} else {
+		Request	req(wbserv.buffers[pollFds[pos].fd], wbserv.servers, pollFds[pos].fd);
+		Response	res = req.runRequest();
+
+		ret = send(pollFds[pos].fd, res.response(), res.size(), MSG_CONFIRM);
+		hasBeenSent(ret, res.size(), "response");
+	}
 	close(pollFds[pos].fd);
 	pollFds.erase(pollFds.begin() + pos);
 }
