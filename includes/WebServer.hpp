@@ -12,7 +12,7 @@
 #define ONE_KILO 1000
 #define CONNECTIONS 10000
 #define POLL_TIMEOUT_SEC 10 * 1000
-#define BUFFER_SIZE ONE_MEGA
+#define BUFFER_SIZE 0xFFFF
 
 namespace Server {
 	enum Keywords {
