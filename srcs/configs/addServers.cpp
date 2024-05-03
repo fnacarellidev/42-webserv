@@ -79,9 +79,6 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 			case Server::SERVER:
 				servers.push_back(ServerConfig());
 				break;
-			case Server::HOST:
-				servers.back().host = splited[1];
-				break;
 			case Server::PORT:
 				addPort(splited[1], servers);
 				break;

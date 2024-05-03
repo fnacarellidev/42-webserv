@@ -5,7 +5,6 @@ std::map<std::string, Server::Keywords>	buildServerMap() {
 	std::map<std::string, Server::Keywords> map;
 
 	map["server"] = Server::SERVER;
-	map["host"] = Server::HOST;
 	map["port"] = Server::PORT;
 	map["names"] = Server::NAMES;
 	map["limit"] = Server::LIMIT;
