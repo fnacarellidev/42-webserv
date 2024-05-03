@@ -7,7 +7,7 @@
 #define POST_OK 0b0010
 #define DELETE_OK 0b0100
 
-#define DEFAULT_ROOT "/var/www/html"
+#define DEFAULT_ROOT "/var/www/html/"
 #define DEFAULT_INDEX "index.html"
 #define DEFAULT_DIRLIST false
 #define DEFAULT_ACCEPT_METHODS GET_OK
