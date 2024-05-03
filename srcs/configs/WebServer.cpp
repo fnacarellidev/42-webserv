@@ -159,13 +159,3 @@ void	WebServer::handleRequests(WebServer& wbserv, std::vector<int>& serverFds, s
 		}
 	}
 }
-
-std::ostream&	operator<<(std::ostream& o, WebServer& webserv) {
-	size_t n = 1;
-	for (std::vector<ServerConfig>::iterator it = webserv.servers.begin(); it != webserv.servers.end(); it++) {
-		o << "Server " << n++ << ": {" << std::endl;
-		o << *it;
-		o << "}" << std::endl;
-	}
-	return o;
-}

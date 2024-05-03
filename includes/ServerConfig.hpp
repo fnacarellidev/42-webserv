@@ -26,5 +26,3 @@ class ServerConfig {
 		RouteConfig*	getRouteByPath(std::string requestUri);
 		std::string*	getFilePathFromStatusCode(int status);
 };
-
-std::ostream&	operator<<(std::ostream& os, ServerConfig& serverConfig);

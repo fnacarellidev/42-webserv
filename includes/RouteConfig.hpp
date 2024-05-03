@@ -25,5 +25,3 @@ class RouteConfig {
 
 		RouteConfig();
 };
-
-std::ostream&	operator<<(std::ostream& os, RouteConfig& routeConfig);

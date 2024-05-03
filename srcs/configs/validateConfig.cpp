@@ -219,7 +219,7 @@ std::map<std::string, Server::Keywords>& serverMap) {
 							error = splited.at(1)[0] != '/';
 							break;
 						default: ;
-					}
+						}
 			}
 			if (error)
 				return error;

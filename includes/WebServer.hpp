@@ -17,7 +17,6 @@
 namespace Server {
 	enum Keywords {
 		SERVER = 1,
-		HOST,
 		PORT,
 		NAMES,
 		LIMIT,
@@ -57,5 +56,3 @@ void	checkInsideRoute(std::ifstream& file, std::string& line) throw(std::runtime
 bool	invalidServerInputs(std::ifstream& file, std::string& line, bool* serverBrackets, std::map<std::string, Server::Keywords>& serverMap);
 void	addRoutes(std::ifstream& file, std::string& line, ServerConfig& server);
 void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers);
-
-std::ostream&	operator<<(std::ostream& o, WebServer& webserv);
