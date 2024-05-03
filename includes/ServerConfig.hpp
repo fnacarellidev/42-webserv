@@ -17,7 +17,6 @@ class ServerConfig {
 		std::string root;
 		unsigned long int	port;
 		std::vector<std::string>	serverNames;
-		std::string	host;
 		size_t	bodyLimit;
 		bool	portSetted;
 

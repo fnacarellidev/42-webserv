@@ -1,8 +1,11 @@
 #include "../../includes/ServerConfig.hpp"
 
 ServerConfig::ServerConfig():
-root(DEFAULT_ROOT), port(DEFAULT_PORT), host(DEFAULT_HOST), bodyLimit(DEFAULT_LIMIT), portSetted(false) {
-	serverNames.push_back(host);
+	root(DEFAULT_ROOT),
+	port(DEFAULT_PORT),
+	bodyLimit(DEFAULT_LIMIT),
+	portSetted(false) {
+	serverNames.push_back("localhost");
 }
 
 std::string *ServerConfig::getFilePathFromStatusCode(int status) {

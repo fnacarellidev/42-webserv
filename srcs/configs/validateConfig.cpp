@@ -50,26 +50,6 @@ static bool	validateErrorConfig(std::string& errors) {
 	return false;
 }
 
-static bool	validateHostConfig(std::string& ip) {
-	if (ip.find_first_not_of("0123456789.") != std::string::npos)
-		return true;
-
-	std::vector<std::string> bits = utils::split(ip, '.');
-
-	if (bits.size() != 4)
-		return true;
-	for (std::vector<std::string>::iterator it = bits.begin(); it != bits.end(); it++) {
-		if (it->size() > 3)
-			return true;
-
-		long int nbr = std::strtol(it->c_str(), NULL, 10);
-
-		if (nbr < 0 || nbr > 255)
-			return true;
-	}
-	return false;
-}
-
 static bool	validateLimitConfig(std::string& limit) {
 	if (limit.find_first_not_of("0123456789KkBbMmGg") != std::string::npos)
 		return true;
@@ -205,9 +185,6 @@ std::map<std::string, Server::Keywords>& serverMap) {
 					switch (found->second) {
 						case Server::ERROR:
 							error = validateErrorConfig(splited[1]);
-							break;
-						case Server::HOST:
-							error = validateHostConfig(splited[1]);
 							break;
 						case Server::LIMIT:
 							error = validateLimitConfig(splited[1]);
