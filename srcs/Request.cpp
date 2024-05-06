@@ -144,7 +144,7 @@ HttpStatus::Code Request::runGet() {
 			status = HttpStatus::FORBIDDEN;
 		return (status);
 	}
-	if (utils::strEndsWith(_reqUri, '/') && _reqUri != "/") { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
+	if (utils::strEndsWith(_reqUri, '/') && _reqUri != "/") {
 			return (HttpStatus::NOT_FOUND);
 	}
 	if (this->execCgi) {
