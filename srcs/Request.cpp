@@ -145,8 +145,10 @@ HttpStatus::Code Request::runGet() {
 		return (status);
 	}
 	if (utils::strEndsWith(_reqUri, '/')) { // example: /webserv/assets/style.css/  it is not a dir, so it wont trigger the condition above.
-		if (!_dirListEnabled || access(filePath.c_str(), R_OK) == -1)
+		if ((!_dirListEnabled && S_ISDIR(statbuf.st_mode)) || access(filePath.c_str(), R_OK) == -1)
 			status = HttpStatus::FORBIDDEN;
+		else if (utils::fileGood(filePath.c_str()) == 0)
+			status = HttpStatus::OK;
 		else
 			status = HttpStatus::NOT_FOUND;
 		return (status);
