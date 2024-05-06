@@ -89,6 +89,7 @@ Request::Request(std::string request, std::vector<ServerConfig> serverConfigs, i
 	_fullRequest(request),
 	_dirListEnabled(false),
 	_connectionFd(connectionFd),
+	method(UNKNOWNMETHOD),
 	_shouldRedirect(false),
 	execCgi(false)
 {
