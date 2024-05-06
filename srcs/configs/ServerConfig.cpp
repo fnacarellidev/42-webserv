@@ -1,7 +1,6 @@
 #include "../../includes/ServerConfig.hpp"
 
 ServerConfig::ServerConfig():
-	root(DEFAULT_ROOT),
 	port(DEFAULT_PORT),
 	bodyLimit(DEFAULT_LIMIT),
 	portSetted(false) {

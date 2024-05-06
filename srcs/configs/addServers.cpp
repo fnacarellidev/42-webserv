@@ -9,9 +9,7 @@ static void	addErrors(std::string const& error, ServerConfig& server) {
 		std::vector<std::string> error = utils::split(*it, '=');
 		int code = std::atoi(error[0].c_str());
 
-		if (error[1][0] == '/')
-			error[1].erase(0, 1);
-		server.insertError(code, server.root + "/" + error[1]);
+		server.insertError(code, error[1]);
 	}
 }
 
@@ -91,11 +89,6 @@ void	addServers(std::ifstream& file, std::vector<ServerConfig>& servers) {
 				break;
 			case Server::ERROR:
 				addErrors(splited[1], servers.back());
-				break;
-			case Server::ROOT:
-				if (*(splited[1].end() - 1) != '/')
-					splited[1].insert(splited[1].end(), '/');
-				servers.back().root = splited[1];
 				break;
 			case Server::ROUTE:
 				addRoutes(file, line, servers.back());

@@ -192,9 +192,6 @@ std::map<std::string, Server::Keywords>& serverMap) {
 						case Server::PORT:
 							error = validatePortConfig(splited[1]);
 							break;
-						case Server::ROOT:
-							error = splited.at(1)[0] != '/';
-							break;
 						default: ;
 						}
 			}

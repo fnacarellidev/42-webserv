@@ -14,7 +14,6 @@ class ServerConfig {
 	public:
 		std::map<int, std::string>	errors;
 		std::vector<RouteConfig*>	routes;
-		std::string root;
 		unsigned long int	port;
 		std::vector<std::string>	serverNames;
 		size_t	bodyLimit;

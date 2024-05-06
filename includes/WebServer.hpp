@@ -22,7 +22,6 @@ namespace Server {
 		LIMIT,
 		ERROR,
 		ROUTE,
-		ROOT
 	};
 };
 
