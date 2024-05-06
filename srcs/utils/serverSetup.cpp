@@ -20,13 +20,15 @@ std::string utils::getFilePath(RouteConfig *route, std::string requestUri) {
 	std::vector<std::string> indexes = route->index;
 	std::string file = requestUri.substr(route->path.size() - 1, std::string::npos);
 
-	if (utils::strEndsWith(requestUri, '/')) {
+	if (route->dirList)
+		return root + file;
+	if (utils::strEndsWith(requestUri, '/') && requestUri != "/") {
 		file.erase(file.end() - 1);
 		if (*file.begin() == '/')
 			file.erase(file.begin());
 		return root + file;
 	}
-	if (file.empty()) {
+	if (file.empty() || requestUri == "/") {
 		for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it) {
 			bool fileExists = access((root + *it).c_str(), F_OK) == 0;
 			if (fileExists)
